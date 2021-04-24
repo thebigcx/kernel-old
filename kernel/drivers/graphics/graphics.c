@@ -5,7 +5,7 @@
 
 graphics_data_t graphics_data;
 
-void init_graphics()
+void gr_init()
 {
     EFI_STATUS status;
 
@@ -30,4 +30,14 @@ void init_graphics()
 
     graphics_data.fb_adr = gop->Mode->FrameBufferBase;
     graphics_data.pix_per_line = gop->Mode->Info->PixelsPerScanLine;
+    graphics_data.v_res = gop->Mode->Info->VerticalResolution;
+}
+
+void gr_clear(float r, float g, float b, float a)
+{
+    for (uint32_t x = 0; x < graphics_data.pix_per_line; x++)
+    for (uint32_t y = 0; y < graphics_data.v_res; y++)
+    {   
+        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * y + 4 * x)) = 0xFFFFFFFF;
+    }
 }

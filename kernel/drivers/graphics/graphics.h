@@ -6,8 +6,10 @@ typedef struct
 {
     uint64_t fb_adr;
     uint32_t pix_per_line;
+    uint32_t v_res;
 } graphics_data_t;
 
 extern graphics_data_t graphics_data;
 
-void init_graphics();
+void gr_init();
+void gr_clear(float r, float g, float b, float a);

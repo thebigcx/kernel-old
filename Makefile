@@ -8,8 +8,8 @@ EFILDS := $(EFILIB)/elf_x86_64_efi.lds
 EFICRT := $(EFILIB)/crt0-efi-x86_64.o
 EFIINC := -I/usr/include/efi
 
-CFLAGS := $(EFIINC) -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c -Ilibc/include
-LDFLAGS := -shared -Bsymbolic -L$(EFILIB) -T$(EFILDS) $(EFICRT)
+CFLAGS := $(EFIINC) -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c -Ilibc/include -O2
+LDFLAGS := -shared -Bsymbolic -L$(EFILIB) -T$(EFILDS) $(EFICRT) -nostdlib
 
 all: $(ISOTARGET)
 
@@ -35,7 +35,7 @@ $(EFITARGET): main.so
 	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym  -j .rel -j .rela -j .rel.* -j .rela.* -j .reloc --target efi-app-x86_64 --subsystem=10 $^ $@
 
 clean:
-	rm *.o
+	rm $(OBJS)
 	rm $(ISOTARGET)
 	rm $(FATTARGET)
 	rm $(EFITARGET)
