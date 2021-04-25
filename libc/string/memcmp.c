@@ -1,6 +1,6 @@
 #include "string.h"
 
-/*int memcmp(const void* s1, const void* s2, size_t n)
+int memcmp(const void* s1, const void* s2, size_t n)
 {
     unsigned char* cs1 = (unsigned char*)s1;
     unsigned char* cs2 = (unsigned char*)s2;
@@ -12,4 +12,4 @@
     }
 
     return 0;
-}*/
+}

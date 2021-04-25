@@ -1,15 +1,7 @@
-CSOURCES := $(wildcard *.c) $(wildcard **/*.c) $(wildcard **/**/*.c) $(wildcard **/**/*.c) $(wildcard **/**/**/*.c) $(wildcard **/**/**/**/*.c)
-OBJS := $(patsubst %.c, %.o, $(CSOURCES))
 ISOTARGET := os.iso
 FATTARGET := fat.img
-EFITARGET := BOOTX64.EFI
-EFILIB := /usr/local/lib
-EFILDS := $(EFILIB)/elf_x86_64_efi.lds
-EFICRT := $(EFILIB)/crt0-efi-x86_64.o
-EFIINC := -I/usr/include/efi
-
-CFLAGS := $(EFIINC) -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -c -Ilibc/include -O2
-LDFLAGS := -shared -Bsymbolic -L$(EFILIB) -T$(EFILDS) $(EFICRT) -nostdlib
+EFITARGET := boot/BOOTX64.EFI
+KERNEL := kernel/kernel.elf
 
 all: $(ISOTARGET)
 
@@ -24,18 +16,16 @@ $(FATTARGET): $(EFITARGET)
 	mmd -i $@ ::/EFI
 	mmd -i $@ ::/EFI/BOOT
 	mcopy -i $@ $< ::/EFI/BOOT
+	mcopy -i $@ startup.nsh ::
+	mcopy -i $@ $(KERNEL) ::
 
-%.o: %.c
-	gcc $(CFLAGS) -o $@ $<
-
-main.so: $(OBJS)
-	ld $(LDFLAGS) $(OBJS) -o $@ -lefi -lgnuefi
-
-$(EFITARGET): main.so
-	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym  -j .rel -j .rela -j .rel.* -j .rela.* -j .reloc --target efi-app-x86_64 --subsystem=10 $^ $@
+$(EFITARGET):
+	cd kernel && make
+	cd ..
+	cd boot && make
+	cd ..
 
 clean:
-	rm $(OBJS)
 	rm $(ISOTARGET)
 	rm $(FATTARGET)
 	rm $(EFITARGET)

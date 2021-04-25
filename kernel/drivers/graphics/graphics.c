@@ -1,43 +1,27 @@
 #include "graphics.h"
 
-#include <efi.h>
-#include <efilib.h>
-
 graphics_data_t graphics_data;
 
-void gr_init()
-{
-    EFI_STATUS status;
+static uint32_t clear_color = 0x00000000;
 
-    EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
-    EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-    status = uefi_call_wrapper(BS->LocateProtocol, 3, &gop_guid, NULL, (void**)&gop);
-    if(EFI_ERROR(status))
-        Print(L"Unable to locate GOP\n");
-
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* info;
-    UINTN size_of_info, num_modes, native_mode;
-
-    status = uefi_call_wrapper(gop->QueryMode, 4, gop, gop->Mode == NULL ? 0 : gop->Mode->Mode, &size_of_info, &info);
-
-    if (EFI_ERROR(status))
-        Print(L"Unable to get native mode\n");
-
-    native_mode = gop->Mode->Mode;
-    num_modes = gop->Mode->MaxMode;
-
-    uefi_call_wrapper(gop->SetMode, 2, gop, num_modes - 1);
-
-    graphics_data.fb_adr = gop->Mode->FrameBufferBase;
-    graphics_data.pix_per_line = gop->Mode->Info->PixelsPerScanLine;
-    graphics_data.v_res = gop->Mode->Info->VerticalResolution;
-}
-
-void gr_clear(float r, float g, float b, float a)
+void gr_clear()
 {
     for (uint32_t x = 0; x < graphics_data.pix_per_line; x++)
     for (uint32_t y = 0; y < graphics_data.v_res; y++)
-    {   
-        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * y + 4 * x)) = 0xFFFFFFFF;
+    {
+        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * y + 4 * x)) = clear_color;
     }
+}
+
+// Layout ARGB - each channel 8-bit
+void gr_clear_color(float r, float g, float b, float a)
+{
+    uint8_t br = (uint8_t)(r * 255.0f);
+    uint8_t bg = (uint8_t)(g * 255.0f);
+    uint8_t bb = (uint8_t)(b * 255.0f);
+    uint8_t ba = (uint8_t)(a * 255.0f);
+
+    clear_color = (ba << 24) |
+                  (br << 16) |
+                  (bg << 8) | bb;
 }

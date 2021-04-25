@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include "stdint.h"
 
 typedef struct
 {
@@ -11,5 +11,5 @@ typedef struct
 
 extern graphics_data_t graphics_data;
 
-void gr_init();
-void gr_clear(float r, float g, float b, float a);
+void gr_clear();
+void gr_clear_color(float r, float g, float b, float a);
