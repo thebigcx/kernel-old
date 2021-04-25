@@ -20,3 +20,9 @@ main.so: $(OBJS)
 
 $(EFITARGET): main.so
 	objcopy -j .text -j .sdata -j .data -j .dynamic -j .dynsym  -j .rel -j .rela -j .rel.* -j .rela.* -j .reloc --target efi-app-x86_64 --subsystem=10 $^ $@
+	rm main.so
+
+.PHONY:
+clean:
+	rm -f $(OBJS)
+	rm -f $(EFITARGET)

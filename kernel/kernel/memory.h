@@ -1,11 +1,6 @@
 #pragma once
 
-#include "stddef.h"
+#include "stdint.h"
+#include "efi_mem.h"
 
-typedef struct
-{
-    void* addresses[20];
-    size_t address_cnt;
-} memory_map_t;
-
-extern memory_map_t memory_map;
+uint64_t get_memory_size(efi_memory_descriptor* mem, uint64_t map_entries);

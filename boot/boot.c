@@ -2,35 +2,30 @@
 #include <efilib.h>
 #include <elf.h>
 
-#include "../kernel/drivers/graphics/graphics.h"
-#include "../kernel/kernel/memory.h"
-#include "boot.h"
+typedef struct
+{
+    uint64_t mem_map_size;
+    uint64_t mem_map_key;
+    uint64_t mem_map_desc_size;
+    uint32_t mem_map_desc_vers;
+    void* mem_map;
+
+    uint64_t fb_adr;
+    uint32_t pix_per_line;
+    uint32_t v_res;
+} boot_info_t;
 
 boot_info_t boot_inf;
 
 static void init_mem_map(EFI_SYSTEM_TABLE* SystemTable)
 {
-    EFI_STATUS status;
-
     boot_inf.mem_map = NULL;
 
     {
-        status = uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &boot_inf.mem_map_size, boot_inf.mem_map, &boot_inf.mem_map_key, &boot_inf.mem_map_desc_size, &boot_inf.mem_map_desc_vers);
+        uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &boot_inf.mem_map_size, boot_inf.mem_map, &boot_inf.mem_map_key, &boot_inf.mem_map_desc_size, &boot_inf.mem_map_desc_vers);
         boot_inf.mem_map_size += 2 * boot_inf.mem_map_desc_size;
-        status = uefi_call_wrapper(SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, boot_inf.mem_map_size, (void**)&boot_inf.mem_map);
-        status = uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &boot_inf.mem_map_size, boot_inf.mem_map, &boot_inf.mem_map_key, &boot_inf.mem_map_desc_size, &boot_inf.mem_map_desc_vers);
-    }
-
-    uint64_t map_entries = boot_inf.mem_map_size / boot_inf.mem_map_desc_size;
-    memory_map.address_cnt = 0;
-
-    for (int i = 0; i < 20; i++)
-    {
-        EFI_MEMORY_DESCRIPTOR* desc = (EFI_MEMORY_DESCRIPTOR*)(boot_inf.mem_map + i * boot_inf.mem_map_desc_size);
-        if (desc->Type == EfiConventionalMemory)
-        {
-            memory_map.addresses[memory_map.address_cnt++] = (void*)desc->PhysicalStart;
-        }
+        uefi_call_wrapper(SystemTable->BootServices->AllocatePool, 3, EfiLoaderData, boot_inf.mem_map_size, (void**)&boot_inf.mem_map);
+        uefi_call_wrapper(SystemTable->BootServices->GetMemoryMap, 5, &boot_inf.mem_map_size, boot_inf.mem_map, &boot_inf.mem_map_key, &boot_inf.mem_map_desc_size, &boot_inf.mem_map_desc_vers);
     }
 }
 
@@ -45,14 +40,14 @@ static void init_gop(EFI_SYSTEM_TABLE* sys_table)
         Print(L"Unable to locate GOP\n");
 
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* info;
-    UINTN size_of_info, num_modes, native_mode;
+    UINTN size_of_info, num_modes;//, native_mode;
 
     status = uefi_call_wrapper(gop->QueryMode, 4, gop, gop->Mode == NULL ? 0 : gop->Mode->Mode, &size_of_info, &info);
 
     if (EFI_ERROR(status))
         Print(L"Unable to get native mode\n");
 
-    native_mode = gop->Mode->Mode;
+    //native_mode = gop->Mode->Mode;
     num_modes = gop->Mode->MaxMode;
 
     uefi_call_wrapper(gop->SetMode, 2, gop, num_modes - 1);
@@ -166,10 +161,8 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
     if (EFI_ERROR(status))
         Print(L"Error (%d): ExitBootServices\n", status);
 
-    SystemTable->RuntimeServices->SetVirtualAddressMap(boot_inf.mem_map_size, boot_inf.mem_map_desc_size, boot_inf.mem_map_desc_vers, boot_inf.mem_map);
-
-    void (*kernel_start)() = ((__attribute__((sysv_abi)) void (*)()) header.e_entry);
-    kernel_start();
+    boot_info_t kern_inf = boot_inf;
+    ((__attribute__((sysv_abi)) void (*)(boot_info_t*)) header.e_entry)(&kern_inf);
     
     return EFI_SUCCESS;
 }
