@@ -2,7 +2,6 @@ SOURCES := $(shell find ./ -type f -name '*.c')
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 TARGET := libc.a
 CFLAGS := -ffreestanding -O2 -Wall -Wextra
-LDFLAGS := -shared -nostdlib
 
 all: $(TARGET)
 
