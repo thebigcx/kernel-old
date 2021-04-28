@@ -2,6 +2,23 @@
 #include <efilib.h>
 #include <elf.h>
 
+#define PSF1_MAGIC0 0x36
+#define PSF1_MAGIC1 0x04
+
+// Bitmap fonts
+typedef struct
+{
+    uint8_t magic[2];
+    uint8_t mode;
+    uint8_t c_size; // Character size
+} psf1_header;
+
+typedef struct
+{
+    psf1_header* header;
+    void* glyph_buf;
+} psf1_font;
+
 typedef struct
 {
     uint64_t mem_map_size;
@@ -13,6 +30,8 @@ typedef struct
     uint64_t fb_adr;
     uint32_t pix_per_line;
     uint32_t v_res;
+
+    psf1_font* font;
 } boot_info_t;
 
 boot_info_t boot_inf;
@@ -79,6 +98,39 @@ static EFI_FILE* load_file(EFI_FILE* dir, CHAR16* path, EFI_HANDLE handle, EFI_S
     }
 
     return file;
+}
+
+static psf1_font* load_font(EFI_FILE* dir, CHAR16* path, EFI_HANDLE handle, EFI_SYSTEM_TABLE* sys_table)
+{
+    EFI_FILE* file = load_file(dir, path, handle, sys_table);
+    if (file == NULL) return NULL;
+
+    psf1_header* header;
+    uefi_call_wrapper(sys_table->BootServices->AllocatePool, 3, EfiLoaderData, sizeof(psf1_header), (void**)&header);
+    UINTN size = sizeof(psf1_header);
+    uefi_call_wrapper(file->Read, 3, file, &size, header);
+
+    if (header->magic[0] != PSF1_MAGIC0 || header->magic[1] != PSF1_MAGIC1)
+        return NULL;
+
+    UINTN glyph_buf_size = header->c_size * 256;
+    if (header->mode == 1)
+    {
+        glyph_buf_size = header->c_size * 512;
+    }
+
+    void* glyph_buf;
+    {
+        uefi_call_wrapper(file->SetPosition, 2, file, sizeof(psf1_header));
+        uefi_call_wrapper(sys_table->BootServices->AllocatePool, 3, EfiLoaderData, glyph_buf_size, (void**)&glyph_buf);
+        uefi_call_wrapper(file->Read, 3, file, &glyph_buf_size, glyph_buf);
+    }
+
+    psf1_font* font;
+    uefi_call_wrapper(sys_table->BootServices->AllocatePool, 3, EfiLoaderData, sizeof(psf1_font), (void**)&font);
+    font->header = header;
+    font->glyph_buf = glyph_buf;
+    return font;
 }
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
@@ -148,6 +200,8 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
             }
         }
     }
+
+    boot_inf.font = load_font(NULL, L"font.psf", ImageHandle, SystemTable);
 
     EFI_STATUS status;
 

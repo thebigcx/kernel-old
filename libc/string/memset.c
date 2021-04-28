@@ -1,6 +1,6 @@
 #include "string.h"
 
-/*void* memset(void* dst, unsigned char c, size_t n)
+void* memset(void* dst, unsigned char c, size_t n)
 {
     unsigned char* cdst = (unsigned char*)dst;
 
@@ -8,4 +8,4 @@
         cdst[i] = c;
 
     return dst;
-}*/
+}

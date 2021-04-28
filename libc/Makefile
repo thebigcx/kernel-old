@@ -1,7 +1,7 @@
 SOURCES := $(shell find ./ -type f -name '*.c')
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 TARGET := libc.a
-CFLAGS := -ffreestanding -O2 -Wall -Wextra
+CFLAGS := -ffreestanding -O2 -Wall -Wextra -nostdinc -Iinclude
 
 all: $(TARGET)
 
@@ -13,5 +13,5 @@ $(TARGET): $(OBJS)
 
 .PHONY:
 clean:
-	rm -f $(OBJS)
-	rm -f $(TARGET)
+	@rm -f $(OBJS)
+	@rm -f $(TARGET)

@@ -24,5 +24,5 @@ $(EFITARGET): main.so
 
 .PHONY:
 clean:
-	rm -f $(OBJS)
-	rm -f $(EFITARGET)
+	@rm -f $(OBJS)
+	@rm -f $(EFITARGET)

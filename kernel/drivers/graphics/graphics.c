@@ -3,6 +3,8 @@
 graphics_data_t graphics_data;
 
 static uint32_t clear_color = 0x00000000;
+static uint32_t text_curs_x = 0;
+static uint32_t text_curs_y = 0;
 
 void gr_clear()
 {
@@ -24,4 +26,33 @@ void gr_clear_color(float r, float g, float b, float a)
     clear_color = (ba << 24) |
                   (br << 16) |
                   (bg << 8) | bb;
+}
+
+void _putchar(char c)
+{
+    if (c == '\n')
+    {
+        text_curs_x = 0;
+        text_curs_y++;
+        return;
+    }
+
+    char* font = (char*)graphics_data.font->glyph_buf + (c * graphics_data.font->header->c_size);
+
+    uint32_t x_off = text_curs_x * 8;
+    uint32_t y_off = text_curs_y * 16;
+
+    for (uint64_t y = y_off; y < y_off + 16; y++)
+    {
+        for (uint64_t x = x_off; x < x_off + 8; x++)
+        {
+            if ((*font & (0b10000000 >> (x - x_off))) > 0)
+            {
+                *(uint32_t*)(graphics_data.fb_adr + x * 4 + (4 * y * graphics_data.pix_per_line)) = 0xFFFFFFFF;
+            }
+        }
+        font++;
+    }
+
+    text_curs_x++;
 }
