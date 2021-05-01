@@ -4,7 +4,7 @@
 #include "../memory/memory.h"
 
 // Definitions
-static page_dir_t* page_dir;
+static page_dir_t* pml4;
 
 uint8_t* temp_mem;
 
@@ -25,40 +25,76 @@ void page_init()
 
 void* get_physaddr(void* virt_adr)
 {
+    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
     uint32_t pd_index = PAGEDIR_IDX(virt_adr);
     uint32_t pt_index = PAGETBL_IDX(virt_adr);
-    uint32_t pf_off = PAGEFRAME_IDX(virt_adr); // Page frame offset
+    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
 
-    page_table_t* table = (page_table_t*)((uint64_t)page_dir->tables[pd_index].frame << 12);
-    uint32_t t = table->pages[pt_index].frame;
+    page_dir_t* pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
+    page_dir_t* pd = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
+    page_dir_t* pt = (page_dir_t*)((uint64_t)pd->entries[pt_index].frame << 12);
+    
+    uint32_t t = pt->entries[pt_index].frame << 12;
 
-    t = (t << 12) + pf_off;
-    return (void*)(uint64_t)t;
+    return (void*)(uint64_t)(t + p_index);
 }
 
 void map_memory(void* virt_adr, void* phys_adr)
 {
+    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
     uint32_t pd_index = PAGEDIR_IDX(virt_adr);
     uint32_t pt_index = PAGETBL_IDX(virt_adr);
+    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
 
-    page_table_t* table;// = page_dir->ref_tables[pd_index];
-    if (!page_dir->tables[pd_index].present)
+    page_dir_t* pdp;
+    if (!pml4->entries[pdp_index].present)
     {
         temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
-        table = (page_table_t*)temp_malloc(PAGE_SIZE);
-        memset(table, 0, PAGE_SIZE);
-        page_dir->tables[pd_index].present = true;
-        page_dir->tables[pd_index].rw = true;
-        page_dir->tables[pd_index].frame = (uint64_t)table >> 12;
+        pdp = (page_dir_t*)temp_malloc(PAGE_SIZE);
+        memset(pdp, 0, PAGE_SIZE);
+        pml4->entries[pdp_index].present = true;
+        pml4->entries[pdp_index].rw = true;
+        pml4->entries[pdp_index].frame = (uint64_t)pdp >> 12;
     }
     else
     {
-        table = (page_table_t*)((uint64_t)page_dir->tables[pd_index].frame << 12);
+        pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
     }
 
-    table->pages[pt_index].frame = (uint64_t)phys_adr >> 12;
-    table->pages[pt_index].rw = true;
-    table->pages[pt_index].present = true;
+    page_dir_t* dir;
+    if (!pdp->entries[pd_index].present)
+    {
+        temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
+        dir = (page_dir_t*)temp_malloc(PAGE_SIZE);
+        memset(dir, 0, PAGE_SIZE);
+        pdp->entries[pd_index].present = true;
+        pdp->entries[pd_index].rw = true;
+        pdp->entries[pd_index].frame = (uint64_t)dir >> 12;
+    }
+    else
+    {
+        dir = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
+    }
+
+    page_dir_t* table;
+    if (!dir->entries[pt_index].present)
+    {
+        //temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
+        //table = (page_dir_t*)temp_malloc(PAGE_SIZE);
+        table = page_request();
+        memset(table, 0, PAGE_SIZE);
+        dir->entries[pt_index].present = true;
+        dir->entries[pt_index].rw = true;
+        dir->entries[pt_index].frame = (uint64_t)table >> 12;
+    }
+    else
+    {
+        table = (page_dir_t*)((uint64_t)dir->entries[pt_index].frame << 12);
+    }
+
+    table->entries[p_index].frame = (uint64_t)phys_adr >> 12;
+    table->entries[p_index].rw = true;
+    table->entries[p_index].present = true;
 }
 
 uint64_t free_memory;
@@ -105,9 +141,8 @@ void page_alloc_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t des
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    page_dir = (page_dir_t*)temp_malloc(PAGE_SIZE);
-    //page_dir = (page_dir_t*)0x7C01000;
-    memset(page_dir, 0, PAGE_SIZE);
+    pml4 = (page_dir_t*)temp_malloc(PAGE_SIZE);
+    memset(pml4, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
 
@@ -197,12 +232,7 @@ void* page_request()
     return NULL;
 }
 
-void set_page_dir(page_dir_t* dir)
+page_dir_t* page_get_pml4()
 {
-    page_dir = dir;
-}
-
-page_dir_t* page_dir_get()
-{
-    return page_dir;
+    return pml4;
 }
