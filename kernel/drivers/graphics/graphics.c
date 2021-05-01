@@ -55,4 +55,10 @@ void _putchar(char c)
     }
 
     text_curs_x++;
+
+    if (text_curs_x > graphics_data.pix_per_line / 8)
+    {
+        text_curs_x = 0;
+        text_curs_y++;
+    }
 }

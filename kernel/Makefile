@@ -1,5 +1,6 @@
 SOURCES := $(shell find ./ -type f -name '*.c')
-OBJS := $(patsubst %.c, %.o, $(SOURCES))
+ASM := $(shell find ./ -type f -name '*.s')
+OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.s, %.o, $(ASM))
 TARGET := kernel.elf
 LDFLAGS := -Tkernel.ld -static -Bsymbolic -nostdlib -L../
 CFLAGS := -ffreestanding -fshort-wchar -Wall -Wextra -O2 -nostdinc -I../libc/include
@@ -7,11 +8,13 @@ CFLAGS := -ffreestanding -fshort-wchar -Wall -Wextra -O2 -nostdinc -I../libc/inc
 kernel: $(TARGET)
 
 $(TARGET): $(OBJS)
-	pwd
 	ld $(LDFLAGS) -o $(TARGET) $(OBJS) -l:libc/libc.a
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
+
+%.o: %.s
+	as $< -o $@
 
 .PHONY:
 clean:

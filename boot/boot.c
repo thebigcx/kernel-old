@@ -30,6 +30,7 @@ typedef struct
     uint64_t fb_adr;
     uint32_t pix_per_line;
     uint32_t v_res;
+    uint64_t fb_buf_sz;
 
     psf1_font* font;
 } boot_info_t;
@@ -73,6 +74,7 @@ static void init_gop(EFI_SYSTEM_TABLE* sys_table)
     boot_inf.fb_adr = gop->Mode->FrameBufferBase;
     boot_inf.pix_per_line = gop->Mode->Info->PixelsPerScanLine;
     boot_inf.v_res = gop->Mode->Info->VerticalResolution;
+    boot_inf.fb_buf_sz = gop->Mode->FrameBufferSize;
 }
 
 static EFI_FILE* load_file(EFI_FILE* dir, CHAR16* path, EFI_HANDLE handle, EFI_SYSTEM_TABLE* sys_table)

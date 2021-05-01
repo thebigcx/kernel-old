@@ -2,7 +2,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "../drivers/graphics/graphics.h"
-#include "paging/page_alloc.h"
+#include "paging/paging.h"
+#include "memory/memory.h"
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -19,6 +20,7 @@ typedef struct
     uint64_t fb_adr;
     uint32_t pix_per_line;
     uint32_t v_res;
+    uint64_t fb_buf_sz;
 
     psf1_font* font;
 } boot_info_t;
@@ -30,11 +32,7 @@ void _start(boot_info_t* inf)
     graphics_data.v_res = inf->v_res;
     graphics_data.font = inf->font;
 
-    const char* str = "wow\n";
-    puts(str);
-    char buf[10];
-    puts(itoa(-29587, buf, 10));
-    while (1);
+    char buffer[100];
 
     page_init();
     page_alloc_init(inf->mem_map, inf->mem_map_size, inf->mem_map_desc_size);
@@ -44,15 +42,36 @@ void _start(boot_info_t* inf)
     void* kernel_start = (void*)&_KernelStart;
     uint64_t kernel_pg_cnt = kernel_sz / PAGE_SIZE + 1;
 
-    page_reserve_m(kernel_start, kernel_pg_cnt);
+    page_alloc_m(kernel_start, kernel_pg_cnt);
+
+    uint64_t mem_size = get_memory_size(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
+    for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
+    {
+        map_memory((void*)i, (void*)i);
+    }
+
+    uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
+    page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
+    for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
+    {
+        map_memory((void*)i, (void*)i);
+    }
+
+    page_dir_t* dir = page_dir_get();
+
+    asm ("mov %0, %%cr3"::"r"(dir));
+
+    puts("Hello, world!\n");
+    asm volatile ("1: jmp 1b");
     
     //uint32_t* mem = (uint32_t)malloc(sizeof(uint32_t));
     //*mem = 0x00FF0000;
     uint32_t color = 0x00FF0000;
-    map_memory(&color, &color);
+    //map_memory(&color, &color);
 
-    uint32_t* color_pointer = (uint32_t*)get_physaddr(&color);
+    
 
+    page_alloc(0x80000);
     map_memory((void*)0x600000000, (void*)0x80000);
 
     uint32_t* test = (uint32_t*)0x600000000;
