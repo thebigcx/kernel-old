@@ -5,7 +5,7 @@
 #include "../memory/efi_mem.h"
 
 #define PAGE_SIZE 4096
-#define PAGE_ENTRY_CNT 1024
+#define PAGE_ENTRY_CNT 512
 
 #define PAGEDIR_IDX(vadr) (((uint64_t)vadr) >> 22)
 #define PAGETBL_IDX(vadr) ((((uint64_t)vadr) >> 12) & 0x3ff)

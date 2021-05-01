@@ -4,6 +4,7 @@
 #include "../drivers/graphics/graphics.h"
 #include "paging/paging.h"
 #include "memory/memory.h"
+#include "gdt/idt.h"
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -59,10 +60,17 @@ void _start(boot_info_t* inf)
 
     page_dir_t* dir = page_dir_get();
 
+    //uint64_t cr3;
+    //asm ("mov %%cr3, %0":"=r"(cr3));
+    //puts(itoa(cr3, buffer, 16));
+    //asm ("mov %0, %%cr3"::"r"(cr3));
     asm ("mov %0, %%cr3"::"r"(dir));
+    //asm ("1: jmp 1b");
 
-    puts("Hello, world!\n");
-    asm volatile ("1: jmp 1b");
+    //puts("Hello, world!\n");
+    //asm volatile ("1: jmp 1b");
+
+    idt_init();
     
     //uint32_t* mem = (uint32_t)malloc(sizeof(uint32_t));
     //*mem = 0x00FF0000;
@@ -71,19 +79,20 @@ void _start(boot_info_t* inf)
 
     
 
-    page_alloc(0x80000);
-    map_memory((void*)0x600000000, (void*)0x80000);
+    //page_alloc(0x80000);
+    //map_memory((void*)0x600000000, (void*)0x80000);
 
-    uint32_t* test = (uint32_t*)0x600000000;
-    *test = 0x00FF0000;
+    //uint32_t* test = (uint32_t*)0x600000000;
+    //*test = 0x00FF0000;
 
     gr_clear_color(0, 0, 0, 1);
     gr_clear();
     for (int x = 0; x < 100; x++)
     for (int y = 0; y < 100; y++)
     {
-        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = *test;
+        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = color;
     }
     
+    while (true);
     return;
 }

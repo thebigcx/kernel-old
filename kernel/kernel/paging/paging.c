@@ -106,6 +106,7 @@ void page_alloc_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t des
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
     page_dir = (page_dir_t*)temp_malloc(PAGE_SIZE);
+    //page_dir = (page_dir_t*)0x7C01000;
     memset(page_dir, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
@@ -185,9 +186,9 @@ void page_release_m(void* adr, uint64_t cnt)
 
 void* page_request()
 {
-    for (size_t i = 0; i < map.size; i++)
+    for (size_t i = 0; i < map.size * 8; i++)
     {
-        if (map.buffer[i]) continue; // Already in use
+        if (bitmap_get(&map, i)) continue; // Already in use
         page_alloc((void*)(i * PAGE_SIZE));
         return (void*)(i * PAGE_SIZE);
     }
