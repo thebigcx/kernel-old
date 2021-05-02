@@ -4,7 +4,7 @@
 #include <memory/memory.h>
 
 // Definitions
-static page_dir_t* pml4;
+static pml4_t* pml4;
 
 uint8_t* temp_mem;
 
@@ -15,6 +15,11 @@ uint64_t reserved_memory;
 bitmap_t map;
 
 bool init = false;
+
+void set_page_frame(uint64_t* page, uint64_t addr)
+{
+    *page = (*page & ~PAGE_FRAME) | (addr & PAGE_FRAME);
+}
 
 void* temp_kmalloc(size_t sz)
 {
@@ -62,7 +67,7 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    pml4 = (page_dir_t*)temp_kmalloc(PAGE_SIZE);
+    pml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
     memset(pml4, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
@@ -77,139 +82,130 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
     }
 }
 
-// Allocate a page at address
-void page_alloc(void* adr)
+// Page map indexing function implementations
+
+void* get_physaddr(void* virt_adr)
 {
-    uint64_t idx = (uint64_t)adr / PAGE_SIZE;
+    uint32_t pml4_index = PML4_IDX(virt_adr);
+    uint32_t pdp_index = PDP_IDX(virt_adr);
+    uint32_t pd_index = PD_IDX(virt_adr);
+    uint32_t pt_index = PT_IDX(virt_adr);
+
+    pdp_t* pdp = (pdp_t*)((uint64_t)pml4->entries[pml4_index] & PML4_FRAME);
+    page_dir_t* pd = (page_dir_t*)((uint64_t)pdp->entries[pdp_index] & PDP_FRAME);
+    page_table_t* pt = (page_table_t*)((uint64_t)pd->entries[pd_index] & PD_FRAME);
+
+    return (void*)(pt->entries[pt_index] & PAGE_FRAME);
+}
+
+void page_map_memory(void* virt_adr, void* phys_adr)
+{
+    uint32_t pml4_index = PML4_IDX(virt_adr);
+    uint32_t pdp_index = PDP_IDX(virt_adr);
+    uint32_t pd_index = PD_IDX(virt_adr);
+    uint32_t pt_index = PT_IDX(virt_adr);
+
+    pdp_t* pdp;
+    if (!pml4->entries[pml4_index] & PML4_PRESENT)
+    {
+        pdp = (pdp_t*)page_request();
+        memset(pdp, 0, PAGE_SIZE);
+        pml4->entries[pml4_index] |= PML4_PRESENT | PML4_WRITABLE;
+        set_page_frame(&pml4->entries[pml4_index], (uint64_t)pdp);
+    }
+    else
+    {
+        pdp = (pdp_t*)((uint64_t)pml4->entries[pml4_index] & PML4_FRAME);
+    }
+
+    page_dir_t* dir;
+    if (!pdp->entries[pdp_index] & PDP_PRESENT)
+    {
+        dir = (page_dir_t*)page_request();
+        memset(dir, 0, PAGE_SIZE);
+        pdp->entries[pdp_index] |= PDP_PRESENT | PDP_WRITABLE;
+        set_page_frame(&pdp->entries[pdp_index], (uint64_t)dir);
+    }
+    else
+    {
+        dir = (page_dir_t*)((uint64_t)pdp->entries[pdp_index] & PDP_FRAME);
+    }
+
+    page_table_t* table;
+    if (!dir->entries[pd_index] & PD_PRESENT)
+    {
+        table = (page_table_t*)page_request();
+        memset(table, 0, PAGE_SIZE);
+        dir->entries[pd_index] |= PD_PRESENT | PD_WRITABLE;
+        set_page_frame(&dir->entries[pd_index], (uint64_t)table);
+    }
+    else
+    {
+        table = (page_table_t*)((uint64_t)dir->entries[pd_index] & PD_FRAME);
+    }
+
+    table->entries[pt_index] |= PAGE_PRESENT | PAGE_WRITABLE;
+    set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);
+}
+
+void page_alloc(void* addr)
+{
+    uint64_t idx = (uint64_t)addr / PAGE_SIZE;
 
     bitmap_set(&map, idx, true);
     free_memory -= PAGE_SIZE;
     used_memory += PAGE_SIZE;
 }
 
-// Page map indexing function implementations
-
-void* get_physaddr(void* virt_adr)
+void page_free(void* addr)
 {
-    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
-    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
-    uint32_t pt_index = PAGETBL_IDX(virt_adr);
-    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
-
-    page_dir_t* pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
-    page_dir_t* pd = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
-    page_dir_t* pt = (page_dir_t*)((uint64_t)pd->entries[pt_index].frame << 12);
-    
-    uint32_t t = pt->entries[pt_index].frame << 12;
-
-    return (void*)(uint64_t)(t + p_index);
-}
-
-void map_memory(void* virt_adr, void* phys_adr)
-{
-    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
-    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
-    uint32_t pt_index = PAGETBL_IDX(virt_adr);
-    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
-
-    page_dir_t* pdp;
-    if (!pml4->entries[pdp_index].present)
-    {
-        pdp = (page_dir_t*)page_request();
-        memset(pdp, 0, PAGE_SIZE);
-        pml4->entries[pdp_index].present = true;
-        pml4->entries[pdp_index].rw = true;
-        pml4->entries[pdp_index].frame = (uint64_t)pdp >> 12;
-    }
-    else
-    {
-        pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
-    }
-
-    page_dir_t* dir;
-    if (!pdp->entries[pd_index].present)
-    {
-        dir = (page_dir_t*)page_request();
-        memset(dir, 0, PAGE_SIZE);
-        pdp->entries[pd_index].present = true;
-        pdp->entries[pd_index].rw = true;
-        pdp->entries[pd_index].frame = (uint64_t)dir >> 12;
-    }
-    else
-    {
-        dir = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
-    }
-
-    page_dir_t* table;
-    if (!dir->entries[pt_index].present)
-    {
-        table = (page_dir_t*)page_request();
-        memset(table, 0, PAGE_SIZE);
-        dir->entries[pt_index].present = true;
-        dir->entries[pt_index].rw = true;
-        dir->entries[pt_index].frame = (uint64_t)table >> 12;
-    }
-    else
-    {
-        table = (page_dir_t*)((uint64_t)dir->entries[pt_index].frame << 12);
-    }
-
-    table->entries[p_index].frame = (uint64_t)phys_adr >> 12;
-    table->entries[p_index].rw = true;
-    table->entries[p_index].present = true;
-}
-
-// Free a page at address
-void page_free(void* adr)
-{
-    uint64_t idx = (uint64_t)adr / PAGE_SIZE;
+    uint64_t idx = (uint64_t)addr / PAGE_SIZE;
 
     bitmap_set(&map, idx, false);
     free_memory += PAGE_SIZE;
     used_memory -= PAGE_SIZE;
 }
 
-void page_reserve(void* adr)
+void page_reserve(void* addr)
 {
-    uint64_t idx = (uint64_t)adr / PAGE_SIZE;
+    uint64_t idx = (uint64_t)addr / PAGE_SIZE;
 
     bitmap_set(&map, idx, true);
     reserved_memory += PAGE_SIZE;
     free_memory -= PAGE_SIZE;
 }
 
-// Release reserved page
-void page_release(void* adr)
+void page_release(void* addr)
 {
-    uint64_t idx = (uint64_t)adr / PAGE_SIZE;
+    uint64_t idx = (uint64_t)addr / PAGE_SIZE;
 
     bitmap_set(&map, idx, false);
     reserved_memory -= PAGE_SIZE;
     free_memory += PAGE_SIZE;
 }
 
-void page_alloc_m(void* adr, uint64_t cnt)
+void page_alloc_m(void* addr, uint64_t cnt)
 {
     for (uint64_t i = 0; i < cnt; i++)
-        page_alloc((void*)((uint64_t)adr + (i * PAGE_SIZE)));
+        page_alloc((void*)((uint64_t)addr + (i * PAGE_SIZE)));
 }
 
-void page_free_m(void* adr, uint64_t cnt)
+void page_free_m(void* addr, uint64_t cnt)
 {
     for (uint64_t i = 0; i < cnt; i++)
-        page_free((void*)((uint64_t)adr + (i * PAGE_SIZE)));
+        page_free((void*)((uint64_t)addr + (i * PAGE_SIZE)));
 }
 
-void page_reserve_m(void* adr, uint64_t cnt)
+void page_reserve_m(void* addr, uint64_t cnt)
 {
     for (uint64_t i = 0; i < cnt; i++)
-        page_reserve((void*)((uint64_t)adr + (i * PAGE_SIZE)));
+        page_reserve((void*)((uint64_t)addr + (i * PAGE_SIZE)));
 }
 
-void page_release_m(void* adr, uint64_t cnt)
+void page_release_m(void* addr, uint64_t cnt)
 {
     for (uint64_t i = 0; i < cnt; i++)
-        page_release((void*)((uint64_t)adr + (i * PAGE_SIZE)));
+        page_release((void*)((uint64_t)addr + (i * PAGE_SIZE)));
 }
 
 void* page_request()
@@ -225,7 +221,7 @@ void* page_request()
     return NULL;
 }
 
-page_dir_t* page_get_pml4()
+pml4_t* page_get_pml4()
 {
     return pml4;
 }

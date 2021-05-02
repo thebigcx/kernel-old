@@ -50,7 +50,7 @@ void heap_init(void* addr, size_t pg_cnt)
 
     for (size_t i = 0; i < pg_cnt; i++)
     {
-        map_memory(p, page_request());
+        page_map_memory(p, page_request());
         p = (void*)((uint64_t)p + PAGE_SIZE);
     }
 
@@ -138,7 +138,7 @@ void heap_expand(size_t n)
     for (size_t i = 0; i < pg_cnt; i++)
     {
         // Map the heap_end address to a new page
-        map_memory(heap_end, page_request());
+        page_map_memory(heap_end, page_request());
         heap_end = (void*)((uint64_t)heap_end + PAGE_SIZE);
     }
 

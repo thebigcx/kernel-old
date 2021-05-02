@@ -41,19 +41,17 @@ static void init_paging(boot_info_t* inf)
     uint64_t mem_size = get_memory_size(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
     for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
     {
-        map_memory((void*)i, (void*)i);
+        page_map_memory((void*)i, (void*)i);
     }
 
     uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
     page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
     for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
     {
-        map_memory((void*)i, (void*)i);
+        page_map_memory((void*)i, (void*)i);
     }
 
-    page_dir_t* dir = page_get_pml4();
-
-    asm ("mov %0, %%cr3"::"r"(dir));
+    asm ("mov %0, %%cr3"::"r"(page_get_pml4()));
 }
 
 void _start(boot_info_t* inf)
