@@ -1,10 +1,11 @@
-#include "stdint.h"
-#include "stdlib.h"
-#include "stdio.h"
-#include "../drivers/graphics/graphics.h"
-#include "paging/paging.h"
-#include "memory/memory.h"
-#include "gdt/idt.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <drivers/graphics/graphics.h>
+#include <paging/paging.h>
+#include <memory/memory.h>
+#include <memory/heap.h>
+#include <gdt/idt.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -26,17 +27,9 @@ typedef struct
     psf1_font* font;
 } boot_info_t;
 
-void _start(boot_info_t* inf)
+static void init_paging(boot_info_t* inf)
 {
-    graphics_data.fb_adr = inf->fb_adr;
-    graphics_data.pix_per_line = inf->pix_per_line;
-    graphics_data.v_res = inf->v_res;
-    graphics_data.font = inf->font;
-
-    char buffer[100];
-
-    page_init();
-    page_alloc_init(inf->mem_map, inf->mem_map_size, inf->mem_map_desc_size);
+    paging_init(inf->mem_map, inf->mem_map_size, inf->mem_map_desc_size);
 
     // Reserve memory for kernel
     uint64_t kernel_sz = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
@@ -61,15 +54,29 @@ void _start(boot_info_t* inf)
     page_dir_t* dir = page_get_pml4();
 
     asm ("mov %0, %%cr3"::"r"(dir));
+}
+
+void _start(boot_info_t* inf)
+{
+    graphics_data.fb_adr = inf->fb_adr;
+    graphics_data.pix_per_line = inf->pix_per_line;
+    graphics_data.v_res = inf->v_res;
+    graphics_data.font = inf->font;
+
+    init_paging(inf);
+    heap_init((void*)0x0000100000000000, 16);
 
     idt_init();
+
+    uint32_t* color = malloc(sizeof(uint32_t));
+    *color = 0x0000ff000;
     
     gr_clear_color(0, 0, 0, 1);
     gr_clear();
     for (int x = 0; x < 100; x++)
     for (int y = 0; y < 100; y++)
     {
-        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = 0x00ff00000;
+        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = *color;
     }
     
     while (true);

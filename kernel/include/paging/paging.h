@@ -1,8 +1,8 @@
 #pragma once
 
-#include "stdint.h"
-#include "stdbool.h"
-#include "../memory/efi_mem.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <memory/memory.h>
 
 #define PAGE_SIZE 4096
 #define PAGE_ENTRY_CNT 512
@@ -50,7 +50,7 @@ typedef struct page_dir
     page_dir_entry_t entries[PAGE_ENTRY_CNT];
 } __attribute__((aligned(PAGE_SIZE))) page_dir_t;
 
-void page_init();
+void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size);
 void* get_physaddr(void* virt_adr);
 void map_memory(void* virt_adr, void* phys_adr);
 

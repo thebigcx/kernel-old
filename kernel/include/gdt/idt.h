@@ -17,16 +17,18 @@
 #define ICW4_8086    0x01
 
 struct interrupt_frame;
+__attribute__((interrupt)) void irq14_handler(struct interrupt_frame* frame);
+__attribute__((interrupt)) void irq33_handler(struct interrupt_frame* frame);
 
 typedef struct idt_entry
 {
     uint16_t off_lowbits;
     uint16_t select;
-    uint8_t zero;
+    uint8_t ist;
     uint8_t type_attr;
     uint16_t off_midbits;
     uint32_t off_highbits;
-    uint32_t zero1;
+    uint32_t ignore;
 } idt_entry_t;
 
 typedef struct idt_record

@@ -1,6 +1,6 @@
 #include "string.h"
 
-/*void* memcpy(void* dst, const void* src, size_t n)
+void* memcpy(void* dst, const void* src, size_t n)
 {
     unsigned char* cdst = (unsigned char*)dst;
     unsigned char* csrc = (unsigned char*)src;
@@ -9,4 +9,4 @@
         cdst[i] = csrc[i];
 
     return dst;
-}*/
+}

@@ -1,4 +1,4 @@
-#include "bitmap.h"
+#include <bitmap.h>
 
 void bitmap_create(bitmap_t* bm)
 {

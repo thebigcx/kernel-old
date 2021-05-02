@@ -1,6 +1,7 @@
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
+#include <stddef.h>
 
 typedef struct
 {
@@ -16,3 +17,5 @@ enum
 {
     CONVENTIONAL_MEMORY = 7
 };
+
+uint64_t get_memory_size(efi_memory_descriptor* mem, uint64_t map_entries, uint64_t desc_size);

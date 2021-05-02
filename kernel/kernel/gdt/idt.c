@@ -1,9 +1,7 @@
-#include "idt.h"
-#include "../io.h"
-#include "string.h"
-
-extern int irq14_handler();
-extern int irq33_handler();
+#include <gdt/idt.h>
+#include <io.h>
+#include <string.h>
+#include <paging/paging.h>
 
 static void set_handler(idt_entry_t* entry, void* fn)
 {
@@ -26,7 +24,7 @@ void idt_init()
     idt[33].type_attr = IDT_TA_INTERRUPT_GATE;
 
     idt_record_t idtr;
-    idtr.limit = 0x0fff;
+    idtr.limit = 256 * sizeof(idt_entry_t) - 1;
     idtr.base = (uint64_t)idt;
 
     asm ("lidt %0" :: "m"(idtr));

@@ -1,109 +1,30 @@
-#include "paging.h"
-#include "string.h"
-#include "../bitmap.h"
-#include "../memory/memory.h"
+#include <paging/paging.h>
+#include <string.h>
+#include <bitmap.h>
+#include <memory/memory.h>
 
 // Definitions
 static page_dir_t* pml4;
 
 uint8_t* temp_mem;
 
-void* temp_malloc(size_t sz)
+uint64_t free_memory;
+uint64_t used_memory;
+uint64_t reserved_memory;
+
+bitmap_t map;
+
+bool init = false;
+
+void* temp_kmalloc(size_t sz)
 {
     void* ret = temp_mem;
-    temp_mem = (size_t)temp_mem + sz;
+    temp_mem = (uint8_t*)((size_t)temp_mem + sz);
 
     return ret;
 }
 
-void page_init()
-{
-    
-}
-
-// Page map indexing function implementations
-
-void* get_physaddr(void* virt_adr)
-{
-    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
-    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
-    uint32_t pt_index = PAGETBL_IDX(virt_adr);
-    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
-
-    page_dir_t* pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
-    page_dir_t* pd = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
-    page_dir_t* pt = (page_dir_t*)((uint64_t)pd->entries[pt_index].frame << 12);
-    
-    uint32_t t = pt->entries[pt_index].frame << 12;
-
-    return (void*)(uint64_t)(t + p_index);
-}
-
-void map_memory(void* virt_adr, void* phys_adr)
-{
-    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
-    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
-    uint32_t pt_index = PAGETBL_IDX(virt_adr);
-    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
-
-    page_dir_t* pdp;
-    if (!pml4->entries[pdp_index].present)
-    {
-        temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
-        pdp = (page_dir_t*)temp_malloc(PAGE_SIZE);
-        memset(pdp, 0, PAGE_SIZE);
-        pml4->entries[pdp_index].present = true;
-        pml4->entries[pdp_index].rw = true;
-        pml4->entries[pdp_index].frame = (uint64_t)pdp >> 12;
-    }
-    else
-    {
-        pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
-    }
-
-    page_dir_t* dir;
-    if (!pdp->entries[pd_index].present)
-    {
-        temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
-        dir = (page_dir_t*)temp_malloc(PAGE_SIZE);
-        memset(dir, 0, PAGE_SIZE);
-        pdp->entries[pd_index].present = true;
-        pdp->entries[pd_index].rw = true;
-        pdp->entries[pd_index].frame = (uint64_t)dir >> 12;
-    }
-    else
-    {
-        dir = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
-    }
-
-    page_dir_t* table;
-    if (!dir->entries[pt_index].present)
-    {
-        //temp_mem = (uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE));
-        //table = (page_dir_t*)temp_malloc(PAGE_SIZE);
-        table = page_request();
-        memset(table, 0, PAGE_SIZE);
-        dir->entries[pt_index].present = true;
-        dir->entries[pt_index].rw = true;
-        dir->entries[pt_index].frame = (uint64_t)table >> 12;
-    }
-    else
-    {
-        table = (page_dir_t*)((uint64_t)dir->entries[pt_index].frame << 12);
-    }
-
-    table->entries[p_index].frame = (uint64_t)phys_adr >> 12;
-    table->entries[p_index].rw = true;
-    table->entries[p_index].present = true;
-}
-
-uint64_t free_memory;
-uint64_t used_memory;
-uint64_t reserved_memory;
-bitmap_t map;
-bool init = false;
-
-void page_alloc_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size)
+void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size)
 {
     if (init) return; // Only need to run once
     init = true;
@@ -141,7 +62,7 @@ void page_alloc_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t des
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    pml4 = (page_dir_t*)temp_malloc(PAGE_SIZE);
+    pml4 = (page_dir_t*)temp_kmalloc(PAGE_SIZE);
     memset(pml4, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
@@ -164,6 +85,78 @@ void page_alloc(void* adr)
     bitmap_set(&map, idx, true);
     free_memory -= PAGE_SIZE;
     used_memory += PAGE_SIZE;
+}
+
+// Page map indexing function implementations
+
+void* get_physaddr(void* virt_adr)
+{
+    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
+    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
+    uint32_t pt_index = PAGETBL_IDX(virt_adr);
+    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
+
+    page_dir_t* pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
+    page_dir_t* pd = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
+    page_dir_t* pt = (page_dir_t*)((uint64_t)pd->entries[pt_index].frame << 12);
+    
+    uint32_t t = pt->entries[pt_index].frame << 12;
+
+    return (void*)(uint64_t)(t + p_index);
+}
+
+void map_memory(void* virt_adr, void* phys_adr)
+{
+    uint32_t pdp_index = PAGEDIRPTR_IDX(virt_adr);
+    uint32_t pd_index = PAGEDIR_IDX(virt_adr);
+    uint32_t pt_index = PAGETBL_IDX(virt_adr);
+    uint32_t p_index = PAGEFRAME_IDX(virt_adr);
+
+    page_dir_t* pdp;
+    if (!pml4->entries[pdp_index].present)
+    {
+        pdp = (page_dir_t*)page_request();
+        memset(pdp, 0, PAGE_SIZE);
+        pml4->entries[pdp_index].present = true;
+        pml4->entries[pdp_index].rw = true;
+        pml4->entries[pdp_index].frame = (uint64_t)pdp >> 12;
+    }
+    else
+    {
+        pdp = (page_dir_t*)((uint64_t)pml4->entries[pdp_index].frame << 12);
+    }
+
+    page_dir_t* dir;
+    if (!pdp->entries[pd_index].present)
+    {
+        dir = (page_dir_t*)page_request();
+        memset(dir, 0, PAGE_SIZE);
+        pdp->entries[pd_index].present = true;
+        pdp->entries[pd_index].rw = true;
+        pdp->entries[pd_index].frame = (uint64_t)dir >> 12;
+    }
+    else
+    {
+        dir = (page_dir_t*)((uint64_t)pdp->entries[pd_index].frame << 12);
+    }
+
+    page_dir_t* table;
+    if (!dir->entries[pt_index].present)
+    {
+        table = (page_dir_t*)page_request();
+        memset(table, 0, PAGE_SIZE);
+        dir->entries[pt_index].present = true;
+        dir->entries[pt_index].rw = true;
+        dir->entries[pt_index].frame = (uint64_t)table >> 12;
+    }
+    else
+    {
+        table = (page_dir_t*)((uint64_t)dir->entries[pt_index].frame << 12);
+    }
+
+    table->entries[p_index].frame = (uint64_t)phys_adr >> 12;
+    table->entries[p_index].rw = true;
+    table->entries[p_index].present = true;
 }
 
 // Free a page at address
@@ -228,7 +221,7 @@ void* page_request()
         return (void*)(i * PAGE_SIZE);
     }
 
-    // TODO: implement swapping to file, similar to Linux swap partition
+    // TODO: implement swapping to file, similar to Linux swapfile / Windows pagefile
     return NULL;
 }
 

@@ -1,5 +1,4 @@
-#include "memory.h"
-#include "efi_mem.h"
+#include <memory/memory.h>
 
 uint64_t get_memory_size(efi_memory_descriptor* mem, uint64_t map_entries, uint64_t desc_size)
 {
