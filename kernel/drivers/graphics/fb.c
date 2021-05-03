@@ -1,4 +1,4 @@
-#include <drivers/graphics/graphics.h>
+#include <drivers/graphics/fb.h>
 
 graphics_data_t graphics_data;
 

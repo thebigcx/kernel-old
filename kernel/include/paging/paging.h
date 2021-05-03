@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <memory/memory.h>
+#include <mem/mem.h>
 
 // Page size and entry counts
 #define PAGE_SIZE          4096

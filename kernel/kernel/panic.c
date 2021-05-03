@@ -3,8 +3,9 @@
 
 void panic(const char* msg)
 {
-    puts("Kernel Panic: ");
+    puts("Kernel Panic: \n");
+    puts("\n");
     puts(msg);
 
-    while (1);
+    asm ("1: jmp 1b");
 }

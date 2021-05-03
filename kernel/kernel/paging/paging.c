@@ -1,7 +1,8 @@
 #include <paging/paging.h>
 #include <string.h>
 #include <bitmap.h>
-#include <memory/memory.h>
+#include <gdt/idt.h>
+#include <stdio.h>
 
 // Definitions
 static pml4_t* pml4;
@@ -15,6 +16,19 @@ uint64_t reserved_memory;
 bitmap_t map;
 
 bool init = false;
+
+void page_fault_handler()
+{
+    puts("Kernel panic:\n\nPage fault");
+    for (;;);
+}
+
+// TODO: put this somewhere else
+void general_protection_fault_handler()
+{
+    puts("Kernel panic:\n\nGeneral protection fault");
+    for (;;);
+}
 
 void set_page_frame(uint64_t* page, uint64_t addr)
 {
@@ -80,6 +94,9 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
             page_reserve_m(dsc->phys_adr, dsc->num_pages);
         }
     }
+
+    idt_set_isr(13, general_protection_fault_handler);
+    idt_set_isr(14, page_fault_handler);
 }
 
 // Page map indexing function implementations

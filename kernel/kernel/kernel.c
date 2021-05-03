@@ -1,11 +1,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <drivers/graphics/graphics.h>
+#include <drivers/graphics/fb.h>
 #include <paging/paging.h>
-#include <memory/memory.h>
-#include <memory/heap.h>
+#include <mem/mem.h>
+#include <mem/heap.h>
 #include <gdt/idt.h>
+#include <gdt/gdt.h>
+#include <input/mouse.h>
+#include <input/keyboard.h>
+#include <io.h>
+#include <pit.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -61,10 +66,28 @@ void _start(boot_info_t* inf)
     graphics_data.v_res = inf->v_res;
     graphics_data.font = inf->font;
 
+    gdt_desc_t gdt_desc;
+    gdt_desc.size = sizeof(gdt_t) - 1;
+    gdt_desc.offset = (uint64_t)&def_gdt;
+    gdt_load(&gdt_desc);
+
     init_paging(inf);
     heap_init((void*)0x0000100000000000, 16);
 
-    idt_init();
+    keyboard_init();
+    mouse_init();
+    pit_init();
+
+    idt_load();
+
+    mouse_start();
+
+    outb(PIC1_DATA, 0xfd);
+    outb(PIC2_DATA, 0xff);
+
+    asm ("sti");
+
+    pit_set_count(2000);
 
     uint32_t* color = malloc(sizeof(uint32_t));
     *color = 0x0000ff000;
@@ -76,7 +99,17 @@ void _start(boot_info_t* inf)
     {
         *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = *color;
     }
-    
-    while (true);
+
+    free(color);
+
+    char buffer[100];
+
+    while (1)
+    {
+        uint32_t key;
+        while (keyboard_get_key(&key))
+            puts(itoa(key, buffer, 16));
+    }
+
     return;
 }

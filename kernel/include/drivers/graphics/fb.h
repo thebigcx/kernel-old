@@ -1,6 +1,8 @@
+// Framebuffer driver for GOP
+
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
 
 // Bitmap fonts
 typedef struct
