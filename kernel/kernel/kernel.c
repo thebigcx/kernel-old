@@ -11,6 +11,7 @@
 #include <input/keyboard.h>
 #include <io.h>
 #include <pit.h>
+#include <acpi.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -30,6 +31,8 @@ typedef struct
     uint64_t fb_buf_sz;
 
     psf1_font* font;
+
+    acpi_rsdt2_t* rsdp;
 } boot_info_t;
 
 static void init_paging(boot_info_t* inf)
@@ -65,6 +68,7 @@ void _start(boot_info_t* inf)
     graphics_data.pix_per_line = inf->pix_per_line;
     graphics_data.v_res = inf->v_res;
     graphics_data.font = inf->font;
+    gr_clear();
 
     gdt_desc_t gdt_desc;
     gdt_desc.size = sizeof(gdt_t) - 1;
@@ -81,6 +85,9 @@ void _start(boot_info_t* inf)
     idt_load();
 
     mouse_start();
+
+    acpi_mcfg_hdr_t* hdr = acpi_find_facp((acpi_sdt_hdr_t*)(inf->rsdp->xsdt_addr));
+    pci_enumerate(hdr);
 
     outb(PIC1_DATA, 0xfd);
     outb(PIC2_DATA, 0xff);

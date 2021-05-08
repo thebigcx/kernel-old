@@ -33,6 +33,8 @@ typedef struct
     uint64_t fb_buf_sz;
 
     psf1_font* font;
+
+    void* rsdp;
 } boot_info_t;
 
 boot_info_t boot_inf;
@@ -135,6 +137,16 @@ static psf1_font* load_font(EFI_FILE* dir, CHAR16* path, EFI_HANDLE handle, EFI_
     return font;
 }
 
+UINTN strcmp(CHAR8* a, CHAR8* b, UINTN l){
+	for (UINTN i = 0; i < l; i++)
+    {
+		if (a[i] != b[i])
+            return 1;
+	}
+
+	return 0;
+}
+
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable)
 {
     InitializeLib(ImageHandle, SystemTable);
@@ -212,6 +224,25 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
 
     Print(L"Initalizing memory map\n");
     init_mem_map(SystemTable);
+
+    EFI_CONFIGURATION_TABLE* cfg_tbl = SystemTable->ConfigurationTable;
+    void* rsdp = NULL;
+    EFI_GUID acpi2tbl_guid = ACPI_20_TABLE_GUID;
+
+    for (UINTN i = 0; i < SystemTable->NumberOfTableEntries; i++)
+    {
+        if (uefi_call_wrapper(CompareGuid, 2, &cfg_tbl[i].VendorGuid, &acpi2tbl_guid))
+        {
+            if (!strcmp((CHAR8*)"RSD PTR ", (CHAR8*)cfg_tbl->VendorTable, 8))
+            {
+                rsdp = (void*)cfg_tbl->VendorTable;
+            }
+        }
+
+        cfg_tbl++;
+    }
+    
+    boot_inf.rsdp = rsdp;
 
     // Exit boot services
 

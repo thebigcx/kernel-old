@@ -24,6 +24,10 @@ $(FATTARGET): $(EFITARGET)
 	@mcopy -i bin/$@ $(KERNEL) ::
 	@mcopy -i bin/$@ $(FONT) ::
 
+	@echo "Creating emulation SATA drive..."
+	@dd if=/dev/zero of=bin/sata.img bs=1k count=1440
+	@mformat -i bin/sata.img -f 1440 ::
+
 $(EFITARGET):
 	@echo ""
 	@echo "<========= Compiling libc =========>"
