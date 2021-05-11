@@ -12,21 +12,6 @@ struct
     int32_t queue_end;
 } key_queue;
 
-static int qwerty_table[] =
-{
-    0, KEY_ESC,
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-    '-', '=',
-    KEY_BACKSPACE, KEY_TAB,
-    'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
-    '[', ']', KEY_ENTER, 
-};
-
-static int qwerty_shift_table[] =
-{
-
-};
-
 void keyboard_interrupt_handler()
 {
     uint8_t scan_code = inb(0x60);
@@ -35,11 +20,6 @@ void keyboard_interrupt_handler()
         return;
 
     key_queue.keys[++key_queue.queue_end] = (uint32_t)scan_code;
-}
-
-char keyboard_translate_scancode(uint8_t scancode, int layout)
-{
-    return qwerty_table[scancode];
 }
 
 void keyboard_init()

@@ -96,5 +96,4 @@ enum KEYBOARD_LAYOUT
 #define KEY_F12 88
 
 bool keyboard_get_key(uint32_t* key);
-char keyboard_translate_scancode(uint8_t scancode, int layout);
 void keyboard_init();

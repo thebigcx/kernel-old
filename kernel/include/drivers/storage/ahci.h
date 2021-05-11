@@ -1,6 +1,31 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
+#include <drivers/pci/pci.h>
+
+#define AHCI_PORT_NULL 0
+#define AHCI_PORT_SATA 1
+#define AHCI_PORT_SEMB 2
+#define AHCI_PORT_PM 3
+#define AHCI_PORT_SATAPI 4
+
+#define AHCI_CMD_SLOTS 32
+
+#define HBA_PORT_IPM_ACTIVE 1
+#define HBA_PORT_DET_PRESENT 3
+
+#define	SATA_SIG_ATA   0x00000101 // SATA drive
+#define	SATA_SIG_ATAPI 0xeb140101 // SATAPI drive
+#define	SATA_SIG_SEMB  0xc33c0101 // Enclosure management bridge
+#define	SATA_SIG_PM	   0x96690101 // Port multiplier
+
+#define HBA_PXCMD_ST  0x0001
+#define HBA_PXCMD_FRE 0x0010
+#define HBA_PXCMD_FR  0x4000
+#define HBA_PXCMD_CR  0x8000
+
+#define HBA_PXIS_TFES (1 << 30)
 
 typedef enum FIS_TYPE
 {
@@ -83,17 +108,17 @@ typedef volatile struct hba_port
 
 typedef volatile struct hba_memory
 {
-    uint32_t cap;      // Host capability
-    uint32_t ghc;      // Global host control
-    uint32_t int_stat; // Interrupt status
-    uint32_t por_impl; // Port implemented
+    uint32_t cap;        // Host capability
+    uint32_t ghc;        // Global host control
+    uint32_t int_stat;   // Interrupt status
+    uint32_t ports_impl; // Port implemented
     uint32_t version;
-    uint32_t ccc_ctl;  // Command completion coalescing control
-    uint32_t ccc_pts;  // Command completion coalescing ports
-    uint32_t em_loc;   // Enclosure management location
-    uint32_t em_ctl;   // Enclosure management control
-    uint32_t cap2;     // Host capabilities extended
-    uint32_t bohc;     // BIOS/OS handoff control and status
+    uint32_t ccc_ctl;    // Command completion coalescing control
+    uint32_t ccc_pts;    // Command completion coalescing ports
+    uint32_t em_loc;     // Enclosure management location
+    uint32_t em_ctl;     // Enclosure management control
+    uint32_t cap2;       // Host capabilities extended
+    uint32_t bohc;       // BIOS/OS handoff control and status
 
     uint8_t res[0x74];
 
@@ -150,3 +175,30 @@ typedef struct hba_cmd_tbl
     hba_prdt_entry_t prdt_entry[1]; // PRDT entries 0 ~ 65535
 
 } hba_cmd_tbl_t;
+
+typedef struct ahci_port
+{
+    hba_port_t* hba_port;
+    uint32_t type;
+    uint8_t num;
+
+} ahci_port_t;
+
+#define AHCI_PORTLIST_MAX 32
+
+typedef struct ahci_portlist
+{
+    ahci_port_t* ports[AHCI_PORTLIST_MAX];
+    size_t count;
+
+} ahci_portlist_t;
+
+extern ahci_portlist_t ahci_portlist;
+
+void ahci_probe_ports();
+void ahci_port_rebase(ahci_port_t* port);
+void ahci_init(pci_dev_t* pci_base_addr);
+void ahci_start_cmd(ahci_port_t* port);
+void ahci_stop_cmd(ahci_port_t* port);
+bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer);
+bool ahci_write();

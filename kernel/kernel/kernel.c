@@ -12,6 +12,9 @@
 #include <io.h>
 #include <pit.h>
 #include <acpi.h>
+#include <drivers/pci/pci.h>
+#include <drivers/pci/pci_ids.h>
+#include <drivers/storage/ahci.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -88,6 +91,15 @@ void _start(boot_info_t* inf)
 
     acpi_mcfg_hdr_t* hdr = acpi_find_facp((acpi_sdt_hdr_t*)(inf->rsdp->xsdt_addr));
     pci_enumerate(hdr);
+    for (uint32_t i = 0; i < pci_devices.count; i++)
+    {
+        pci_dev_t* dev = &pci_devices.devs[i];
+        
+        if (dev->class_code == PCI_CLASS_STORAGE && dev->subclass == PCI_SUBCLASS_SATA && dev->progif == PCI_PROGIF_AHCI)
+        {
+            ahci_init(dev);
+        }
+    }
 
     outb(PIC1_DATA, 0xfd);
     outb(PIC2_DATA, 0xff);
