@@ -1,4 +1,4 @@
-#include <input/keyboard.h>
+#include <drivers/input/keyboard/ps2_keyboard.h>
 #include <gdt/idt.h>
 #include <stdio.h>
 #include <stddef.h>

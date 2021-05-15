@@ -24,10 +24,6 @@ $(FATTARGET): $(EFITARGET)
 	@mcopy -i bin/$@ $(KERNEL) ::
 	@mcopy -i bin/$@ $(FONT) ::
 
-	@echo "Creating emulation SATA drive..."
-	@dd if=/dev/random of=bin/sata.img bs=1k count=1440
-	@mformat -i bin/sata.img -f 1440 ::
-
 $(EFITARGET):
 	@echo ""
 	@echo "<========= Compiling libc =========>"
@@ -51,8 +47,6 @@ clean:
 	@rm -rf iso
 	@echo "Cleaning FAT image..."
 	@rm -f bin/$(FATTARGET)
-	@echo "Cleaning SATA drive..."
-	@rm -f bin/sata.img
 	@rm -rf bin/iso
 	@echo "Cleaning kernel..."
 	@cd kernel && make clean

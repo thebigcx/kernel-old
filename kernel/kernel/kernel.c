@@ -7,14 +7,15 @@
 #include <mem/heap.h>
 #include <gdt/idt.h>
 #include <gdt/gdt.h>
-#include <input/mouse.h>
-#include <input/keyboard.h>
+#include <drivers/input/mouse/ps2_mouse.h>
+#include <drivers/input/keyboard/ps2_keyboard.h>
 #include <io.h>
 #include <pit.h>
 #include <acpi.h>
 #include <drivers/pci/pci.h>
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ahci.h>
+#include <drivers/fs/fat/fat.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -100,6 +101,52 @@ void _start(boot_info_t* inf)
             ahci_init(dev);
         }
     }
+    storage_dev_t dev = ahci_get_dev(0);
+    bool t = fat_is_fat(&dev);
+    fat_dri_t fat_dri;
+    fat_init(&fat_dri, &dev);
+
+    fat_file_t* files = page_request();
+    uint32_t cnt = 0;
+    fat_file_t system = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
+    fat_file_t file = fat_get_file(&fat_dri, &system, "TEST    TXT");
+    {
+        puts(file.name);
+        puts("\n");
+        puts("======Contents=======\n\n");
+
+        void* buffer = page_request();
+        fat_file_read(&fat_dri, &file, buffer);
+
+        for (int i = 0; i < file.file_len; i++)
+        {
+            putchar(((char*)buffer)[i]);
+        }
+
+        puts("\n=======EOF=========\n");
+    }
+    //fat_read_dir(&fat_dri, file.curr_cluster, files, &cnt);
+    //fat_read_dir(&fat_dri, 2, files, &cnt);
+    //fat_read_dir(&fat_dri, fat_dri.mnt_inf.root_offset, files, &cnt);
+
+    /*for (int i = 0; i < cnt; i++)
+    {
+        puts(files[i].name);
+        puts("\n");
+        puts("======Contents=======\n\n");
+
+        void* buffer = page_request();
+        fat_file_read(&fat_dri, &files[i], buffer);
+
+        for (int i = 0; i < files[i].file_len; i++)
+        {
+            putchar(((char*)buffer)[i]);
+        }
+
+        puts("\n=======EOF=========\n");
+    }*/
+
+    while (1);
 
     outb(PIC1_DATA, 0xfd);
     outb(PIC2_DATA, 0xff);

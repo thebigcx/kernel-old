@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <drivers/pci/pci.h>
+#include <drivers/storage/dev.h>
 
 #define AHCI_PORT_NULL 0
 #define AHCI_PORT_SATA 1
@@ -26,6 +27,8 @@
 #define HBA_PXCMD_CR  0x8000
 
 #define HBA_PXIS_TFES (1 << 30)
+
+#define SECTOR_SIZE 512
 
 typedef enum FIS_TYPE
 {
@@ -200,5 +203,9 @@ void ahci_port_rebase(ahci_port_t* port);
 void ahci_init(pci_dev_t* pci_base_addr);
 void ahci_start_cmd(ahci_port_t* port);
 void ahci_stop_cmd(ahci_port_t* port);
+
+bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer, int write);
 bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer);
 bool ahci_write();
+
+storage_dev_t ahci_get_dev(int idx);

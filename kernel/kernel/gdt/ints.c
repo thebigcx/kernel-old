@@ -1,8 +1,5 @@
 #include <gdt/idt.h>
 #include <io.h>
-#include <stdio.h>
-#include <system.h>
-#include <input/keyboard.h>
 
 __attribute__((interrupt)) void isr0(struct interrupt_frame* frame) { if (isrs[0]) isrs[0](); }
 __attribute__((interrupt)) void isr1(struct interrupt_frame* frame) { if (isrs[1]) isrs[1](); }

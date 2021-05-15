@@ -76,20 +76,7 @@ void ahci_init(pci_dev_t* pci_base_addr)
         ahci_port_rebase(ahci_portlist.ports[i]);
     }
 
-    puts("AHCI done\n");
-
-    //uint8_t* buffer = (uint8_t*)malloc(1000);
-    uint8_t* buffer = page_request();
-    memset(buffer, 0, PAGE_SIZE);
-    ahci_read(ahci_portlist.ports[0], 4, 8, buffer);
-    for (int i = 0; i < PAGE_SIZE; i++)
-    {
-        putchar((char)buffer[i]);
-    }
-
-    puts("\nRead complete.\n");
-
-    while (1);
+    puts("AHCI initialized\n");
 }
 
 void ahci_port_rebase(ahci_port_t* ahci_port)
@@ -164,25 +151,35 @@ static int32_t find_cmd_slot(hba_port_t* port)
 
 bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer)
 {
+    return ahci_access(ahciport, sector, cnt, buffer, 0);
+}
+
+bool ahci_write(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer)
+{
+    return ahci_access(ahciport, sector, cnt, buffer, 1);
+}
+
+bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer, int write)
+{
     hba_port_t* port = ahciport->hba_port;
 
     port->int_stat = (uint32_t) -1;
     
-    //int slot = find_cmd_slot(port);
-    //if (slot == -1)
-        //return false;
+    int slot = find_cmd_slot(port);
+    if (slot == -1)
+        return false;
 
     hba_cmd_header_t* cmd_hdr = (hba_cmd_header_t*)(uint64_t)port->com_base_addr;
-    //cmd_hdr += slot;
+    cmd_hdr += slot;
     cmd_hdr->cmd_fis_len = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
-    cmd_hdr->write = 0; // We're reading from device
-    cmd_hdr->prdt_len = 1;// = (uint16_t)((cnt - 1) >> 4) + 1;
+    cmd_hdr->write = write;
+    cmd_hdr->prdt_len = (uint16_t)((cnt - 1) >> 4) + 1;
 
     hba_cmd_tbl_t* cmd_tbl = (hba_cmd_tbl_t*)(uint64_t)(cmd_hdr->cmd_tbl_base_addr);
     memset(cmd_tbl, 0, sizeof(hba_cmd_tbl_t) + (cmd_hdr->prdt_len - 1) * sizeof(hba_prdt_entry_t));
 
     uint16_t i = 0;
-    /*for (; i < cmd_hdr->prdt_len - 1; i++)
+    for (; i < cmd_hdr->prdt_len - 1; i++)
     {
         cmd_tbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
         cmd_tbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
@@ -190,7 +187,7 @@ bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffe
         cmd_tbl->prdt_entry[i].int_on_cmpl = 1;
 
         buffer = (void*)((uint64_t)buffer + 8 * 1024);
-    }*/
+    }
 
     cmd_tbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
     cmd_tbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
@@ -201,7 +198,7 @@ bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffe
 
     cmd_fis->fis_type = FIS_TYPE_REG_H2D;
     cmd_fis->com_ctrl = 1; // Command
-    cmd_fis->command = ATA_CMD_READ_DMA_EX;
+    cmd_fis->command = write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX;
 
     cmd_fis->lba0 = (uint8_t)sector;
     cmd_fis->lba1 = (uint8_t)(sector >> 8);
@@ -227,12 +224,12 @@ bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffe
         return false;
     }
 
-    port->cmd_issue = 1;// << slot;
+    port->cmd_issue = 1 << slot;
 
     // Wait for completion
     while (1)
     {
-        if ((port->cmd_issue/* & (1 << slot)*/) == 0)
+        if ((port->cmd_issue & (1 << slot)) == 0)
             break;
         if (port->int_stat & HBA_PXIS_TFES) // Task file error
         {
@@ -249,4 +246,23 @@ bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffe
     }
 
     return true;
+}
+
+int ahci_storage_dev_read(storage_dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+{
+    return ahci_read((ahci_port_t*)dev->priv, offset, len, buffer);
+}
+
+int ahci_storage_dev_write(storage_dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+{
+    return ahci_write((ahci_port_t*)dev->priv, offset, len, buffer);
+}
+
+storage_dev_t ahci_get_dev(int idx)
+{
+    storage_dev_t dev;
+    dev.read = ahci_storage_dev_read;
+    dev.write = ahci_storage_dev_write;
+    dev.priv = (void*)ahci_portlist.ports[idx];
+    return dev;
 }
