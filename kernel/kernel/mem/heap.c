@@ -10,13 +10,15 @@ static heap_block_t* last_block;
 
 static void heap_combine_forward(heap_block_t* block)
 {
-    if (block->next == NULL || !block->next->free) return;
+    if (block->next == NULL) return;
+    if (!block->next->free) return;
     if (block->next == last_block) last_block = block;
 
     if (block->next->next != NULL)
-        block->next->next = block;
+        block->next->next->prev = block;
 
     block->len += block->next->len + sizeof(heap_block_t);
+    block->next = block->next->next;
 }
 
 static void heap_combine_back(heap_block_t* block)
@@ -51,6 +53,7 @@ void heap_init(void* addr, size_t pg_cnt)
     for (size_t i = 0; i < pg_cnt; i++)
     {
         page_map_memory(p, page_request());
+        memset(p, 0, PAGE_SIZE);
         p = (void*)((uint64_t)p + PAGE_SIZE);
     }
 
@@ -139,6 +142,7 @@ void heap_expand(size_t n)
     {
         // Map the heap_end address to a new page
         page_map_memory(heap_end, page_request());
+        memset(heap_end, 0, PAGE_SIZE);
         heap_end = (void*)((uint64_t)heap_end + PAGE_SIZE);
     }
 

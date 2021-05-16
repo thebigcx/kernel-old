@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <drivers/storage/dev.h>
+#include <stddef.h>
 
 #define FAT_FSINFO_LEAD_SIG     0x41615252
 #define FAT_FSINFO_SIG          0x61417272
@@ -18,7 +19,7 @@
 #define FAT_ATTR_VOL_ID     0x08
 #define FAT_ATTR_DIR        0x10
 #define FAT_ATTR_ARCHIVE    0x20
-#define FAT_ATTR_LFN        FAT_ATTR_RO | FAT_ATTR_HIDDEN | FAT_ATTR_SYSTEM | FAT_ATTR_VOL_ID
+#define FAT_ATTR_LFN        0x0f
 
 // BIOS parameter block
 typedef struct fat_bpb
@@ -135,13 +136,28 @@ typedef struct fat_file
 
 } fat_file_t;
 
+typedef struct fat_lfn_entry
+{
+    uint8_t order;
+    uint16_t chars0[5];
+    uint8_t attr;
+    uint8_t type;
+    uint8_t checksum;
+    uint16_t chars1[6];
+    uint16_t zero;
+    uint16_t chars2[2];
+
+} __attribute__((packed)) fat_lfn_entry_t;
+
 // fat.c
 bool fat_is_fat(storage_dev_t* dev);
 void fat_init(fat_dri_t* dri, storage_dev_t* dev);
 
 // file.c
 fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name);
-void fat_file_read(fat_dri_t* dri, fat_file_t* file, void* buffer);
+void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer);
+void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer);
+void fat_write_cluster(fat_dri_t* dri, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c
 void fat_read_dir(fat_dri_t* dri, uint32_t cluster, fat_file_t* files, uint32_t* cnt);
@@ -150,3 +166,4 @@ void fat_read_dir(fat_dri_t* dri, uint32_t cluster, fat_file_t* files, uint32_t*
 uint64_t fat_cluster_to_lba(fat_dri_t* dri, uint32_t cluster);
 uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t* num_clus);
 void* fat_read_cluster_chain(fat_dri_t* dri, uint32_t cluster, uint64_t* num_clus);
+void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt);

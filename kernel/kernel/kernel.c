@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <drivers/graphics/fb.h>
+#include <drivers/graphics/graphics.h>
 #include <paging/paging.h>
 #include <mem/mem.h>
 #include <mem/heap.h>
@@ -68,11 +68,13 @@ static void init_paging(boot_info_t* inf)
 
 void _start(boot_info_t* inf)
 {
-    graphics_data.fb_adr = inf->fb_adr;
-    graphics_data.pix_per_line = inf->pix_per_line;
-    graphics_data.v_res = inf->v_res;
+    gl_surface_t fb_surf;
+    fb_surf.width = inf->pix_per_line;
+    fb_surf.height = inf->v_res;
+    fb_surf.buffer = inf->fb_adr;
+
     graphics_data.font = inf->font;
-    gr_clear();
+    graphics_data.fb_surf = fb_surf;
 
     gdt_desc_t gdt_desc;
     gdt_desc.size = sizeof(gdt_t) - 1;
@@ -108,15 +110,16 @@ void _start(boot_info_t* inf)
 
     fat_file_t* files = page_request();
     uint32_t cnt = 0;
-    fat_file_t system = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
-    fat_file_t file = fat_get_file(&fat_dri, &system, "TEST    TXT");
+    //fat_file_t system = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
+    fat_file_t file = fat_get_file(&fat_dri, NULL, "long_file_name.txt");
+    //fat_read_dir(&fat_dri, fat_dri.mnt_inf.root_offset, files, &cnt);
     {
         puts(file.name);
         puts("\n");
         puts("======Contents=======\n\n");
 
         void* buffer = page_request();
-        fat_file_read(&fat_dri, &file, buffer);
+        fat_file_read(&fat_dri, &file, file.file_len, buffer);
 
         for (int i = 0; i < file.file_len; i++)
         {
@@ -127,16 +130,17 @@ void _start(boot_info_t* inf)
     }
     //fat_read_dir(&fat_dri, file.curr_cluster, files, &cnt);
     //fat_read_dir(&fat_dri, 2, files, &cnt);
-    //fat_read_dir(&fat_dri, fat_dri.mnt_inf.root_offset, files, &cnt);
+    /*fat_file_t sys = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
+    fat_read_dir(&fat_dri, sys.curr_cluster, files, &cnt);
 
-    /*for (int i = 0; i < cnt; i++)
+    for (int i = 0; i < cnt; i++)
     {
         puts(files[i].name);
         puts("\n");
         puts("======Contents=======\n\n");
 
         void* buffer = page_request();
-        fat_file_read(&fat_dri, &files[i], buffer);
+        fat_file_read(&fat_dri, &files[i], files[i].file_len, buffer);
 
         for (int i = 0; i < files[i].file_len; i++)
         {
@@ -146,27 +150,22 @@ void _start(boot_info_t* inf)
         puts("\n=======EOF=========\n");
     }*/
 
-    while (1);
+    //while (1);
 
     outb(PIC1_DATA, 0xfd);
     outb(PIC2_DATA, 0xff);
 
     asm ("sti");
 
-    pit_set_count(2000);
-
-    uint32_t* color = malloc(sizeof(uint32_t));
-    *color = 0x0000ff000;
+    //pit_set_count(2000);
     
-    gr_clear_color(0, 0, 0, 1);
-    gr_clear();
-    for (int x = 0; x < 100; x++)
+    //gr_clear();
+    gl_surface_clear(&fb_surf, 0, 0, 0);
+    /*for (int x = 0; x < 100; x++)
     for (int y = 0; y < 100; y++)
     {
         *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = *color;
-    }
-
-    free(color);
+    }*/
 
     char buffer[100];
 
@@ -174,7 +173,18 @@ void _start(boot_info_t* inf)
     {
         uint32_t key;
         while (keyboard_get_key(&key))
-            puts(itoa(key, buffer, 16));
+        {
+            //char buffer[10];
+            //sprintf(buffer, "%d\n", key);
+            //sprintf(buffer, "%s\n", "Key pressed!");
+            //printf(buffer);
+            printf("Key pressed: %d\n", key);
+        }
+            //puts(itoa(key, buffer, 16));
+
+        //printf("Hello!", 5);
+
+        //gl_surface_clear(&fb_surf, 0, 0, 0);
     }
 
     return;

@@ -1,0 +1,20 @@
+Hello!
+
+This file contains a file name longer
+than the standard DOS 8.3 to test my
+driver's ability to read long file
+names correctly.
+
+Hello!
+
+This file contains a file name longer
+than the standard DOS 8.3 to test my
+driver's ability to read long file
+names correctly.
+
+Hello!
+
+This file contains a file name longer
+than the standard DOS 8.3 to test my
+driver's ability to read long file
+names correctly.

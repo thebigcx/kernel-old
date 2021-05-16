@@ -49,3 +49,23 @@ uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t
 
     return ret;
 }
+
+void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt)
+{
+    uint32_t name_idx = 0;
+
+    for (int32_t i = cnt - 1; i >= 0; i--)
+    {
+        char buffer[100];
+        for (uint32_t j = 0; j < 5; j++)
+            dst[name_idx++] = entries[i]->chars0[j];
+
+        for (uint32_t j = 0; j < 6; j++)
+            dst[name_idx++] = entries[i]->chars1[j];
+
+        dst[name_idx++] = entries[i]->chars2[0];
+        dst[name_idx++] = entries[i]->chars2[1];
+    }
+
+    dst[name_idx] = '\0';
+}
