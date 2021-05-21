@@ -175,7 +175,7 @@ void pci_add_dev(uint8_t bus, uint8_t slot, uint8_t func)
     pci_devices.devs[pci_devices.count++] = dev;
 }
 
-void pci_enumerate(acpi_mcfg_hdr_t* hdr)
+void pci_enumerate()
 {
     memset(pci_devices.devs, 0, sizeof(pci_dev_t) * PCI_DEVLIST_MAX);
     pci_devices.count = 0;
@@ -202,19 +202,6 @@ void pci_enumerate(acpi_mcfg_hdr_t* hdr)
             }
         }
     }
-
-    /*char buffer[100];
-    for (uint32_t i = 0; i < pci_devices.count; i++)
-    {
-        puts(pci_class_to_str(pci_devices.devs[i].class_code));
-        puts(" / ");
-        puts(pci_subclass_to_str(pci_devices.devs[i].class_code, pci_devices.devs[i].subclass));
-        puts(" / ");
-        puts(pci_progif_to_str(pci_devices.devs[i].class_code, pci_devices.devs[i].subclass, pci_devices.devs[i].progif));
-        puts("\n");
-    }
-
-    while (1);*/
 }
 
 const char* pci_class_to_str(uint8_t class_code)

@@ -1,4 +1,5 @@
 #include <drivers/graphics/graphics.h>
+#include <string.h>
 
 void gl_swap_buffers()
 {

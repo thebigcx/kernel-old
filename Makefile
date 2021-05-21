@@ -31,6 +31,11 @@ $(EFITARGET):
 	@cd libc && make
 	@cd ..
 	@echo ""
+	@echo "<========= Compiling libos ========>"
+	@echo ""
+	@cd lib && make
+	@cd ..
+	@echo ""
 	@echo "<====== Compiling boot loader =====>"
 	@echo ""
 	@cd boot && make
@@ -48,6 +53,9 @@ clean:
 	@echo "Cleaning FAT image..."
 	@rm -f bin/$(FATTARGET)
 	@rm -rf bin/iso
+	@echo "Cleaning libos..."
+	@cd lib && make clean
+	@cd ..
 	@echo "Cleaning kernel..."
 	@cd kernel && make clean
 	@cd ..

@@ -4,13 +4,21 @@
 fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
 {
     fat_file_t file;
+
+    if (dir->flags != FAT_DIRECTORY)
+    {
+        puts("[FAT] Error: cannot list contents of file (not a directory).\n");
+        file.flags = FAT_INVALID;
+        return file;
+    }
+
     // Look in root directory if dir is null
     uint32_t cluster = dir != NULL ? dir->curr_cluster : dri->mnt_inf.root_offset;
 
     uint64_t num_clusters = 0;
     fat_dir_entry_t* dirs = fat_read_cluster_chain(dri, cluster, &num_clusters);
 
-    fat_lfn_entry_t** lfn_entries;
+    fat_lfn_entry_t** lfn_entries = malloc(sizeof(fat_lfn_entry_t*) * 10);
     uint32_t lfn_cnt = 0;
 
     for (uint32_t i = 0; i < num_clusters * 512; i++)
@@ -64,20 +72,23 @@ fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
             }
         }
     }
+
+    free(lfn_entries);
     
+    puts("[FAT] Error: could not find file in directory.\n");
     file.flags = FAT_INVALID;
     return file;
 }
 
-void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer)
+void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
     void* buf = fat_read_cluster_chain(dri, file->curr_cluster, &cnt);
 
-    memcpy(buffer, buf, size);
+    memcpy(buffer, buf + off, size);
 }
 
-void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer)
+void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
     uint32_t* buf = fat_get_cluster_chain(dri, file->curr_cluster, &cnt);

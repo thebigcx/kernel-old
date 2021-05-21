@@ -110,9 +110,6 @@ typedef struct elf64_program_hdr
 #define EI_ABIVERSION   8
 #define EI_PAD          9
 
-#define ELFDATA2LSB     (1)
-#define ELFCLASS32      (1)
-
 // Elf types
 #define ET_NONE         0
 #define ET_REL          1

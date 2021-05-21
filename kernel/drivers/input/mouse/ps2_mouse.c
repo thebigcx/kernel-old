@@ -8,7 +8,7 @@ static void mouse_wait()
     uint64_t time = 100000;
     while (time--)
     {
-        if ((inb(0x64) & 0b10) == 0)
+        if ((inb(0x64) & 2) == 0)
             return;
     }
 }
@@ -18,7 +18,7 @@ static void mouse_wait_input()
     uint64_t time = 100000;
     while (time--)
     {
-        if (inb(0x64) & 0b10)
+        if ((inb(0x64) & 1) == 1)
             return;
     }
 }
@@ -42,15 +42,22 @@ void mouse_handler()
     puts("Mouse\n");
 }
 
-void mouse_start()
+void mouse_map_int()
 {
+    idt_set_irq(12, mouse_handler);
+}
+
+void mouse_init()
+{
+    mouse_wait();
     outb(0x64, 0xa8);
+
+    outb(0x64, 0xff);
     mouse_wait();
 
     outb(0x64, 0x20);
     mouse_wait_input();
-    uint8_t status = inb(0x60);
-    status |= 0b10;
+    uint8_t status = ((inb(0x60) & ~0x20) | 2);
     mouse_wait();
     outb(0x64, 0x60);
     mouse_wait();
@@ -61,9 +68,4 @@ void mouse_start()
 
     mouse_write(0xf4);
     mouse_read();
-}
-
-void mouse_init()
-{
-    idt_set_irq(12, mouse_handler);
 }

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <drivers/storage/dev.h>
+#include <drivers/fs/vfs/vfs.h>
 #include <stddef.h>
 
 #define FAT_FSINFO_LEAD_SIG     0x41615252
@@ -82,8 +83,8 @@ typedef struct fat_bootrecord
 
 typedef struct fat_dir_entry
 {
-    int8_t name[8];
-    int8_t ext[3];
+    uint8_t name[8];
+    uint8_t ext[3];
     uint8_t attrib;
     uint8_t userattrib;
 
@@ -153,14 +154,20 @@ typedef struct fat_lfn_entry
 bool fat_is_fat(storage_dev_t* dev);
 void fat_init(fat_dri_t* dri, storage_dev_t* dev);
 
+fs_file_t* fat_fopen(fs_dri_t* dri, const char* path, const char* format);
+size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
+size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
+int fat_fclose(fs_dri_t* dri, fs_file_t* stream);
+
 // file.c
 fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name);
-void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer);
-void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, void* buffer);
+void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer);
+void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer);
 void fat_write_cluster(fat_dri_t* dri, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c
 void fat_read_dir(fat_dri_t* dri, uint32_t cluster, fat_file_t* files, uint32_t* cnt);
+fat_file_t fat_traverse_path(fat_dri_t* dri, const char* path);
 
 // fatent.c
 uint64_t fat_cluster_to_lba(fat_dri_t* dri, uint32_t cluster);

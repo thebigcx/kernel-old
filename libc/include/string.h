@@ -11,3 +11,4 @@ char* strrev(char* str);
 int strcmp(const char* str1, const char* str2);
 int strncmp(const char* str1, const char* str2, size_t n);
 char* strcpy(char* dst, const char* src);
+char* strsep(char** str, const char* delim);

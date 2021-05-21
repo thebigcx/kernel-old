@@ -16,6 +16,7 @@
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ahci.h>
 #include <drivers/fs/fat/fat.h>
+#include <drivers/fs/vfs/vfs.h>
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -82,90 +83,47 @@ void _start(boot_info_t* inf)
     gdt_load(&gdt_desc);
 
     init_paging(inf);
-    heap_init((void*)0x0000100000000000, 16);
+    heap_init((void*)0x0000100000000000);
 
     keyboard_init();
-    mouse_init();
     pit_init();
 
+    mouse_map_int();
     idt_load();
 
-    mouse_start();
+    mouse_init();
 
-    acpi_mcfg_hdr_t* hdr = acpi_find_facp((acpi_sdt_hdr_t*)(inf->rsdp->xsdt_addr));
-    pci_enumerate(hdr);
-    for (uint32_t i = 0; i < pci_devices.count; i++)
-    {
-        pci_dev_t* dev = &pci_devices.devs[i];
-        
-        if (dev->class_code == PCI_CLASS_STORAGE && dev->subclass == PCI_SUBCLASS_SATA && dev->progif == PCI_PROGIF_AHCI)
-        {
-            ahci_init(dev);
-        }
-    }
+    pci_enumerate();
+    
+    ahci_init(&pci_devices);
     storage_dev_t dev = ahci_get_dev(0);
-    bool t = fat_is_fat(&dev);
-    fat_dri_t fat_dri;
-    fat_init(&fat_dri, &dev);
 
-    fat_file_t* files = page_request();
-    uint32_t cnt = 0;
-    //fat_file_t system = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
-    fat_file_t file = fat_get_file(&fat_dri, NULL, "long_file_name.txt");
-    //fat_read_dir(&fat_dri, fat_dri.mnt_inf.root_offset, files, &cnt);
+    fs_mnt_disk(&dev, &root_mnt_pt);
+    FILE* file = fopen("system_folder/long_file_name.txt", "r");
+
+    uint8_t buf[100];
+    fread(buf, 100, 1, file);
+
+    for (int i = 0; i < 100; i++)
     {
-        puts(file.name);
-        puts("\n");
-        puts("======Contents=======\n\n");
-
-        void* buffer = page_request();
-        fat_file_read(&fat_dri, &file, file.file_len, buffer);
-
-        for (int i = 0; i < file.file_len; i++)
-        {
-            putchar(((char*)buffer)[i]);
-        }
-
-        puts("\n=======EOF=========\n");
+        putchar(buf[i]);
     }
-    //fat_read_dir(&fat_dri, file.curr_cluster, files, &cnt);
-    //fat_read_dir(&fat_dri, 2, files, &cnt);
-    /*fat_file_t sys = fat_get_file(&fat_dri, NULL, "SYSTEM     ");
-    fat_read_dir(&fat_dri, sys.curr_cluster, files, &cnt);
 
-    for (int i = 0; i < cnt; i++)
+    fread(buf, 100, 1, file);
+
+    for (int i = 0; i < 100; i++)
     {
-        puts(files[i].name);
-        puts("\n");
-        puts("======Contents=======\n\n");
-
-        void* buffer = page_request();
-        fat_file_read(&fat_dri, &files[i], files[i].file_len, buffer);
-
-        for (int i = 0; i < files[i].file_len; i++)
-        {
-            putchar(((char*)buffer)[i]);
-        }
-
-        puts("\n=======EOF=========\n");
-    }*/
-
-    //while (1);
+        putchar(buf[i]);
+    }
 
     outb(PIC1_DATA, 0xfd);
     outb(PIC2_DATA, 0xff);
 
     asm ("sti");
 
-    //pit_set_count(2000);
+    pit_set_count(2000);
     
-    //gr_clear();
     gl_surface_clear(&fb_surf, 0, 0, 0);
-    /*for (int x = 0; x < 100; x++)
-    for (int y = 0; y < 100; y++)
-    {
-        *((uint32_t*)(graphics_data.fb_adr + 4 * graphics_data.pix_per_line * x + 4 * y)) = *color;
-    }*/
 
     char buffer[100];
 
@@ -178,11 +136,9 @@ void _start(boot_info_t* inf)
             //sprintf(buffer, "%d\n", key);
             //sprintf(buffer, "%s\n", "Key pressed!");
             //printf(buffer);
-            printf("Key pressed: %d\n", key);
+            //printf("Key pressed: %d\n", key);
+            puts("Keyboard.\n");
         }
-            //puts(itoa(key, buffer, 16));
-
-        //printf("Hello!", 5);
 
         //gl_surface_clear(&fb_surf, 0, 0, 0);
     }

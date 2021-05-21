@@ -200,7 +200,7 @@ extern ahci_portlist_t ahci_portlist;
 
 void ahci_probe_ports();
 void ahci_port_rebase(ahci_port_t* port);
-void ahci_init(pci_dev_t* pci_base_addr);
+void ahci_init_dev(pci_dev_t* pci_base_addr);
 void ahci_start_cmd(ahci_port_t* port);
 void ahci_stop_cmd(ahci_port_t* port);
 
@@ -209,3 +209,6 @@ bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffe
 bool ahci_write();
 
 storage_dev_t ahci_get_dev(int idx);
+
+// Initialize AHCI, devs is a list of all PCI devices
+void ahci_init(pci_devlist_t* devs);

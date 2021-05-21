@@ -1,6 +1,7 @@
 #include <drivers/fs/fat/fat.h>
 #include <paging/paging.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 bool fat_is_fat(storage_dev_t* dev)
 {
@@ -49,4 +50,33 @@ void fat_init(fat_dri_t* dri, storage_dev_t* dev)
     dri->dev = dev;
 
     page_free(record);
+}
+
+// TODO: traverse paths
+fs_file_t* fat_fopen(fs_dri_t* dri, const char* path, const char* format)
+{
+    fs_file_t* file = malloc(sizeof(fs_file_t));
+    file->id = 0;
+    file->priv = malloc(sizeof(fat_file_t));
+    file->pos = 0;
+    
+    *((fat_file_t*)file->priv) = fat_traverse_path((fat_dri_t*)dri->priv, path);
+
+    return file;
+}
+
+size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, size_t nmemb, fs_file_t* stream)
+{
+    fat_file_read((fat_dri_t*)dri->priv, (fat_file_t*)stream->priv, size * nmemb, stream->pos, ptr);
+    stream->pos += size * nmemb;
+}
+
+size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, size_t nmemb, fs_file_t* stream)
+{
+
+}
+
+int fat_fclose(fs_dri_t* dri, fs_file_t* stream)
+{
+
 }

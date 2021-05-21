@@ -1,9 +1,11 @@
 #include <drivers/storage/ahci.h>
+#include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata.h>
 
 #include <stdlib.h>
 #include <paging/paging.h>
 #include <string.h>
+#include <stdio.h>
 
 hba_memory_t* abar;
 ahci_portlist_t ahci_portlist;
@@ -49,7 +51,6 @@ void ahci_probe_ports()
 
             if (pt == AHCI_PORT_SATA || pt == AHCI_PORT_SATAPI)
             {
-                puts("AHCI port!\n");
                 ahci_port_t* port = (ahci_port_t*)malloc(sizeof(ahci_port_t));
                 port->hba_port = &abar->ports[i];
                 port->type = pt;
@@ -60,7 +61,7 @@ void ahci_probe_ports()
     }
 }
 
-void ahci_init(pci_dev_t* pci_base_addr)
+void ahci_init_dev(pci_dev_t* pci_base_addr)
 {
     pci_enable_bus_master(pci_base_addr);
     pci_enable_ints(pci_base_addr);
@@ -265,4 +266,17 @@ storage_dev_t ahci_get_dev(int idx)
     dev.write = ahci_storage_dev_write;
     dev.priv = (void*)ahci_portlist.ports[idx];
     return dev;
+}
+
+void ahci_init(pci_devlist_t* devs)
+{
+    for (uint32_t i = 0; i < pci_devices.count; i++)
+    {
+        pci_dev_t* dev = &pci_devices.devs[i];
+        
+        if (dev->class_code == PCI_CLASS_STORAGE && dev->subclass == PCI_SUBCLASS_SATA && dev->progif == PCI_PROGIF_AHCI)
+        {
+            ahci_init_dev(dev);
+        }
+    }
 }

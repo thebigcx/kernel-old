@@ -46,26 +46,21 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
     return new;
 }
 
-void heap_init(void* addr, size_t pg_cnt)
+void heap_init(void* addr)
 {
-    void* p = addr;
+    page_map_memory(addr, page_request());
 
-    for (size_t i = 0; i < pg_cnt; i++)
-    {
-        page_map_memory(p, page_request());
-        memset(p, 0, PAGE_SIZE);
-        p = (void*)((uint64_t)p + PAGE_SIZE);
-    }
-
-    size_t heap_len = pg_cnt * PAGE_SIZE;
+    size_t heap_len = PAGE_SIZE;
 
     heap_start = addr;
     heap_end = (void*)((size_t)heap_start + heap_len);
+
     heap_block_t* start_block = (heap_block_t*)addr;
     start_block->len = heap_len - sizeof(heap_block_t);
     start_block->next = NULL;
     start_block->prev = NULL;
     start_block->free = true;
+
     last_block = start_block;
 }
 
@@ -73,10 +68,7 @@ void* _malloc(size_t n)
 {
     // Must be a multiple of 16 bytes
     if (n % 16 != 0)
-    {
-        n -= n % 16;
-        n += 16;
-    }
+        n = n - (n % 16) + 16;
 
     heap_block_t* curr = (heap_block_t*)heap_start;
     while (1)

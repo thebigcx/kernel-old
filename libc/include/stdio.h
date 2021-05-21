@@ -2,11 +2,9 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdint.h>
 
-typedef struct FILE
-{
-    
-} FILE;
+typedef struct fs_file_t FILE;
 
 void putchar(char c);
 void puts(const char* str);

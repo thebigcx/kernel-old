@@ -98,7 +98,7 @@ uint64_t pci_get_base_addr(pci_dev_t* dev, uint8_t idx);
 bool pci_check_dev(uint8_t bus, uint8_t dev, uint8_t func);
 
 void pci_add_dev(uint8_t bus, uint8_t slot, uint8_t func);
-void pci_enumerate(acpi_mcfg_hdr_t* hdr);
+void pci_enumerate();
 
 const char* pci_class_to_str(uint8_t class_code);
 const char* pci_subclass_to_str(uint8_t class_code, uint8_t subclass);
