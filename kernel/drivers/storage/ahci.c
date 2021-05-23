@@ -69,7 +69,7 @@ void ahci_init_dev(pci_dev_t* pci_base_addr)
     pci_enable_mem_space(pci_base_addr);
 
     abar = (hba_memory_t*)pci_get_base_addr(pci_base_addr, 5);
-    page_map_memory((void*)abar, (void*)abar);
+    page_kernel_map_memory((void*)abar, (void*)abar);
 
     ahci_probe_ports();
 

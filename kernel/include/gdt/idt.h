@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
 
 #define IDT_TA_INTERRUPT_GATE 0x8e
 #define IDT_TA_CALL_GATE      0x8c

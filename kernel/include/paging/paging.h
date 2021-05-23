@@ -69,11 +69,21 @@ typedef struct page_table
     page_t entries[PAGES_PER_TABLE];
 } __attribute__((aligned(PAGE_SIZE))) page_table_t;
 
+typedef struct page_map
+{
+    pml4_t* pml4;
+    uint64_t pml4_phys;
+
+} __attribute__((packed)) page_map_t;
+
 void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size);
-void* get_physaddr(void* virt_adr);
+void* get_physaddr(void* virt_adr, pml4_t* pml4);
+void* get_kernel_physaddr(void* virt_adr);
 
 // Map virtual address to physical address
-void page_map_memory(void* virt_adr, void* phys_adr);
+void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4);
+// Map memory for kernel
+void page_kernel_map_memory(void* virt_adr, void* phys_adr);
 // Allocate a page at physical address
 void page_alloc(void* addr);
 // Free a page at physical address
@@ -92,5 +102,8 @@ void page_reserve_m(void* addr, uint64_t cnt);
 // Release multiple reserved pages
 void page_release_m(void* addr, uint64_t cnt);
 
+// Create a page map
+pml4_t* page_mk_map();
+
 void* page_request();
-pml4_t* page_get_pml4();
+pml4_t* page_get_kpml4();

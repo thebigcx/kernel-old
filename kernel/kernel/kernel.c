@@ -10,7 +10,7 @@
 #include <drivers/input/mouse/ps2_mouse.h>
 #include <drivers/input/keyboard/ps2_keyboard.h>
 #include <io.h>
-#include <pit.h>
+#include <time/time.h>
 #include <acpi.h>
 #include <drivers/pci/pci.h>
 #include <drivers/pci/pci_ids.h>
@@ -57,23 +57,30 @@ static void init_paging(boot_info_t* inf)
     uint64_t mem_size = get_memory_size(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
     for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
     {
-        page_map_memory((void*)i, (void*)i);
+        page_kernel_map_memory((void*)i, (void*)i);
     }
 
     uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
     page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
     for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
     {
-        page_map_memory((void*)i, (void*)i);
+        page_kernel_map_memory((void*)i, (void*)i);
     }
 
-    asm ("mov %0, %%cr3"::"r"(page_get_pml4()));
+    asm ("mov %0, %%cr3"::"r"(page_get_kpml4()));
 }
 
 void kernel_proc()
 {
     puts("KERNEL PROCESS");
-    for (;;);
+    for (;;)
+    {
+        mouse_packet_t pack;
+        while (mouse_get_packet(&pack))
+        {
+            puts("Mouse\n");
+        }
+    }
 }
 
 void _start(boot_info_t* inf)
@@ -95,7 +102,7 @@ void _start(boot_info_t* inf)
     heap_init((void*)0x0000100000000000);
 
     keyboard_init();
-    pit_init();
+    pit_init(1600);
 
     mouse_map_int();
     idt_load();
@@ -125,14 +132,12 @@ void _start(boot_info_t* inf)
         putchar(buf[i]);
     }
 
-    outb(PIC1_DATA, 0xfd);
-    outb(PIC2_DATA, 0xff);
+    outb(PIC1_DATA, 0xf8);
+    outb(PIC2_DATA, 0xef);
 
     asm ("sti");
-
-    pit_set_count(2000);
     
-    scheduler_init();
+    //scheduler_init();
 
     for (;;);
 }

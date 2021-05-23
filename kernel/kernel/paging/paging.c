@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 // Definitions
-static pml4_t* pml4;
+static pml4_t* kpml4;
 
 uint8_t* temp_mem;
 
@@ -81,8 +81,8 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    pml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
-    memset(pml4, 0, PAGE_SIZE);
+    kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
+    memset(kpml4, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
 
@@ -101,7 +101,7 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
 // Page map indexing function implementations
 
-void* get_physaddr(void* virt_adr)
+void* get_physaddr(void* virt_adr, pml4_t* pml4)
 {
     uint32_t pml4_index = PML4_IDX(virt_adr);
     uint32_t pdp_index = PDP_IDX(virt_adr);
@@ -115,7 +115,12 @@ void* get_physaddr(void* virt_adr)
     return (void*)(pt->entries[pt_index] & PAGE_FRAME);
 }
 
-void page_map_memory(void* virt_adr, void* phys_adr)
+void* get_kernel_physaddr(void* virt_adr)
+{
+    return get_physaddr(virt_adr, kpml4);
+}
+
+void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4)
 {
     uint32_t pml4_index = PML4_IDX(virt_adr);
     uint32_t pdp_index = PDP_IDX(virt_adr);
@@ -163,6 +168,11 @@ void page_map_memory(void* virt_adr, void* phys_adr)
 
     table->entries[pt_index] |= PAGE_PRESENT | PAGE_WRITABLE;
     set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);
+}
+
+void page_kernel_map_memory(void* virt_adr, void* phys_adr)
+{
+    page_map_memory(virt_adr, phys_adr, kpml4);
 }
 
 void page_alloc(void* addr)
@@ -238,7 +248,15 @@ void* page_request()
     return NULL;
 }
 
-pml4_t* page_get_pml4()
+pml4_t* page_get_kpml4()
 {
+    return kpml4;
+}
+
+pml4_t* page_mk_map()
+{
+    pml4_t* pml4 = page_request();
+    memset(pml4, 0, PAGE_SIZE);
+
     return pml4;
 }

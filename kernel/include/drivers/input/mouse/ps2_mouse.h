@@ -1,6 +1,11 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
+
+#define MOUSE_BTN_LEFT  (1 << 0)
+#define MOUSE_BTN_RIGHT (1 << 1)
+#define MOUSE_BTN_MID   (1 << 2)
 
 typedef struct mouse_packet
 {
@@ -13,3 +18,4 @@ typedef struct mouse_packet
 
 void mouse_init();
 void mouse_map_int();
+bool mouse_get_packet(mouse_packet_t* packet);

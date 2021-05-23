@@ -48,7 +48,7 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
 
 void heap_init(void* addr)
 {
-    page_map_memory(addr, page_request());
+    page_kernel_map_memory(addr, page_request());
 
     size_t heap_len = PAGE_SIZE;
 
@@ -134,7 +134,7 @@ void heap_expand(size_t n)
     for (size_t i = 0; i < pg_cnt; i++)
     {
         // Map the heap_end address to a new page
-        page_map_memory(heap_end, page_request());
+        page_kernel_map_memory(heap_end, page_request());
         memset(heap_end, 0, PAGE_SIZE);
         heap_end = (void*)((uint64_t)heap_end + PAGE_SIZE);
     }

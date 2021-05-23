@@ -44,7 +44,7 @@ proc_t* mk_proc(void* entry)
 {
     proc_t* proc = malloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_get_pml4();
+    proc->addr_space = page_get_kpml4(); // TODO: use page_mk_map()
     proc->pid = 0;
     proc->next = NULL;
 
@@ -55,10 +55,10 @@ proc_t* mk_proc(void* entry)
     proc->regs.ss = KERNEL_SS;
 
     void* stack = page_request();
-    page_map_memory(stack, stack);
+    page_kernel_map_memory(stack, stack);
     for (int i = 0; i < 31; i++)
     {
-        page_map_memory(page_request(), stack + i * PAGE_SIZE + 1);
+        page_kernel_map_memory(page_request(), stack + i * PAGE_SIZE + 1);
     }
 
     proc->regs.rbp = (uint64_t)stack + PAGE_SIZE * 32;
