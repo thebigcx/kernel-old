@@ -17,6 +17,9 @@
 #include <drivers/storage/ahci.h>
 #include <drivers/fs/fat/fat.h>
 #include <drivers/fs/vfs/vfs.h>
+#include <scheduler/scheduler.h>
+
+extern void jump_usermode();
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -67,6 +70,12 @@ static void init_paging(boot_info_t* inf)
     asm ("mov %0, %%cr3"::"r"(page_get_pml4()));
 }
 
+void kernel_proc()
+{
+    puts("KERNEL PROCESS");
+    for (;;);
+}
+
 void _start(boot_info_t* inf)
 {
     gl_surface_t fb_surf;
@@ -96,20 +105,20 @@ void _start(boot_info_t* inf)
     pci_enumerate();
     
     ahci_init(&pci_devices);
-    storage_dev_t dev = ahci_get_dev(0);
+    dev_t dev = ahci_get_dev(0);
 
     fs_mnt_disk(&dev, &root_mnt_pt);
-    FILE* file = fopen("system_folder/long_file_name.txt", "r");
+    fs_file_t* file = vfs_open("system_folder/long_file_name.txt");
 
     uint8_t buf[100];
-    fread(buf, 100, 1, file);
+    vfs_read(buf, 100, file);
 
     for (int i = 0; i < 100; i++)
     {
         putchar(buf[i]);
     }
 
-    fread(buf, 100, 1, file);
+    vfs_read(buf, 100, file);
 
     for (int i = 0; i < 100; i++)
     {
@@ -123,25 +132,7 @@ void _start(boot_info_t* inf)
 
     pit_set_count(2000);
     
-    gl_surface_clear(&fb_surf, 0, 0, 0);
+    scheduler_init();
 
-    char buffer[100];
-
-    while (1)
-    {
-        uint32_t key;
-        while (keyboard_get_key(&key))
-        {
-            //char buffer[10];
-            //sprintf(buffer, "%d\n", key);
-            //sprintf(buffer, "%s\n", "Key pressed!");
-            //printf(buffer);
-            //printf("Key pressed: %d\n", key);
-            puts("Keyboard.\n");
-        }
-
-        //gl_surface_clear(&fb_surf, 0, 0, 0);
-    }
-
-    return;
+    for (;;);
 }

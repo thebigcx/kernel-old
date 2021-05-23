@@ -20,9 +20,9 @@ typedef struct fs_file_t
 
 typedef struct fs_dri
 {
-    fs_file_t* (*fopen)(struct fs_dri* dri, const char* path, const char* format);
-    size_t (*fread)(struct fs_dri* dri, void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
-    size_t (*fwrite)(struct fs_dri* dri, const void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
+    fs_file_t* (*fopen)(struct fs_dri* dri, const char* path);
+    size_t (*fread)(struct fs_dri* dri, void* ptr, size_t size, fs_file_t* stream);
+    size_t (*fwrite)(struct fs_dri* dri, const void* ptr, size_t size, fs_file_t* stream);
     int (*fclose)(struct fs_dri* dri, fs_file_t* stream);
     
     int type;
@@ -32,20 +32,31 @@ typedef struct fs_dri
 
 typedef struct mount
 {
-    storage_dev_t* dev;
+    dev_t* dev;
     fs_dri_t fs_dri;
+    char* mnt_pt;
 
 } mount_t;
 
+#define MOUNT_LST_MAX 100
+
+typedef struct mount_lst
+{
+    mount_t mnts[MOUNT_LST_MAX];
+    uint32_t cnt;
+
+} mount_lst_t;
+
 extern mount_t root_mnt_pt;
+extern mount_lst_t fs_mounts;
 
 // mount.c
-int fs_get_type(storage_dev_t* dev);
-void fs_mnt_disk(storage_dev_t* dev, mount_t* mnt);
+int fs_get_type(dev_t* dev);
+void fs_mnt_disk(dev_t* dev, mount_t* mnt);
 
 // vfs.c
-fs_file_t* vfs_fopen(const char* path, const char* format);
-size_t vfs_fread(void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
-size_t vfs_fwrite(const void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
-int vfs_fclose(fs_file_t* stream);
+fs_file_t* vfs_open(const char* path);
+size_t vfs_read(void* ptr, size_t size, fs_file_t* stream);
+size_t vfs_write(const void* ptr, size_t size, fs_file_t* stream);
+int vfs_close(fs_file_t* stream);
 int vfs_seek(fs_file_t* file, uint64_t off, int whence);

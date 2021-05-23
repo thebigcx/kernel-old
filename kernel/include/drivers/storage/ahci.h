@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <drivers/pci/pci.h>
-#include <drivers/storage/dev.h>
 
 #define AHCI_PORT_NULL 0
 #define AHCI_PORT_SATA 1
@@ -198,6 +197,8 @@ typedef struct ahci_portlist
 
 extern ahci_portlist_t ahci_portlist;
 
+typedef struct dev dev_t;
+
 void ahci_probe_ports();
 void ahci_port_rebase(ahci_port_t* port);
 void ahci_init_dev(pci_dev_t* pci_base_addr);
@@ -208,7 +209,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
 bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer);
 bool ahci_write();
 
-storage_dev_t ahci_get_dev(int idx);
+dev_t ahci_get_dev(int idx);
 
 // Initialize AHCI, devs is a list of all PCI devices
 void ahci_init(pci_devlist_t* devs);

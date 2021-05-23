@@ -101,8 +101,9 @@ void _free(void* ptr)
 {
     heap_block_t* block = (heap_block_t*)ptr - 1;
     block->free = true;
-    heap_combine_forward(block);
-    heap_combine_back(block);
+    // TODO: fix this
+    //heap_combine_forward(block);
+    //heap_combine_back(block);
 }
 
 void* _realloc(void* ptr, size_t size)

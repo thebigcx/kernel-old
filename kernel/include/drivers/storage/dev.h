@@ -1,11 +1,19 @@
 #pragma once
 
 #include <stdint.h>
+#include <drivers/storage/ahci.h>
 
-typedef struct storage_dev
+typedef struct dev
 {
-    int (*read)(struct storage_dev* dev, uint64_t offset, uint32_t len, void* buffer);
-    int (*write)(struct storage_dev* dev, uint64_t offset, uint32_t len, void* buffer);
-    void* priv;
+    int (*read)(struct dev* dev, uint64_t offset, uint32_t len, void* buffer);
+    int (*write)(struct dev* dev, uint64_t offset, uint32_t len, void* buffer);
+    void* derived;
 
-} storage_dev_t;
+} dev_t;
+
+// Derived class data of dev_t
+typedef struct disk_dev
+{
+    ahci_port_t* port;
+
+} disk_dev_t;

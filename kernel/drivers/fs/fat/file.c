@@ -5,7 +5,7 @@ fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
 {
     fat_file_t file;
 
-    if (dir->flags != FAT_DIRECTORY)
+    if (dir != NULL && dir->flags != FAT_DIRECTORY)
     {
         puts("[FAT] Error: cannot list contents of file (not a directory).\n");
         file.flags = FAT_INVALID;
@@ -68,6 +68,7 @@ fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
 
                 file.file_len = dirs[i].file_sz;
 
+                free(lfn_entries);
                 return file;
             }
         }

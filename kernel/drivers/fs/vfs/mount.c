@@ -4,12 +4,12 @@
 
 mount_t root_mnt_pt;
 
-int fs_get_type(storage_dev_t* dev)
+int fs_get_type(dev_t* dev)
 {
     return FS_TYPE_FAT32; // TODO: other filesystems
 }
 
-void fs_mnt_disk(storage_dev_t* dev, mount_t* mnt)
+void fs_mnt_disk(dev_t* dev, mount_t* mnt)
 {
     int type = fs_get_type(dev);
     mnt->fs_dri.type = type;

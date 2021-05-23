@@ -1,6 +1,7 @@
 #include <drivers/storage/ahci.h>
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata.h>
+#include <drivers/storage/dev.h>
 
 #include <stdlib.h>
 #include <paging/paging.h>
@@ -249,22 +250,23 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     return true;
 }
 
-int ahci_storage_dev_read(storage_dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+int ahci_storage_dev_read(dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
 {
-    return ahci_read((ahci_port_t*)dev->priv, offset, len, buffer);
+    return ahci_read(((disk_dev_t*)dev->derived)->port, offset, len, buffer);
 }
 
-int ahci_storage_dev_write(storage_dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+int ahci_storage_dev_write(dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
 {
-    return ahci_write((ahci_port_t*)dev->priv, offset, len, buffer);
+    return ahci_write(((disk_dev_t*)dev->derived)->port, offset, len, buffer);
 }
 
-storage_dev_t ahci_get_dev(int idx)
+dev_t ahci_get_dev(int idx)
 {
-    storage_dev_t dev;
+    dev_t dev;
     dev.read = ahci_storage_dev_read;
     dev.write = ahci_storage_dev_write;
-    dev.priv = (void*)ahci_portlist.ports[idx];
+    dev.derived = malloc(sizeof(disk_dev_t));
+    ((disk_dev_t*)dev.derived)->port = ahci_portlist.ports[idx];
     return dev;
 }
 

@@ -186,5 +186,5 @@ typedef struct ext2_dir_entry
 } __attribute__((packed)) ext2_dir_entry_t;
 
 // inode.c
-void ext2_write_inode(ext2_superblock_t* sb, ext2_inode_t* inode, uint32_t idx, storage_dev_t* dev);
-void ext2_write_superblock(ext2_superblock_t* block, storage_dev_t* dev);
+void ext2_write_inode(ext2_superblock_t* sb, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
+void ext2_write_superblock(ext2_superblock_t* block, dev_t* dev);

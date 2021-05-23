@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-bool fat_is_fat(storage_dev_t* dev)
+bool fat_is_fat(dev_t* dev)
 {
     fat_bootrecord_t* record = page_request();
 
@@ -22,7 +22,7 @@ bool fat_is_fat(storage_dev_t* dev)
     return false;
 }
 
-void fat_init(fat_dri_t* dri, storage_dev_t* dev)
+void fat_init(fat_dri_t* dri, dev_t* dev)
 {
     fat_bootrecord_t* record = page_request();
     dev->read(dev, 0, 1, record);
@@ -52,8 +52,7 @@ void fat_init(fat_dri_t* dri, storage_dev_t* dev)
     page_free(record);
 }
 
-// TODO: traverse paths
-fs_file_t* fat_fopen(fs_dri_t* dri, const char* path, const char* format)
+fs_file_t* fat_fopen(fs_dri_t* dri, const char* path)
 {
     fs_file_t* file = malloc(sizeof(fs_file_t));
     file->id = 0;
@@ -65,13 +64,13 @@ fs_file_t* fat_fopen(fs_dri_t* dri, const char* path, const char* format)
     return file;
 }
 
-size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, size_t nmemb, fs_file_t* stream)
+size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, fs_file_t* stream)
 {
-    fat_file_read((fat_dri_t*)dri->priv, (fat_file_t*)stream->priv, size * nmemb, stream->pos, ptr);
-    stream->pos += size * nmemb;
+    fat_file_read((fat_dri_t*)dri->priv, (fat_file_t*)stream->priv, size, stream->pos, ptr);
+    stream->pos += size;
 }
 
-size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, size_t nmemb, fs_file_t* stream)
+size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, fs_file_t* stream)
 {
 
 }

@@ -119,7 +119,7 @@ typedef struct fat_mnt_info
 // FAT32 filesystem driver
 typedef struct fat_dri
 {
-    storage_dev_t* dev;
+    dev_t* dev;
     fat_mnt_info_t mnt_inf;
 
 } fat_dri_t;
@@ -151,12 +151,12 @@ typedef struct fat_lfn_entry
 } __attribute__((packed)) fat_lfn_entry_t;
 
 // fat.c
-bool fat_is_fat(storage_dev_t* dev);
-void fat_init(fat_dri_t* dri, storage_dev_t* dev);
+bool fat_is_fat(dev_t* dev);
+void fat_init(fat_dri_t* dri, dev_t* dev);
 
-fs_file_t* fat_fopen(fs_dri_t* dri, const char* path, const char* format);
-size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
-size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, size_t nmemb, fs_file_t* stream);
+fs_file_t* fat_fopen(fs_dri_t* dri, const char* path);
+size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, fs_file_t* stream);
+size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, fs_file_t* stream);
 int fat_fclose(fs_dri_t* dri, fs_file_t* stream);
 
 // file.c
@@ -174,3 +174,4 @@ uint64_t fat_cluster_to_lba(fat_dri_t* dri, uint32_t cluster);
 uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t* num_clus);
 void* fat_read_cluster_chain(fat_dri_t* dri, uint32_t cluster, uint64_t* num_clus);
 void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt);
+void fat_alloc_clusters(fat_dri_t* dri, int* clusters, int num_clusters);

@@ -68,3 +68,8 @@ void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t 
 
     dst[name_idx] = '\0';
 }
+
+void fat_alloc_clusters(fat_dri_t* dri, int* clusters, int num_clusters)
+{
+    
+}
