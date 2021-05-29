@@ -137,7 +137,8 @@ static psf1_font* load_font(EFI_FILE* dir, CHAR16* path, EFI_HANDLE handle, EFI_
     return font;
 }
 
-UINTN strcmp(CHAR8* a, CHAR8* b, UINTN l){
+UINTN strcmp(CHAR8* a, CHAR8* b, UINTN l)
+{
 	for (UINTN i = 0; i < l; i++)
     {
 		if (a[i] != b[i])

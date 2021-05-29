@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <io.h>
+#include <system.h>
 
 #define KEY_QUEUE_SIZE 512
 
@@ -12,7 +13,7 @@ struct
     int32_t queue_end;
 } key_queue;
 
-void keyboard_interrupt_handler()
+void kb_interrupt_handler(reg_ctx_t* r)
 {
     uint8_t scan_code = inb(0x60);
 
@@ -20,16 +21,18 @@ void keyboard_interrupt_handler()
         return;
 
     key_queue.keys[++key_queue.queue_end] = (uint32_t)scan_code;
+
+    outb(PIC1_COMMAND, PIC_EOI);
 }
 
-void keyboard_init()
+void kb_init()
 {
-    idt_set_irq(1, keyboard_interrupt_handler);
+    idt_set_irq(1, kb_interrupt_handler);
 
     key_queue.queue_end = -1;
 }
 
-bool keyboard_get_key(uint32_t* key)
+bool kb_get_key(uint32_t* key)
 {
     if (key_queue.queue_end < 0)
         return false;

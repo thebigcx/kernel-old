@@ -75,8 +75,8 @@ typedef struct elf64_program_hdr
 #define SHT_REL         9
 
 // ShT attributes
-#define SHF_WRITE 0x01
-#define SHF_ALLOC 0x02
+#define SHF_WRITE       0x01
+#define SHF_ALLOC       0x02
 
 // Elf identitifers
 #define EI_MAG0         0

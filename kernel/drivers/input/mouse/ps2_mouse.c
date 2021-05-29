@@ -2,6 +2,7 @@
 #include <io.h>
 #include <gdt/idt.h>
 #include <stdio.h>
+#include <system.h>
 
 int8_t mouse_data[3];
 uint8_t cycle = 0;
@@ -49,7 +50,7 @@ static void mouse_write(uint8_t value)
     outb(0x60, value);
 }
 
-void mouse_handler()
+void mouse_handler(reg_ctx_t* r)
 {
     switch (cycle)
     {
@@ -88,6 +89,9 @@ void mouse_handler()
             cycle = 0;
             break;
     }
+
+    outb(PIC2_COMMAND, PIC_EOI);
+    outb(PIC1_COMMAND, PIC_EOI);
 }
 
 void mouse_map_int()

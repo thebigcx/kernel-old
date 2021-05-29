@@ -16,7 +16,7 @@
 #define ICW1_ICW4    0x01
 #define ICW4_8086    0x01
 
-struct interrupt_frame;
+/*struct interrupt_frame;
 __attribute__((interrupt)) void isr0(struct interrupt_frame* frame);
 __attribute__((interrupt)) void isr1(struct interrupt_frame* frame);
 __attribute__((interrupt)) void isr2(struct interrupt_frame* frame);
@@ -48,7 +48,7 @@ __attribute__((interrupt)) void irq11(struct interrupt_frame* frame);
 __attribute__((interrupt)) void irq12(struct interrupt_frame* frame);
 __attribute__((interrupt)) void irq13(struct interrupt_frame* frame);
 __attribute__((interrupt)) void irq14(struct interrupt_frame* frame);
-__attribute__((interrupt)) void irq15(struct interrupt_frame* frame);
+__attribute__((interrupt)) void irq15(struct interrupt_frame* frame);*/
 
 typedef struct idt_entry
 {

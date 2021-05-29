@@ -15,9 +15,8 @@
 #include <drivers/pci/pci.h>
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ahci.h>
-#include <drivers/fs/fat/fat.h>
 #include <drivers/fs/vfs/vfs.h>
-#include <scheduler/scheduler.h>
+#include <sched/sched.h>
 
 extern void jump_usermode();
 
@@ -101,7 +100,7 @@ void _start(boot_info_t* inf)
     init_paging(inf);
     heap_init((void*)0x0000100000000000);
 
-    keyboard_init();
+    kb_init();
     pit_init(1600);
 
     mouse_map_int();
@@ -137,7 +136,7 @@ void _start(boot_info_t* inf)
 
     asm ("sti");
     
-    //scheduler_init();
+    sched_init();
 
     for (;;);
 }

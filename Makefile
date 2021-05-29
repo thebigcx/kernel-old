@@ -28,23 +28,19 @@ $(EFITARGET):
 	@echo ""
 	@echo "<========= Compiling libc =========>"
 	@echo ""
-	@cd libc && make
-	@cd ..
+	@cd kernel/libc && make
 	@echo ""
 	@echo "<========= Compiling libos ========>"
 	@echo ""
-	@cd lib && make
-	@cd ..
+	@cd kernel/lib && make
 	@echo ""
 	@echo "<====== Compiling boot loader =====>"
 	@echo ""
 	@cd boot && make
-	@cd ..
 	@echo ""
 	@echo "<========= Compiling kernel =======>"
 	@echo ""
 	@cd kernel && make
-	@cd ..
 
 clean:
 	@echo "Cleaning iso..."
@@ -54,17 +50,13 @@ clean:
 	@rm -f bin/$(FATTARGET)
 	@rm -rf bin/iso
 	@echo "Cleaning libos..."
-	@cd lib && make clean
-	@cd ..
+	@cd kernel/lib && make clean
 	@echo "Cleaning kernel..."
 	@cd kernel && make clean
-	@cd ..
 	@echo "Cleaning boot loader..."
 	@cd boot && make clean
-	@cd ..
 	@echo "Cleaning libc..."
-	@cd libc && make clean
-	@cd ..
+	@cd kernel/libc && make clean
 
 qemu:
 	qemu-system-x86_64 -L /usr/share/OVMF/x64 -bios /usr/share/OVMF/x64/OVMF_CODE.fd -cdrom bin/$(ISOTARGET)

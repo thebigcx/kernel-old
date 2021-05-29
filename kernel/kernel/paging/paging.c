@@ -3,6 +3,7 @@
 #include <bitmap.h>
 #include <gdt/idt.h>
 #include <stdio.h>
+#include <system.h>
 
 // Definitions
 static pml4_t* kpml4;
@@ -17,14 +18,14 @@ bitmap_t map;
 
 bool init = false;
 
-void page_fault_handler()
+void page_fault_handler(reg_ctx_t* r)
 {
     puts("Kernel panic:\n\nPage fault");
     for (;;);
 }
 
 // TODO: put this somewhere else
-void general_protection_fault_handler()
+void general_protection_fault_handler(reg_ctx_t* r)
 {
     puts("Kernel panic:\n\nGeneral protection fault");
     for (;;);

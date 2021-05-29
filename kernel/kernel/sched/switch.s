@@ -1,4 +1,5 @@
 .global task_switch
+.global save_regs
 
 .macro popaq
 

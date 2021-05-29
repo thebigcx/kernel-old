@@ -2,9 +2,59 @@
 #include <io.h>
 #include <string.h>
 #include <paging/paging.h>
+#include <system.h>
 
-void(*isrs[16])();
-void(*irqs[16])();
+extern void isr0();
+extern void isr1();
+extern void isr2();
+extern void isr3();
+extern void isr4();
+extern void isr5();
+extern void isr6();
+extern void isr7();
+extern void isr8();
+extern void isr9();
+extern void isr10();
+extern void isr11();
+extern void isr12();
+extern void isr13();
+extern void isr14();
+extern void isr15();
+extern void isr16();
+extern void isr17();
+extern void isr18();
+extern void isr19();
+extern void isr20();
+extern void isr21();
+extern void isr22();
+extern void isr23();
+extern void isr24();
+extern void isr25();
+extern void isr26();
+extern void isr27();
+extern void isr28();
+extern void isr29();
+extern void isr30();
+extern void isr31();
+
+extern void irq0();
+extern void irq1();
+extern void irq2();
+extern void irq3();
+extern void irq4();
+extern void irq5();
+extern void irq6();
+extern void irq7();
+extern void irq8();
+extern void irq9();
+extern void irq10();
+extern void irq11();
+extern void irq12();
+extern void irq13();
+extern void irq14();
+extern void irq15();
+
+void(*int_handlers[256])(reg_ctx_t* r);
 
 static void set_handler(idt_entry_t* entry, void* fn)
 {
@@ -37,6 +87,23 @@ void idt_load()
     set_handler(&idt[0xc], isr12);
     set_handler(&idt[0xd], isr13);
     set_handler(&idt[0xe], isr14);
+    set_handler(&idt[0xf], isr15);
+    set_handler(&idt[0x10], isr16);
+    set_handler(&idt[0x11], isr17);
+    set_handler(&idt[0x12], isr18);
+    set_handler(&idt[0x13], isr19);
+    set_handler(&idt[0x14], isr20);
+    set_handler(&idt[0x15], isr21);
+    set_handler(&idt[0x16], isr22);
+    set_handler(&idt[0x17], isr23);
+    set_handler(&idt[0x18], isr24);
+    set_handler(&idt[0x19], isr25);
+    set_handler(&idt[0x1a], isr26);
+    set_handler(&idt[0x1b], isr27);
+    set_handler(&idt[0x1c], isr28);
+    set_handler(&idt[0x1d], isr29);
+    set_handler(&idt[0x1e], isr30);
+    set_handler(&idt[0x1f], isr31);
 
     set_handler(&idt[0x20], irq0);
     set_handler(&idt[0x21], irq1);
@@ -78,12 +145,24 @@ void idt_load()
     outb(PIC2_DATA, a2);
 }
 
-void idt_set_irq(uint32_t id, void(*handler)())
+void idt_set_irq(uint32_t id, void(*handler)(reg_ctx_t* r))
 {
-    irqs[id] = handler;
+    int_handlers[id + 32] = handler;
 }
 
-void idt_set_isr(uint32_t id, void(*handler)())
+void idt_set_isr(uint32_t id, void(*handler)(reg_ctx_t* r))
 {
-    isrs[id] = handler;
+    int_handlers[id] = handler;
+}
+
+void irq_handler(uint64_t num, reg_ctx_t* r)
+{
+    if (int_handlers[num])
+        int_handlers[num](r);
+}
+
+void isr_handler(uint64_t num, reg_ctx_t* r)
+{
+    if (int_handlers[num])
+        int_handlers[num](r);
 }

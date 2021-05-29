@@ -95,5 +95,5 @@ enum KEYBOARD_LAYOUT
 #define KEY_F11 87
 #define KEY_F12 88
 
-bool keyboard_get_key(uint32_t* key);
-void keyboard_init();
+bool kb_get_key(uint32_t* key);
+void kb_init();

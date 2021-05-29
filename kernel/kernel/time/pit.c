@@ -2,13 +2,16 @@
 #include <gdt/idt.h>
 #include <stdio.h>
 #include <io.h>
+#include <sched/sched.h>
 
 uint64_t ticks;
 uint64_t freq;
 
-void pit_int_handler()
+void pit_int_handler(reg_ctx_t* r)
 {
     ticks++;
+
+    sched_tick(r);
 }
 
 void pit_init(uint64_t frequency)

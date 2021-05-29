@@ -62,4 +62,11 @@ void _putchar(char c)
         text_curs_x = 0;
         text_curs_y++;
     }
+
+    if (text_curs_y >= graphics_data.fb_surf.height / 16 - 1)
+    {
+        gl_surface_clear(&graphics_data.fb_surf, 0, 0, 0);
+        text_curs_x = 0;
+        text_curs_y = 0;
+    }
 }
