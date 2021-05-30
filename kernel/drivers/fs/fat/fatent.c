@@ -1,12 +1,12 @@
 #include <drivers/fs/fat/fat.h>
 #include <stdlib.h>
 
-uint64_t fat_cluster_to_lba(fat_dri_t* dri, uint32_t cluster)
+uint64_t fat_cluster_to_lba(fat_vol_t* dri, uint32_t cluster)
 {
-    return dri->mnt_inf.first_usable_cluster + cluster * dri->mnt_inf.sectors_per_cluster - (2 * dri->mnt_inf.sectors_per_cluster);
+    return dri->mnt_inf.first_clus + cluster * dri->mnt_inf.sects_per_clus - (2 * dri->mnt_inf.sects_per_clus);
 }
 
-void* fat_read_cluster_chain(fat_dri_t* dri, uint32_t cluster, uint64_t* num_clus)
+void* fat_read_cluster_chain(fat_vol_t* dri, uint32_t cluster, uint64_t* num_clus)
 {
     uint32_t* clusters = fat_get_cluster_chain(dri, cluster, num_clus);
 
@@ -19,11 +19,11 @@ void* fat_read_cluster_chain(fat_dri_t* dri, uint32_t cluster, uint64_t* num_clu
 
         buf += 512;
     }
-
+    
     return _buf;
 }
 
-uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t* num_clus)
+uint32_t* fat_get_cluster_chain(fat_vol_t* dri, uint32_t first_cluster, uint64_t* num_clus)
 {
     uint32_t clus = first_cluster;
     uint32_t cchain = 0;
@@ -33,7 +33,7 @@ uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t
 
     do
     {
-        uint32_t fat_sector = dri->mnt_inf.res_sectors + (clus * 4) / 512;
+        uint32_t fat_sector = dri->mnt_inf.res_sects + (clus * 4) / 512;
         uint32_t fat_off = (clus * 4) % 512;
 
         dri->dev->read(dri->dev, fat_sector, 1, buf);
@@ -50,7 +50,7 @@ uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t
     return ret;
 }
 
-void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt)
+void fat_get_lfn(fat_vol_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt)
 {
     uint32_t name_idx = 0;
 
@@ -69,7 +69,7 @@ void fat_get_lfn(fat_dri_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t 
     dst[name_idx] = '\0';
 }
 
-void fat_alloc_clusters(fat_dri_t* dri, int* clusters, int num_clusters)
+void fat_alloc_clusters(fat_vol_t* dri, int* clusters, int num_clusters)
 {
     
 }

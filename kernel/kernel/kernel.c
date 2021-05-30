@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <drivers/graphics/graphics.h>
+#include <drivers/video/video.h>
 #include <paging/paging.h>
 #include <mem/mem.h>
 #include <mem/heap.h>
@@ -17,6 +17,9 @@
 #include <drivers/storage/ahci.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <sched/sched.h>
+
+#define LOG(m) console_write(m, 255, 255, 255)
+#define DONE() console_write("Done\n", 0, 255, 0)
 
 extern void jump_usermode();
 
@@ -69,78 +72,114 @@ static void init_paging(boot_info_t* inf)
     asm ("mov %0, %%cr3"::"r"(page_get_kpml4()));
 }
 
+size_t test_read(fs_file_t* file, void* ptr, size_t size)
+{
+    strcpy((char*)ptr, "Never gonna give you up");
+    return 0;
+}
+
+size_t test_write(fs_file_t* file, const void* ptr, size_t size)
+{
+    return 0;
+}
+
 void kernel_proc()
 {
-    puts("KERNEL PROCESS");
+    DONE();
+
+    // TESTS
+    
+    fs_node_t dev = vfs_resolve_path("/dev/keyboard", NULL);
+    fs_file_t* devfile = vfs_open(&dev);
+    char buf[100];
+
+    fs_node_t node = vfs_resolve_path("/system_folder/long_file_name.txt", "/");
+    fs_file_t* file = vfs_open(&node);
+    uint8_t buffer[100];
+    vfs_read(file, buffer, 100);
+
     for (;;)
     {
         mouse_packet_t pack;
         while (mouse_get_packet(&pack))
         {
-            puts("Mouse\n");
+            console_write("Mouse\n", 255, 255, 255);
+        }
+
+        if (vfs_read(devfile, &buf, 100))
+        {
+            char ibuffer[100];
+            LOG(itoa(*buf, ibuffer, 10));
         }
     }
 }
 
 void _start(boot_info_t* inf)
 {
-    gl_surface_t fb_surf;
-    fb_surf.width = inf->pix_per_line;
-    fb_surf.height = inf->v_res;
-    fb_surf.buffer = inf->fb_adr;
+    vid_mode_t vidmode;
+    vidmode.width = inf->pix_per_line;
+    vidmode.height = inf->v_res;
+    vidmode.depth = 32;
+    vidmode.fb = inf->fb_adr;
+    video_init(vidmode);
+    video_set_fnt(inf->font);
+    memset(vidmode.fb, 0, vidmode.width * vidmode.height * (vidmode.depth / 8));
 
-    graphics_data.font = inf->font;
-    graphics_data.fb_surf = fb_surf;
-
+    LOG("Initializing GDT...");
     gdt_desc_t gdt_desc;
     gdt_desc.size = sizeof(gdt_t) - 1;
     gdt_desc.offset = (uint64_t)&def_gdt;
     gdt_load(&gdt_desc);
+    DONE();
 
+    LOG("Initializing paging and memory...");
     init_paging(inf);
+    DONE();
+    LOG("Initializing heap...");
     heap_init();
+    DONE();
 
+    LOG("Initializing keyboard...");
     kb_init();
+    DONE();
+    LOG("Initializing PIT...");
     pit_init(1600);
+    DONE();
 
+    LOG("Initializing mouse...");
     mouse_map_int();
+    DONE();
+    LOG("Loading IDT...");
     idt_load();
+    DONE();
 
     mouse_init();
 
+    LOG("Enumerating PCI devices...");
     pci_enumerate();
+    DONE();
     
+    LOG("Initializing AHCI controllers...");
     ahci_init(&pci_devices);
-    dev_t dev = ahci_get_dev(0);
+    DONE();
 
+    LOG("Mounting root directory...");
+
+    dev_t dev = ahci_get_dev(0);
     root_mnt_pt = fs_mnt_dev(&dev, "/");
+
+    DONE();
 
     outb(PIC1_DATA, 0xf8);
     outb(PIC2_DATA, 0xef);
-
-    //TEST
-    /*asm("sti");
-    void* m = kmalloc(1000);
-    kfree(m);
-    fs_file_t* file = vfs_open("system_folder/long_file_name.txt");
-    uint8_t buf[100];
-    vfs_read(buf, 100, file);
-    for (int i = 0; i < 100; i++) putchar(buf[i]);
-    kernel_proc();
-    while (1);*/
-    //fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", "/");
-    fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", "/");
-    fs_file_t* file = vfs_open(&node);
-
-    uint8_t buf[4896];
-    vfs_read(file, buf, 4896);
     
-    //proc_t* proc = mk_elf_proc(buf);
-    //char buffer[2];
-    //puts(itoa(*((uint8_t*)proc->regs.rip), buffer, 16));
-    //proc->next = proc;
+    LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
     sched_spawn_proc(proc);
+    DONE();
     
+    LOG("Jumping to multitasking...");
     sched_init();
+
+    for (;;);
 }

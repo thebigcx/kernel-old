@@ -30,6 +30,11 @@ void kb_init()
     idt_set_irq(1, kb_interrupt_handler);
 
     key_queue.queue_end = -1;
+
+    fs_node_t node;
+    node.read = kb_read;
+    node.write = kb_write;
+    vfs_mk_dev_file(node, "/dev/keyboard");
 }
 
 bool kb_get_key(uint32_t* key)
@@ -40,4 +45,21 @@ bool kb_get_key(uint32_t* key)
     *key = key_queue.keys[key_queue.queue_end--];
 
     return true;
+}
+
+size_t kb_read(fs_file_t* file, void* ptr, size_t size)
+{
+    size_t i = 0;
+    for (; i < size; i++)
+    {
+        if (!kb_get_key(ptr++))
+            break;
+    }
+
+    return i;
+}
+
+size_t kb_write(fs_file_t* file, const void* ptr, size_t size)
+{
+    return 0;
 }

@@ -77,8 +77,6 @@ void ahci_init_dev(pci_dev_t* pci_base_addr)
     {
         ahci_port_rebase(ahci_portlist.ports[i]);
     }
-
-    puts("AHCI initialized\n");
 }
 
 void ahci_port_rebase(ahci_port_t* ahci_port)
@@ -87,7 +85,7 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
 
     ahci_stop_cmd(ahci_port);
 
-    void* new_base = page_request();
+    void* new_base = kmalloc(PAGE_SIZE);
     port->com_base_addr = (uint32_t)((uint64_t)new_base & 0xffffffff);
     port->com_base_addr_u = (uint32_t)((uint64_t)new_base >> 32); // Upper 32 bits
     memset((void*)(uint64_t)port->com_base_addr, 0, PAGE_SIZE);
@@ -102,7 +100,7 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
     {
         cmd_hdr[i].prdt_len = 8;
         
-        void* cmd_tbl = page_request();
+        void* cmd_tbl = kmalloc(256);
         uint64_t addr = (uint64_t)cmd_tbl + (i << 8);
         cmd_hdr[i].cmd_tbl_base_addr = (uint32_t)(uint64_t)addr;
         cmd_hdr[i].cmd_tbl_base_addr_u = (uint32_t)((uint64_t)addr >> 32);
@@ -147,7 +145,7 @@ static int32_t find_cmd_slot(hba_port_t* port)
         slots >>= 1;
     }
 
-    puts("[ERROR] AHCI : Could not find free command list entry.\n");
+    console_write("[ERROR] AHCI : Could not find free command list entry.\n", 255, 0, 0);
     return -1;
 }
 
@@ -222,7 +220,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     }
     if (spin == 1000000)
     {
-        puts("[ERROR] AHCI : Port has hung.\n");
+        console_write("[ERROR] AHCI : Port has hung.\n", 255, 0, 0);
         return false;
     }
 
@@ -235,7 +233,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
             break;
         if (port->int_stat & HBA_PXIS_TFES) // Task file error
         {
-            puts("[ERROR] AHCI : Read disk error.\n");
+            console_write("[ERROR] AHCI : Read disk error.\n", 255, 0, 0);
             return false;
         }
     }
@@ -243,7 +241,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     // Check again
     if (port->int_stat & HBA_PXIS_TFES)
     {
-        puts("[ERROR] AHCI : Read disk error.\n");
+        console_write("[ERROR] AHCI : Read disk error.\n", 255, 0, 0);
         return false;
     }
 

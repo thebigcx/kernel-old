@@ -10,6 +10,9 @@
 #define KERNEL_CS 0x08
 #define KERNEL_SS 0x10
 
+#define USER_CS 0x1b
+#define USER_SS 0x23
+
 typedef struct proc
 {
     uint64_t pid;

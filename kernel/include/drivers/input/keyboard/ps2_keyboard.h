@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <drivers/fs/vfs/vfs.h>
 
 enum KEYBOARD_LAYOUT
 {
@@ -94,6 +95,9 @@ enum KEYBOARD_LAYOUT
 #define KEY_KPPERIOD 83
 #define KEY_F11 87
 #define KEY_F12 88
+
+size_t kb_read(fs_file_t* file, void* ptr, size_t size);
+size_t kb_write(fs_file_t* file, const void* ptr, size_t size);
 
 bool kb_get_key(uint32_t* key);
 void kb_init();

@@ -69,7 +69,6 @@ idt_entry_t* idt;
 
 void idt_load()
 {
-    //idt = page_request();
     idt = kmalloc(sizeof(idt_entry_t) * 256);
     memset(idt, 0, sizeof(idt_entry_t) * 256);
 

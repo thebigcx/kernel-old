@@ -20,14 +20,14 @@ bool init = false;
 
 void page_fault_handler(reg_ctx_t* r)
 {
-    puts("Kernel panic:\n\nPage fault");
+    console_write("Kernel panic:\n\nPage fault", 255, 0, 0);
     for (;;);
 }
 
 // TODO: put this somewhere else
 void general_protection_fault_handler(reg_ctx_t* r)
 {
-    puts("Kernel panic:\n\nGeneral protection fault");
+    console_write("Kernel panic:\n\nGeneral protection fault", 255, 0, 0);
     for (;;);
 }
 
@@ -36,7 +36,7 @@ void set_page_frame(uint64_t* page, uint64_t addr)
     *page = (*page & ~PAGE_FRAME) | (addr & PAGE_FRAME);
 }
 
-void* temp_kkmalloc(size_t sz)
+void* temp_kmalloc(size_t sz)
 {
     void* ret = temp_mem;
     temp_mem = (uint8_t*)((size_t)temp_mem + sz);
@@ -82,19 +82,22 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    kpml4 = (pml4_t*)temp_kkmalloc(PAGE_SIZE);
+    kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
     memset(kpml4, 0, PAGE_SIZE);
 
-    page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
+    page_reserve_m(0, memory_size / PAGE_SIZE + 1);
 
     for (uint64_t i = 0; i < entries; i++)
     {
         efi_memory_descriptor* dsc = (efi_memory_descriptor*)((uint64_t)mem + (i * desc_size));
-        if (dsc->type != CONVENTIONAL_MEMORY)
+        if (dsc->type == CONVENTIONAL_MEMORY)
         {
-            page_reserve_m(dsc->phys_adr, dsc->num_pages);
+            page_release_m(dsc->phys_adr, dsc->num_pages);
         }
     }
+
+    page_reserve_m(0, 0x100);
+    page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
 
     idt_set_isr(13, general_protection_fault_handler);
     idt_set_isr(14, page_fault_handler);

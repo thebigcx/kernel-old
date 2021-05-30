@@ -4,9 +4,9 @@
 
 void puts(const char* str)
 {
-    size_t sz = strlen(str);
+    /*size_t sz = strlen(str);
     for (size_t i = 0; i < sz; i++)
     {
         putchar(str[i]);
-    }
+    }*/
 }

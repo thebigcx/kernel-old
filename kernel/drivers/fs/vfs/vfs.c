@@ -2,6 +2,20 @@
 #include <string.h>
 #include <mem/heap.h>
 
+struct dev_node
+{
+    const char* path;
+    fs_node_t node;
+} dev_nodes[128];
+uint32_t dev_node_cnt = 0;
+
+void vfs_mk_dev_file(fs_node_t node, const char* path)
+{
+    dev_nodes[dev_node_cnt].path = path;
+    dev_nodes[dev_node_cnt].node = node;
+    dev_node_cnt++;
+}
+
 fs_file_t* vfs_open(fs_node_t* node)
 {
     fs_file_t* file = kmalloc(sizeof(fs_file_t));
@@ -17,12 +31,12 @@ void vfs_close(fs_file_t* file)
 
 size_t vfs_read(fs_file_t* file, void* ptr, size_t size)
 {
-    return file->node->read(&root_mnt_pt->fs_dri, ptr, size, file);
+    return file->node->read(file, ptr, size);
 }
 
 size_t vfs_write(fs_file_t* file, const void* ptr, size_t size)
 {
-    return file->node->write(&root_mnt_pt->fs_dri, ptr, size, file);
+    return file->node->write(file, ptr, size);
 }
 
 void strsplit(char** arr, const char* str, char c, uint32_t* cnt)
@@ -48,13 +62,32 @@ void strsplit(char** arr, const char* str, char c, uint32_t* cnt)
         token[tok_size++] = str[i];
     }
 
-    //kfree(token);
+    kfree(token);
 
     *cnt = arr_len;
 }
 
 fs_node_t vfs_resolve_path(const char* path, const char* working_dir)
 {
+    for (uint32_t i = 0; i < dev_node_cnt; i++)
+    {
+        if (path[0] != '/' && working_dir)
+        {
+            char* new_path = kmalloc(strlen(path) + strlen(working_dir) + 1);
+            strcpy(new_path, working_dir);
+            new_path[strlen(working_dir)] = '/';
+            strcpy(new_path + strlen(working_dir) + 1, path);
+
+            if (strcmp(dev_nodes[i].path, new_path) == 0)
+                return dev_nodes[i].node;
+        }
+        else
+        {
+            if (strcmp(dev_nodes[i].path, path) == 0)
+                return dev_nodes[i].node;
+        }
+    }
+
     char* parts[10];
     for (int i = 0; i < 10; i++)
         parts[i] = kmalloc(32);

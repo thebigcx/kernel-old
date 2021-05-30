@@ -21,8 +21,8 @@ mount_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
     {
         mnt->fs_dri.find_file = fat_find_file;
 
-        mnt->fs_dri.priv = kmalloc(sizeof(fat_dri_t));
-        fat_init((fat_dri_t*)mnt->fs_dri.priv, dev);
+        mnt->fs_dri.priv = kmalloc(sizeof(fat_vol_t));
+        fat_init((fat_vol_t*)mnt->fs_dri.priv, dev);
     }
 
     fs_mnts.mnts[fs_mnts.cnt++] = mnt;

@@ -50,8 +50,13 @@ void heap_init()
 {
     void* addr = page_request();
     page_kernel_map_memory(addr, addr);
-
-    size_t heap_len = PAGE_SIZE;
+    for (int i = 1; i < 1000; i++)
+    {
+        page_kernel_map_memory(addr + i * PAGE_SIZE, page_request());
+    }
+    
+    
+    size_t heap_len = 100 * PAGE_SIZE;
 
     heap_start = addr;
     heap_end = (void*)((size_t)heap_start + heap_len);

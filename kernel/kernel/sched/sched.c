@@ -15,31 +15,6 @@ proc_t* last_proc;
 
 extern void kernel_proc();
 
-void test_proc_1()
-{
-    puts("PROC1");
-    for (;;)
-    {
-        uint32_t key;
-        while (kb_get_key(&key))
-        {
-            puts("Keyboard\n");
-        }
-    }
-}
-void test_proc_2()
-{
-    puts("PROC2");
-    for (;;)
-    {
-        mouse_packet_t pack;
-        while (mouse_get_packet(&pack))
-        {
-            puts("Mouse\n");
-        }
-    }
-}
-
 void sched_init()
 {
     asm ("sti");
@@ -60,19 +35,12 @@ void schedule(reg_ctx_t* r)
 
 proc_t* mk_proc(void* entry)
 {
-    proc_t* proc = page_request();
-    //proc_t* proc = kmalloc(sizeof(proc_t));
+    proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_get_kpml4(); // TODO: use page_mk_map()
     proc->pid = 0;
     proc->next = NULL;
 
-    /*void* stack = page_request();
-    page_kernel_map_memory(stack, stack);
-    for (int i = 1; i < 4; i++)
-    {
-        page_kernel_map_memory(stack + i * PAGE_SIZE, page_request());
-    }*/
     void* stack = kmalloc(16000);
     memset(stack, 0, 16000);
 
