@@ -7,7 +7,7 @@
 
 typedef struct elf64_hdr
 {
-    uint8_t   ident[ELF_NIDENT];
+    int8_t    ident[ELF_NIDENT];
     uint16_t  type;
     uint16_t  machine;
     uint32_t  version;

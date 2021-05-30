@@ -46,9 +46,10 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
     return new;
 }
 
-void heap_init(void* addr)
+void heap_init()
 {
-    page_kernel_map_memory(addr, page_request());
+    void* addr = page_request();
+    page_kernel_map_memory(addr, addr);
 
     size_t heap_len = PAGE_SIZE;
 
@@ -64,7 +65,7 @@ void heap_init(void* addr)
     last_block = start_block;
 }
 
-void* _malloc(size_t n)
+void* kmalloc(size_t n)
 {
     // Must be a multiple of 16 bytes
     if (n % 16 != 0)
@@ -92,29 +93,28 @@ void* _malloc(size_t n)
         curr = curr->next;
     }
 
-    // Expand heap and re-run malloc()
+    // Expand heap and re-run kmalloc()
     heap_expand(n);
-    return _malloc(n);
+    return kmalloc(n);
 }
 
-void _free(void* ptr)
+void kfree(void* ptr)
 {
     heap_block_t* block = (heap_block_t*)ptr - 1;
     block->free = true;
-    // TODO: fix this
-    //heap_combine_forward(block);
-    //heap_combine_back(block);
+    heap_combine_forward(block);
+    heap_combine_back(block);
 }
 
-void* _realloc(void* ptr, size_t size)
+void* krealloc(void* ptr, size_t size)
 {
     size_t block_sz = ((heap_block_t*)((uint64_t)ptr - sizeof(heap_block_t)))->len;
     if (block_sz < size) return ptr; // Reallocation to less than previous size is UB
 
-    void* new = malloc(size);
+    void* new = kmalloc(size);
     memcpy(new, ptr, block_sz);
 
-    free(ptr);
+    kfree(ptr);
 
     return new;
 }

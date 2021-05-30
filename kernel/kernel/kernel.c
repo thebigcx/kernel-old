@@ -98,7 +98,7 @@ void _start(boot_info_t* inf)
     gdt_load(&gdt_desc);
 
     init_paging(inf);
-    heap_init((void*)0x0000100000000000);
+    heap_init();
 
     kb_init();
     pit_init(1600);
@@ -113,30 +113,34 @@ void _start(boot_info_t* inf)
     ahci_init(&pci_devices);
     dev_t dev = ahci_get_dev(0);
 
-    fs_mnt_disk(&dev, &root_mnt_pt);
-    fs_file_t* file = vfs_open("system_folder/long_file_name.txt");
-
-    uint8_t buf[100];
-    vfs_read(buf, 100, file);
-
-    for (int i = 0; i < 100; i++)
-    {
-        putchar(buf[i]);
-    }
-
-    vfs_read(buf, 100, file);
-
-    for (int i = 0; i < 100; i++)
-    {
-        putchar(buf[i]);
-    }
+    root_mnt_pt = fs_mnt_dev(&dev, "/");
 
     outb(PIC1_DATA, 0xf8);
     outb(PIC2_DATA, 0xef);
 
-    asm ("sti");
+    //TEST
+    /*asm("sti");
+    void* m = kmalloc(1000);
+    kfree(m);
+    fs_file_t* file = vfs_open("system_folder/long_file_name.txt");
+    uint8_t buf[100];
+    vfs_read(buf, 100, file);
+    for (int i = 0; i < 100; i++) putchar(buf[i]);
+    kernel_proc();
+    while (1);*/
+    //fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", "/");
+    fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", "/");
+    fs_file_t* file = vfs_open(&node);
+
+    uint8_t buf[4896];
+    vfs_read(file, buf, 4896);
+    
+    //proc_t* proc = mk_elf_proc(buf);
+    //char buffer[2];
+    //puts(itoa(*((uint8_t*)proc->regs.rip), buffer, 16));
+    //proc->next = proc;
+    proc_t* proc = mk_proc(kernel_proc);
+    sched_spawn_proc(proc);
     
     sched_init();
-
-    for (;;);
 }

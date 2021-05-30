@@ -10,7 +10,7 @@ void* fat_read_cluster_chain(fat_dri_t* dri, uint32_t cluster, uint64_t* num_clu
 {
     uint32_t* clusters = fat_get_cluster_chain(dri, cluster, num_clus);
 
-    uint8_t* buf = page_request();
+    uint8_t* buf = kmalloc(*num_clus * 512);
     uint8_t* _buf = buf;
 
     for (uint32_t i = 0; i < *num_clus; i++)
@@ -27,9 +27,9 @@ uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t
 {
     uint32_t clus = first_cluster;
     uint32_t cchain = 0;
-    uint32_t* ret = malloc(100 * sizeof(uint32_t));
+    uint32_t* ret = kmalloc(100 * sizeof(uint32_t));
 
-    uint8_t* buf = malloc(512);
+    uint8_t* buf = kmalloc(512);
 
     do
     {
@@ -45,7 +45,7 @@ uint32_t* fat_get_cluster_chain(fat_dri_t* dri, uint32_t first_cluster, uint64_t
     }
     while ((cchain != 0) && !((cchain & 0x0fffffff) >= 0x0ffffff8));
 
-    free(buf);
+    kfree(buf);
 
     return ret;
 }

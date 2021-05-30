@@ -11,8 +11,8 @@ typedef struct heap_block
     struct heap_block* next;
 } heap_block_t;
 
-void heap_init(void* addr);
-void* _malloc(size_t n);
-void _free(void* ptr);
-void* _realloc(void* ptr, size_t size);
+void heap_init();
+void* kmalloc(size_t n);
+void kfree(void* ptr);
+void* krealloc(void* ptr, size_t size);
 void heap_expand(size_t n);

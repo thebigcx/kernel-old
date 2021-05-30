@@ -1,9 +1,9 @@
 #include <drivers/fs/fat/fat.h>
 #include <string.h>
 
-fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
+fat_node_t fat_get_file(fat_dri_t* dri, fat_node_t* dir, const char* name)
 {
-    fat_file_t file;
+    fat_node_t file;
 
     if (dir != NULL && dir->flags != FAT_DIRECTORY)
     {
@@ -18,7 +18,7 @@ fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
     uint64_t num_clusters = 0;
     fat_dir_entry_t* dirs = fat_read_cluster_chain(dri, cluster, &num_clusters);
 
-    fat_lfn_entry_t** lfn_entries = malloc(sizeof(fat_lfn_entry_t*) * 10);
+    fat_lfn_entry_t** lfn_entries = kmalloc(sizeof(fat_lfn_entry_t*) * 10);
     uint32_t lfn_cnt = 0;
 
     for (uint32_t i = 0; i < num_clusters * 512; i++)
@@ -68,20 +68,20 @@ fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name)
 
                 file.file_len = dirs[i].file_sz;
 
-                free(lfn_entries);
+                kfree(lfn_entries);
                 return file;
             }
         }
     }
 
-    free(lfn_entries);
+    kfree(lfn_entries);
     
     puts("[FAT] Error: could not find file in directory.\n");
     file.flags = FAT_INVALID;
     return file;
 }
 
-void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer)
+void fat_file_read(fat_dri_t* dri, fat_node_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
     void* buf = fat_read_cluster_chain(dri, file->curr_cluster, &cnt);
@@ -89,7 +89,7 @@ void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, vo
     memcpy(buffer, buf + off, size);
 }
 
-void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer)
+void fat_file_write(fat_dri_t* dri, fat_node_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
     uint32_t* buf = fat_get_cluster_chain(dri, file->curr_cluster, &cnt);

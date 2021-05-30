@@ -52,7 +52,7 @@ void ahci_probe_ports()
 
             if (pt == AHCI_PORT_SATA || pt == AHCI_PORT_SATAPI)
             {
-                ahci_port_t* port = (ahci_port_t*)malloc(sizeof(ahci_port_t));
+                ahci_port_t* port = (ahci_port_t*)kmalloc(sizeof(ahci_port_t));
                 port->hba_port = &abar->ports[i];
                 port->type = pt;
                 port->num = ahci_portlist.count;
@@ -92,7 +92,7 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
     port->com_base_addr_u = (uint32_t)((uint64_t)new_base >> 32); // Upper 32 bits
     memset((void*)(uint64_t)port->com_base_addr, 0, PAGE_SIZE);
 
-    void* fis_base = page_request();
+    void* fis_base = kmalloc(256);
     port->fis_base = (uint32_t)((uint64_t)fis_base & 0xffffffff);
     port->fis_base_u = (uint32_t)((uint64_t)fis_base >> 32); // Upper 32 bits
     memset((void*)(uint64_t)port->fis_base, 0, 256);
@@ -265,7 +265,7 @@ dev_t ahci_get_dev(int idx)
     dev_t dev;
     dev.read = ahci_storage_dev_read;
     dev.write = ahci_storage_dev_write;
-    dev.derived = malloc(sizeof(disk_dev_t));
+    dev.derived = kmalloc(sizeof(disk_dev_t));
     ((disk_dev_t*)dev.derived)->port = ahci_portlist.ports[idx];
     return dev;
 }

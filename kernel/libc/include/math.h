@@ -17,3 +17,9 @@ double fabs(double x);
 
 // Square root
 double sqrt(double x);
+
+// Returns the remainder of x divided by y
+double fmod(double x, double y);
+
+// Returns d truncated
+double trunc(double d);

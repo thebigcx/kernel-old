@@ -2,27 +2,29 @@
 #include <drivers/fs/fat/fat.h>
 #include <stdlib.h>
 
-mount_t root_mnt_pt;
+mount_t* root_mnt_pt;
+mount_lst_t fs_mnts;
 
 int fs_get_type(dev_t* dev)
 {
     return FS_TYPE_FAT32; // TODO: other filesystems
 }
 
-void fs_mnt_disk(dev_t* dev, mount_t* mnt)
+mount_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
 {
-    int type = fs_get_type(dev);
-    mnt->fs_dri.type = type;
+    mount_t* mnt = kmalloc(sizeof(mount_t));
+    mnt->fs_dri.type = FS_TYPE_FAT32;
     mnt->dev = dev;
+    strcpy(mnt->mnt_pt, mnt_pt);
 
-    if (type == FS_TYPE_FAT32)
+    if (fs_get_type(dev) == FS_TYPE_FAT32)
     {
-        mnt->fs_dri.fopen = fat_fopen;
-        mnt->fs_dri.fread = fat_fread;
-        mnt->fs_dri.fwrite = fat_fwrite;
-        mnt->fs_dri.fclose = fat_fclose;
+        mnt->fs_dri.find_file = fat_find_file;
 
-        mnt->fs_dri.priv = malloc(sizeof(fat_dri_t));
+        mnt->fs_dri.priv = kmalloc(sizeof(fat_dri_t));
         fat_init((fat_dri_t*)mnt->fs_dri.priv, dev);
     }
+
+    fs_mnts.mnts[fs_mnts.cnt++] = mnt;
+    return mnt;
 }

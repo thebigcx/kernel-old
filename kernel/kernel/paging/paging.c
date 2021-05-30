@@ -36,7 +36,7 @@ void set_page_frame(uint64_t* page, uint64_t addr)
     *page = (*page & ~PAGE_FRAME) | (addr & PAGE_FRAME);
 }
 
-void* temp_kmalloc(size_t sz)
+void* temp_kkmalloc(size_t sz)
 {
     void* ret = temp_mem;
     temp_mem = (uint8_t*)((size_t)temp_mem + sz);
@@ -82,7 +82,7 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
+    kpml4 = (pml4_t*)temp_kkmalloc(PAGE_SIZE);
     memset(kpml4, 0, PAGE_SIZE);
 
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);

@@ -1,8 +1,8 @@
 #include "stdlib.h"
 
-extern void* _malloc();
+//extern void* _malloc();
 
 void* malloc(size_t n)
 {
-    return _malloc(n);
+    //return _malloc(n);
 }

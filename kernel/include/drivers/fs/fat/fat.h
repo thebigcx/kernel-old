@@ -124,18 +124,14 @@ typedef struct fat_dri
 
 } fat_dri_t;
 
-typedef struct fat_file
+typedef struct fat_node
 {
     char name[32];
     uint32_t flags;
     uint32_t file_len;
-    uint32_t id;
-    uint32_t eof;
-    uint32_t pos;
     uint32_t curr_cluster;
-    uint32_t dev;
 
-} fat_file_t;
+} fat_node_t;
 
 typedef struct fat_lfn_entry
 {
@@ -154,20 +150,18 @@ typedef struct fat_lfn_entry
 bool fat_is_fat(dev_t* dev);
 void fat_init(fat_dri_t* dri, dev_t* dev);
 
-fs_file_t* fat_fopen(fs_dri_t* dri, const char* path);
 size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, fs_file_t* stream);
 size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, fs_file_t* stream);
-int fat_fclose(fs_dri_t* dri, fs_file_t* stream);
+fs_node_t fat_find_file(fs_dri_t* dri, fs_node_t* dir, const char* name);
 
 // file.c
-fat_file_t fat_get_file(fat_dri_t* dri, fat_file_t* dir, const char* name);
-void fat_file_read(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer);
-void fat_file_write(fat_dri_t* dri, fat_file_t* file, size_t size, size_t off, void* buffer);
+fat_node_t fat_get_file(fat_dri_t* dri, fat_node_t* dir, const char* name);
+void fat_file_read(fat_dri_t* dri, fat_node_t* file, size_t size, size_t off, void* buffer);
+void fat_file_write(fat_dri_t* dri, fat_node_t* file, size_t size, size_t off, void* buffer);
 void fat_write_cluster(fat_dri_t* dri, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c
-void fat_read_dir(fat_dri_t* dri, uint32_t cluster, fat_file_t* files, uint32_t* cnt);
-fat_file_t fat_traverse_path(fat_dri_t* dri, const char* path);
+void fat_read_dir(fat_dri_t* dri, uint32_t cluster, fat_node_t* files, uint32_t* cnt);
 
 // fatent.c
 uint64_t fat_cluster_to_lba(fat_dri_t* dri, uint32_t cluster);

@@ -5,7 +5,7 @@
 
 bool fat_is_fat(dev_t* dev)
 {
-    fat_bootrecord_t* record = page_request();
+    fat_bootrecord_t* record = kmalloc(512);
 
     dev->read(dev, 0, 1, record);
 
@@ -24,7 +24,7 @@ bool fat_is_fat(dev_t* dev)
 
 void fat_init(fat_dri_t* dri, dev_t* dev)
 {
-    fat_bootrecord_t* record = page_request();
+    fat_bootrecord_t* record = kmalloc(512);
     dev->read(dev, 0, 1, record);
 
     char buffer[100];
@@ -52,21 +52,9 @@ void fat_init(fat_dri_t* dri, dev_t* dev)
     page_free(record);
 }
 
-fs_file_t* fat_fopen(fs_dri_t* dri, const char* path)
-{
-    fs_file_t* file = malloc(sizeof(fs_file_t));
-    file->id = 0;
-    file->priv = malloc(sizeof(fat_file_t));
-    file->pos = 0;
-    
-    *((fat_file_t*)file->priv) = fat_traverse_path((fat_dri_t*)dri->priv, path);
-
-    return file;
-}
-
 size_t fat_fread(fs_dri_t* dri, void* ptr, size_t size, fs_file_t* stream)
 {
-    fat_file_read((fat_dri_t*)dri->priv, (fat_file_t*)stream->priv, size, stream->pos, ptr);
+    fat_file_read((fat_dri_t*)dri->priv, (fat_node_t*)(stream->node->priv), size, stream->pos, ptr);
     stream->pos += size;
 }
 
@@ -75,7 +63,17 @@ size_t fat_fwrite(fs_dri_t* dri, const void* ptr, size_t size, fs_file_t* stream
 
 }
 
-int fat_fclose(fs_dri_t* dri, fs_file_t* stream)
+fs_node_t fat_find_file(fs_dri_t* dri, fs_node_t* dir, const char* name)
 {
+    fat_node_t* fatfile = kmalloc(sizeof(fat_node_t));
+    fat_node_t* parent = dir ? (fat_node_t*)dir->priv : NULL;
+    
+    *fatfile = fat_get_file((fat_dri_t*)(dri->priv), parent, name);
 
+    fs_node_t node;
+    node.priv = fatfile;
+    node.read = fat_fread;
+    node.write = fat_fwrite;
+
+    return node;
 }

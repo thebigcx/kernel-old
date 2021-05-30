@@ -24,7 +24,7 @@ typedef struct proc
 void task_switch(reg_ctx_t* regs, uint64_t pml4);
 void sched_init();
 void schedule(reg_ctx_t* r);
-void sched_lock();
-void sched_unlock();
 proc_t* mk_proc(void* entry);
+proc_t* mk_elf_proc(uint8_t* elf_dat);
 void sched_tick(reg_ctx_t* r);
+void sched_spawn_proc(proc_t* proc);
