@@ -43,13 +43,12 @@ void fat_init(fat_vol_t* dri, dev_t* dev)
     page_free(record);
 }
 
-size_t fat_fread(fs_file_t* file, void* ptr, size_t size)
+size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size)
 {
-    fat_file_read((fat_node_t*)file->node->priv, size, file->pos, ptr);
-    file->pos += size;
+    fat_file_read((fat_node_t*)file->priv, size, off, ptr);
 }
 
-size_t fat_fwrite(fs_file_t* file, const void* ptr, size_t size)
+size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)
 {
 
 }

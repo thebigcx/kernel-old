@@ -41,56 +41,18 @@ proc_t* mk_proc(void* entry)
     proc->pid = 0;
     proc->next = NULL;
 
-    void* stack = kmalloc(16000);
-    memset(stack, 0, 16000);
+    void* stack = kmalloc(1000);
+    memset(stack, 0, 1000);
 
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     proc->regs.rip = entry;
     proc->regs.rflags = 0x202;
     proc->regs.cs = KERNEL_CS;
     proc->regs.ss = KERNEL_SS;
-    proc->regs.rbp = (uint64_t)stack + 16000;
-    proc->regs.rsp = (uint64_t)stack + 16000;
+    proc->regs.rbp = (uint64_t)stack + 1000;
+    proc->regs.rsp = (uint64_t)stack + 1000;
 
     return proc;
-}
-
-proc_t* mk_elf_proc(uint8_t* elf_dat)
-{
-    elf64_hdr_t hdr;
-    elf64_program_hdr_t phdr;
-    uint64_t base = UINT64_MAX;
-
-    memcpy(&hdr, elf_dat, sizeof(elf64_hdr_t));
-
-    if (hdr.ident[0] != 0x7f || hdr.ident[1] != 'E' || hdr.ident[2] != 'L' || hdr.ident[3] != 'F')
-    {
-        return NULL;
-    }
-
-    /*uint64_t size = 0;
-
-    for (int i = 0; i < hdr.ph_num; i++)
-    {
-        memcpy(&phdr, elf_dat + hdr.ph_off + hdr.ph_ent_size * i, sizeof(elf64_program_hdr_t));
-        base = base < phdr.vaddr ? base : phdr.vaddr;
-        uint64_t seg_end = phdr.vaddr - base + phdr.mem_sz;
-        size = size > seg_end ? size : seg_end;
-    }
-
-    //uint8_t* final_img = kmalloc(size);
-    uint8_t* final_img = page_request();
-
-    for (int i = 0; i < hdr.ph_num; i++)
-    {
-        uint64_t addr;
-        memcpy(&phdr, elf_dat + hdr.ph_off + hdr.ph_ent_size * i, sizeof(elf64_program_hdr_t));
-        addr = (phdr.vaddr - base) + (uint64_t)final_img;
-        memset(addr, 0, phdr.mem_sz);
-        memcpy(addr, elf_dat + phdr.offset, phdr.file_sz);
-    }
-
-    return mk_proc(hdr.entry + final_img);*/
 }
 
 void sched_tick(reg_ctx_t* r)
@@ -101,13 +63,7 @@ void sched_tick(reg_ctx_t* r)
 
 void sched_spawn_proc(proc_t* proc)
 {
-    if (!ready_lst_start)
-    {
-        ready_lst_start = proc;
-        return;
-    }
-
-    if (!ready_lst_end)
+    if (!ready_lst_start || !ready_lst_end) // First process
     {
         ready_lst_start = proc;
         ready_lst_end = proc;

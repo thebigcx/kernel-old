@@ -72,44 +72,30 @@ static void init_paging(boot_info_t* inf)
     asm ("mov %0, %%cr3"::"r"(page_get_kpml4()));
 }
 
-size_t test_read(fs_file_t* file, void* ptr, size_t size)
-{
-    strcpy((char*)ptr, "Never gonna give you up");
-    return 0;
-}
-
-size_t test_write(fs_file_t* file, const void* ptr, size_t size)
-{
-    return 0;
-}
-
 void kernel_proc()
 {
     DONE();
 
     // TESTS
     
-    fs_node_t dev = vfs_resolve_path("/dev/keyboard", NULL);
-    fs_file_t* devfile = vfs_open(&dev);
-    char buf[100];
-
-    fs_node_t node = vfs_resolve_path("/system_folder/long_file_name.txt", "/");
-    fs_file_t* file = vfs_open(&node);
-    uint8_t buffer[100];
-    vfs_read(file, buffer, 100);
+    fs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
+    vfs_open(&kb);
+    fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
+    vfs_open(&mouse);
 
     for (;;)
     {
         mouse_packet_t pack;
-        while (mouse_get_packet(&pack))
+        if (vfs_read(&mouse, &pack, 0, 1))
         {
-            console_write("Mouse\n", 255, 255, 255);
+            LOG("Mouse");
         }
 
-        if (vfs_read(devfile, &buf, 100))
+        uint32_t key;
+        if (vfs_read(&kb, &key, 0, 1))
         {
-            char ibuffer[100];
-            LOG(itoa(*buf, ibuffer, 10));
+            char buffer[100];
+            LOG(itoa(key, buffer, 10));
         }
     }
 }
@@ -177,6 +163,16 @@ void _start(boot_info_t* inf)
     proc_t* proc = mk_proc(kernel_proc);
     sched_spawn_proc(proc);
     DONE();
+
+    // TEST
+    fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", NULL);
+    vfs_open(&node);
+    uint8_t* elf_dat = kmalloc(4904);
+    vfs_read(&node, elf_dat, 0, 4904);
+    vfs_close(&node);
+
+    proc_t* elfproc = mk_elf_proc(elf_dat);
+    sched_spawn_proc(elfproc);
     
     LOG("Jumping to multitasking...");
     sched_init();

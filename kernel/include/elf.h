@@ -50,7 +50,7 @@ typedef struct elf64_sym
 
 } elf64_sym_t;
 
-typedef struct elf64_program_hdr
+typedef struct elf64_phdr
 {
     uint32_t  type;
     uint64_t  offset;
@@ -61,7 +61,7 @@ typedef struct elf64_program_hdr
     uint32_t  flags;
     uint32_t  align;
 
-} elf64_program_hdr_t;
+} elf64_phdr_t;
 
 #define SHN_UNDEF (0x00)
 
@@ -130,13 +130,13 @@ typedef struct elf64_program_hdr
 #define STT_OBJECT      1
 #define STT_FUNC        2
 
-bool elf_check_file(elf64_hdr_t* hdr);
-bool elf_check_supported(elf64_hdr_t* hdr);
-void* elf_load_rel(elf64_hdr_t* hdr);
-void* elf_load_file(void* file);
-elf64_sect_hdr_t* elf_sect_hdr(elf64_hdr_t* hdr);
-elf64_sect_hdr_t* elf_section(elf64_hdr_t* hdr, uint32_t idx);
-char* elf_str_tbl(elf64_hdr_t* hdr);
-char* elf_lookup_str(elf64_hdr_t* hdr, uint32_t offset);
-int elf_load_stage1(elf64_hdr_t* hdr);
-int elf_load_stage2(elf64_hdr_t* hdr);
+// Program header types
+#define PT_NULL         0
+#define PT_LOAD         1
+#define PT_DYNAMIC      1
+#define PT_INTERP       1
+#define PT_NOTE         1
+#define PT_SHLIB        1
+#define PT_PHDR         1
+#define PT_TLS          1
+#define PT_NUM          1

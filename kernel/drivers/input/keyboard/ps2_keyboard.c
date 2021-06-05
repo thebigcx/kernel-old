@@ -47,7 +47,7 @@ bool kb_get_key(uint32_t* key)
     return true;
 }
 
-size_t kb_read(fs_file_t* file, void* ptr, size_t size)
+size_t kb_read(fs_node_t* file, void* ptr, size_t off, size_t size)
 {
     size_t i = 0;
     for (; i < size; i++)
@@ -59,7 +59,7 @@ size_t kb_read(fs_file_t* file, void* ptr, size_t size)
     return i;
 }
 
-size_t kb_write(fs_file_t* file, const void* ptr, size_t size)
+size_t kb_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
 {
     return 0;
 }

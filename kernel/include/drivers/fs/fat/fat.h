@@ -151,8 +151,8 @@ typedef struct fat_lfn_entry
 bool fat_is_fat(dev_t* dev);
 void fat_init(fat_vol_t* dri, dev_t* dev);
 
-size_t fat_fread(fs_file_t* file, void* ptr, size_t size);
-size_t fat_fwrite(fs_file_t* file, const void* ptr, size_t size);
+size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size);
+size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
 fs_node_t fat_find_file(fs_vol_t* dri, fs_node_t* dir, const char* name);
 
 // file.c

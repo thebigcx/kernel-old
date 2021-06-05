@@ -97,7 +97,7 @@ void* kmalloc(size_t n)
         if (curr->next == NULL) break;
         curr = curr->next;
     }
-
+    
     // Expand heap and re-run kmalloc()
     heap_expand(n);
     return kmalloc(n);
@@ -136,13 +136,13 @@ void heap_expand(size_t n)
     size_t pg_cnt = n / PAGE_SIZE;
     heap_block_t* new = (heap_block_t*)heap_end;
 
-    for (size_t i = 0; i < pg_cnt; i++)
+    /*for (size_t i = 0; i < pg_cnt; i++)
     {
         // Map the heap_end address to a new page
         page_kernel_map_memory(heap_end, page_request());
         memset(heap_end, 0, PAGE_SIZE);
         heap_end = (void*)((uint64_t)heap_end + PAGE_SIZE);
-    }
+    }*/
 
     new->free = true;
     new->prev = last_block;

@@ -16,27 +16,25 @@ void vfs_mk_dev_file(fs_node_t node, const char* path)
     dev_node_cnt++;
 }
 
-fs_file_t* vfs_open(fs_node_t* node)
+// Create an fs_file_t from node
+void vfs_open(fs_node_t* node)
 {
-    fs_file_t* file = kmalloc(sizeof(fs_file_t));
-    file->node = node;
-    file->pos = 0;
-    return file;
+    
 }
 
-void vfs_close(fs_file_t* file)
+void vfs_close(fs_node_t* file)
 {
-    kfree(file);
+
 }
 
-size_t vfs_read(fs_file_t* file, void* ptr, size_t size)
+size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)
 {
-    return file->node->read(file, ptr, size);
+    return file->read(file, ptr, off, size);
 }
 
-size_t vfs_write(fs_file_t* file, const void* ptr, size_t size)
+size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
 {
-    return file->node->write(file, ptr, size);
+    return file->write(file, ptr, off, size);
 }
 
 void strsplit(char** arr, const char* str, char c, uint32_t* cnt)

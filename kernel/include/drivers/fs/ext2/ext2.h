@@ -185,6 +185,21 @@ typedef struct ext2_dir_entry
 
 } __attribute__((packed)) ext2_dir_entry_t;
 
+typedef struct ext2_vol
+{
+    struct
+    {
+        ext2_superblock_t super;
+        ext2_superblock_t superext;
+    } __attribute__((packed));
+
+} ext2_vol_t;
+
+#define EXT2_SB_LBA 2
+
 // inode.c
 void ext2_write_inode(ext2_superblock_t* sb, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
 void ext2_write_superblock(ext2_superblock_t* block, dev_t* dev);
+
+// super.c
+void ext2_init(ext2_vol_t* vol, dev_t* dev);

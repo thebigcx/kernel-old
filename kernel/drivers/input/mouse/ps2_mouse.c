@@ -122,6 +122,11 @@ void mouse_init()
 
     mouse_write(0xf4);
     mouse_read();
+
+    fs_node_t node;
+    node.read = mouse_vfs_read;
+    node.write = mouse_vfs_write;
+    vfs_mk_dev_file(node, "/dev/mouse");
 }
 
 bool mouse_get_packet(mouse_packet_t* packet)
@@ -132,4 +137,21 @@ bool mouse_get_packet(mouse_packet_t* packet)
     *packet = mouse_queue.packets[mouse_queue.packet_end--];
 
     return true;
+}
+
+size_t mouse_vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)
+{
+    size_t i = 0;
+    for (; i < size; i++)
+    {
+        if (!mouse_get_packet(ptr++))
+            break;
+    }
+
+    return i;
+}
+
+size_t mouse_vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
+{
+    return 0;
 }

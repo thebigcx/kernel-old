@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <drivers/fs/vfs/vfs.h>
 
 #define MOUSE_BTN_LEFT  (1 << 0)
 #define MOUSE_BTN_RIGHT (1 << 1)
@@ -19,3 +20,6 @@ typedef struct mouse_packet
 void mouse_init();
 void mouse_map_int();
 bool mouse_get_packet(mouse_packet_t* packet);
+
+size_t mouse_vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size);
+size_t mouse_vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
