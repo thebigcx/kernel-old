@@ -34,6 +34,8 @@ void kb_init()
     fs_node_t node;
     node.read = kb_read;
     node.write = kb_write;
+    node.open = kb_open;
+    node.close = kb_close;
     vfs_mk_dev_file(node, "/dev/keyboard");
 }
 
@@ -62,4 +64,14 @@ size_t kb_read(fs_node_t* file, void* ptr, size_t off, size_t size)
 size_t kb_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
 {
     return 0;
+}
+
+int kb_open(fs_node_t* file)
+{
+    return 0;
+}
+
+void kb_close(fs_node_t* file)
+{
+
 }

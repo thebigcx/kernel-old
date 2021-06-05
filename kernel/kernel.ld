@@ -1,6 +1,8 @@
 OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_start)
 
+KERNEL_VIRT_BASE = 0xC0000000;
+
 SECTIONS
 {
     _KernelStart = .;

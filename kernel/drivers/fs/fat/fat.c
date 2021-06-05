@@ -17,7 +17,7 @@ bool fat_is_fat(dev_t* dev)
         if (clusters > 65525) return true;
     }
 
-    page_free(record);
+    kfree(record);
 
     return false;
 }
@@ -40,7 +40,7 @@ void fat_init(fat_vol_t* dri, dev_t* dev)
 
     dri->dev = dev;
 
-    page_free(record);
+    kfree(record);
 }
 
 size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size)
@@ -49,6 +49,16 @@ size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size)
 }
 
 size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)
+{
+
+}
+
+int fat_fopen(fs_node_t* file)
+{
+    return file->priv == NULL;
+}
+
+void fat_fclose(fs_node_t* file)
 {
 
 }
@@ -64,6 +74,8 @@ fs_node_t fat_find_file(fs_vol_t* dri, fs_node_t* dir, const char* name)
     node.priv = fatfile;
     node.read = fat_fread;
     node.write = fat_fwrite;
+    node.open = fat_fopen;
+    node.close = fat_fclose;
 
     return node;
 }

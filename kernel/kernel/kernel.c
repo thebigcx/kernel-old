@@ -62,6 +62,11 @@ static void init_paging(boot_info_t* inf)
         page_kernel_map_memory((void*)i, (void*)i);
     }
 
+    /*for (uint64_t i = kernel_start; i < kernel_pg_cnt; i++)
+    {
+        page_kernel_map_memory((void*)i + 0xC0000000, (void*)i);   
+    }*/
+
     uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
     page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
     for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
@@ -77,7 +82,7 @@ void kernel_proc()
     DONE();
 
     // TESTS
-    
+
     fs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
     vfs_open(&kb);
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
@@ -172,7 +177,7 @@ void _start(boot_info_t* inf)
     vfs_close(&node);
 
     proc_t* elfproc = mk_elf_proc(elf_dat);
-    sched_spawn_proc(elfproc);
+    //sched_spawn_proc(elfproc);
     
     LOG("Jumping to multitasking...");
     sched_init();

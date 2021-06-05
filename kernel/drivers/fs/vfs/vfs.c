@@ -16,15 +16,15 @@ void vfs_mk_dev_file(fs_node_t node, const char* path)
     dev_node_cnt++;
 }
 
-// Create an fs_file_t from node
-void vfs_open(fs_node_t* node)
+// Returns true if file doesn't exist, etc
+int vfs_open(fs_node_t* file)
 {
-    
+    return file->open(file);
 }
 
 void vfs_close(fs_node_t* file)
 {
-
+    file->close(file);
 }
 
 size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)

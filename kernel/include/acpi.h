@@ -52,4 +52,4 @@ typedef struct acpi_mcfg_hdr
 
 } __attribute__((packed)) acpi_mcfg_hdr_t;
 
-acpi_mcfg_hdr_t* acpi_find_facp(acpi_sdt_hdr_t* sdt);
+void* acpi_find_tbl(acpi_sdt_hdr_t* sdt, const char* tbl);

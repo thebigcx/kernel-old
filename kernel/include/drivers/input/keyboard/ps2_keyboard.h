@@ -98,6 +98,8 @@ enum KEYBOARD_LAYOUT
 
 size_t kb_read(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t kb_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
+int kb_open(fs_node_t* file);
+void kb_close(fs_node_t* file);
 
 bool kb_get_key(uint32_t* key);
 void kb_init();

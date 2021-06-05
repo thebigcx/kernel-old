@@ -14,8 +14,10 @@ typedef struct fs_node
 {
     void* priv;
 
+    int (*open)(struct fs_node* file);
     size_t (*read)(struct fs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct fs_node* file, const void* ptr, size_t off, size_t size);
+    void (*close)(struct fs_node* file);
 
 } fs_node_t;
 
@@ -53,10 +55,10 @@ int fs_get_type(dev_t* dev);
 mount_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt);
 
 // vfs.c
-void vfs_open(fs_node_t* node);
+int vfs_open(fs_node_t* node);
 size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(fs_node_t* file);
-int vfs_seek(fs_node_t* file, uint64_t off, int whence);
 fs_node_t vfs_resolve_path(const char* path, const char* working_dir);
 void vfs_mk_dev_file(fs_node_t node, const char* path);
+uint64_t vfs_get_size(fs_node_t* node);

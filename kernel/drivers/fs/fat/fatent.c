@@ -19,6 +19,8 @@ void* fat_read_cluster_chain(fat_vol_t* dri, uint32_t cluster, uint64_t* num_clu
 
         buf += 512;
     }
+
+    kfree(clusters);
     
     return _buf;
 }
@@ -67,6 +69,12 @@ void fat_get_lfn(fat_vol_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t 
     }
 
     dst[name_idx] = '\0';
+}
+
+uint32_t fat_find_free_clus(fat_vol_t* dri)
+{
+    uint32_t cchain = 0;
+
 }
 
 void fat_alloc_clusters(fat_vol_t* dri, int* clusters, int num_clusters)
