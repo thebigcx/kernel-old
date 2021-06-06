@@ -1,5 +1,6 @@
 #include <syscall.h>
 #include <console.h>
+#include <paging/paging.h>
 
 #define SYSCALL_CNT 100
 
@@ -33,6 +34,7 @@ syscall_t syscalls[SYSCALL_CNT] =
 
 void syscall_handler(reg_ctx_t* regs)
 {
-    console_write("Syscall!", 255, 255, 255);
-    uint64_t ret = syscalls[regs->rax](regs);
+    
+
+    regs->rax = syscalls[regs->rax](regs);
 }

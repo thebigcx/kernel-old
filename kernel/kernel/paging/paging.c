@@ -16,6 +16,10 @@ uint64_t reserved_memory;
 
 bitmap_t map;
 
+efi_memory_descriptor* boot_mem;
+uint64_t boot_map_size;
+uint64_t boot_desc_size;
+
 void set_page_frame(uint64_t* page, uint64_t addr)
 {
     *page = (*page & ~PAGE_FRAME) | (addr & PAGE_FRAME);
@@ -31,6 +35,10 @@ void* temp_kmalloc(size_t sz)
 
 void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size)
 {
+    boot_mem = mem;
+    boot_map_size = map_size;
+    boot_desc_size = desc_size;
+
     uint64_t entries = map_size / desc_size;
 
     void* largest_seg = NULL;
@@ -50,7 +58,7 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
         }
     }
 
-    uint64_t memory_size = get_memory_size(mem, entries, desc_size);
+    uint64_t memory_size = mem_get_sz();
     free_memory = memory_size;
     uint64_t buf_size = memory_size / PAGE_SIZE / 8 + 1;
 
@@ -240,6 +248,13 @@ pml4_t* page_mk_map()
 {
     pml4_t* pml4 = temp_kmalloc(PAGE_SIZE);
     memset(pml4, 0, PAGE_SIZE);
+
+    // Identity map all conventional memory
+    uint64_t mem_size = mem_get_sz();
+    for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
+    {
+        page_map_memory((void*)i, (void*)i, pml4);
+    }
 
     return pml4;
 }

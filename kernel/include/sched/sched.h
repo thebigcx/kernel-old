@@ -31,6 +31,7 @@ void schedule(reg_ctx_t* r);
 proc_t* mk_proc(void* entry);
 void sched_tick(reg_ctx_t* r);
 void sched_spawn_proc(proc_t* proc);
+void sched_kill_proc(proc_t* proc);
 
 // exec.c
 proc_t* mk_elf_proc(uint8_t* elf_dat);

@@ -57,7 +57,7 @@ static void init_paging(boot_info_t* inf)
 
     page_alloc_m(kernel_start, kernel_pg_cnt);
 
-    uint64_t mem_size = get_memory_size(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
+    uint64_t mem_size = mem_get_sz();
     for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
     {
         page_kernel_map_memory((void*)i, (void*)i);
@@ -70,7 +70,7 @@ static void init_paging(boot_info_t* inf)
         page_kernel_map_memory((void*)i, (void*)i);
     }
 
-    asm ("mov %0, %%cr3"::"r"(page_get_kpml4()));
+    asm volatile ("mov %0, %%cr3"::"r"(page_get_kpml4()));
 }
 
 void kernel_proc()
@@ -105,6 +105,8 @@ void kernel_proc()
 
 void _start(boot_info_t* inf)
 {
+    mem_boot_data(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
+
     vid_mode_t vidmode;
     vidmode.width = inf->pix_per_line;
     vidmode.height = inf->v_res;
@@ -165,6 +167,8 @@ void _start(boot_info_t* inf)
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
+    proc->addr_space = page_get_kpml4(); // Kernel process gets to use kernel pml4
+    
     sched_spawn_proc(proc);
     DONE();
 

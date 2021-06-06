@@ -18,4 +18,5 @@ enum
     CONVENTIONAL_MEMORY = 7
 };
 
-uint64_t get_memory_size(efi_memory_descriptor* mem, uint64_t map_entries, uint64_t desc_size);
+void mem_boot_data(efi_memory_descriptor* mem, uint64_t map_entries, uint64_t desc_size);
+uint64_t mem_get_sz();
