@@ -17,11 +17,12 @@
 #include <drivers/storage/ahci.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <sched/sched.h>
+#include <apic.h>
+#include <unistd.h>
+#include <syscall.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
-
-extern void jump_usermode();
 
 // Defined in linker
 extern uint64_t _KernelStart;
@@ -62,11 +63,6 @@ static void init_paging(boot_info_t* inf)
         page_kernel_map_memory((void*)i, (void*)i);
     }
 
-    /*for (uint64_t i = kernel_start; i < kernel_pg_cnt; i++)
-    {
-        page_kernel_map_memory((void*)i + 0xC0000000, (void*)i);   
-    }*/
-
     uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
     page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
     for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
@@ -87,6 +83,8 @@ void kernel_proc()
     vfs_open(&kb);
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
     vfs_open(&mouse);
+
+    fs_node_t* node = syscall(SYS_OPEN, "/system_folder/long_file_name.txt");
 
     for (;;)
     {
@@ -161,8 +159,9 @@ void _start(boot_info_t* inf)
 
     DONE();
 
-    outb(PIC1_DATA, 0xf8);
-    outb(PIC2_DATA, 0xef);
+    LOG("Initializing APIC...");
+    apic_init();
+    DONE();
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);

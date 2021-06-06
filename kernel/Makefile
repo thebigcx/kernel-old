@@ -10,9 +10,6 @@ kernel: $(TARGET)
 $(TARGET): $(OBJS)
 	ld $(LDFLAGS) -o $(TARGET) $(OBJS) -l:libc.a
 
-kernel/gdt/ints.o: kernel/gdt/ints.c
-	gcc -Iinclude -mno-red-zone -mgeneral-regs-only -ffreestanding -c -o $@ $<
-
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
 

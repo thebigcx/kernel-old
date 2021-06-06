@@ -38,6 +38,7 @@ proc_t* mk_proc(void* entry)
     proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_get_kpml4(); // TODO: use page_mk_map()
+    //proc->addr_space = page_mk_map();
     proc->pid = 0;
     proc->next = NULL;
 

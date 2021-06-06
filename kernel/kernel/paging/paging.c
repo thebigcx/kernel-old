@@ -16,21 +16,6 @@ uint64_t reserved_memory;
 
 bitmap_t map;
 
-bool init = false;
-
-void page_fault_handler(reg_ctx_t* r)
-{
-    console_write("Kernel panic:\n\nPage fault", 255, 0, 0);
-    for (;;);
-}
-
-// TODO: put this somewhere else
-void general_protection_fault_handler(reg_ctx_t* r)
-{
-    console_write("Kernel panic:\n\nGeneral protection fault", 255, 0, 0);
-    for (;;);
-}
-
 void set_page_frame(uint64_t* page, uint64_t addr)
 {
     *page = (*page & ~PAGE_FRAME) | (addr & PAGE_FRAME);
@@ -46,9 +31,6 @@ void* temp_kmalloc(size_t sz)
 
 void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size)
 {
-    if (init) return; // Only need to run once
-    init = true;
-
     uint64_t entries = map_size / desc_size;
 
     void* largest_seg = NULL;
@@ -98,9 +80,6 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     page_reserve_m(0, 0x100);
     page_alloc_m(map.buffer, map.size / PAGE_SIZE + 1);
-
-    idt_set_isr(13, general_protection_fault_handler);
-    idt_set_isr(14, page_fault_handler);
 }
 
 // Page map indexing function implementations
@@ -259,7 +238,7 @@ pml4_t* page_get_kpml4()
 
 pml4_t* page_mk_map()
 {
-    pml4_t* pml4 = page_request();
+    pml4_t* pml4 = temp_kmalloc(PAGE_SIZE);
     memset(pml4, 0, PAGE_SIZE);
 
     return pml4;

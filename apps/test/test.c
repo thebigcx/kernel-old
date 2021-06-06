@@ -1,4 +1,5 @@
 void _start()
 {
-    asm volatile ("hlt");
+    //asm volatile ("hlt");
+    for (;;);
 }

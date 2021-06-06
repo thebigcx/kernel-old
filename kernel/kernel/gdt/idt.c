@@ -36,6 +36,7 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void isr0x80();
 
 extern void irq0();
 extern void irq1();
@@ -56,13 +57,16 @@ extern void irq15();
 
 void(*int_handlers[256])(reg_ctx_t* r);
 
-static void set_handler(idt_entry_t* entry, void* fn)
+static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t type, uint8_t dpl)
 {
     entry->off_lowbits  = (uint16_t)(((uint64_t)fn & 0x000000000000ffff));
     entry->off_midbits  = (uint16_t)(((uint64_t)fn & 0x00000000ffff0000) >> 16);
     entry->off_highbits = (uint32_t)(((uint64_t)fn & 0xffffffff00000000) >> 32);
-    entry->select = 0x08;
-    entry->type_attr = IDT_TA_INTERRUPT_GATE;
+    entry->select = select;
+    entry->present = true;
+    entry->stor = IDT_STOR;
+    entry->dpl = dpl;
+    entry->type = type;
 }
 
 idt_entry_t* idt;
@@ -72,55 +76,56 @@ void idt_load()
     idt = kmalloc(sizeof(idt_entry_t) * 256);
     memset(idt, 0, sizeof(idt_entry_t) * 256);
 
-    set_handler(&idt[0x0], isr0);
-    set_handler(&idt[0x1], isr1);
-    set_handler(&idt[0x2], isr2);
-    set_handler(&idt[0x3], isr3);
-    set_handler(&idt[0x4], isr4);
-    set_handler(&idt[0x5], isr5);
-    set_handler(&idt[0x6], isr6);
-    set_handler(&idt[0x7], isr7);
-    set_handler(&idt[0x8], isr8);
-    set_handler(&idt[0x9], isr9);
-    set_handler(&idt[0xa], isr10);
-    set_handler(&idt[0xb], isr11);
-    set_handler(&idt[0xc], isr12);
-    set_handler(&idt[0xd], isr13);
-    set_handler(&idt[0xe], isr14);
-    set_handler(&idt[0xf], isr15);
-    set_handler(&idt[0x10], isr16);
-    set_handler(&idt[0x11], isr17);
-    set_handler(&idt[0x12], isr18);
-    set_handler(&idt[0x13], isr19);
-    set_handler(&idt[0x14], isr20);
-    set_handler(&idt[0x15], isr21);
-    set_handler(&idt[0x16], isr22);
-    set_handler(&idt[0x17], isr23);
-    set_handler(&idt[0x18], isr24);
-    set_handler(&idt[0x19], isr25);
-    set_handler(&idt[0x1a], isr26);
-    set_handler(&idt[0x1b], isr27);
-    set_handler(&idt[0x1c], isr28);
-    set_handler(&idt[0x1d], isr29);
-    set_handler(&idt[0x1e], isr30);
-    set_handler(&idt[0x1f], isr31);
+    set_handler(&idt[0x0], isr0, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1], isr1, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2], isr2, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x3], isr3, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x4], isr4, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x5], isr5, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x6], isr6, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x7], isr7, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x8], isr8, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x9], isr9, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xa], isr10, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xb], isr11, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xc], isr12, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xd], isr13, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xe], isr14, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xf], isr15, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x10], isr16, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x11], isr17, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x12], isr18, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x13], isr19, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x14], isr20, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x15], isr21, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x16], isr22, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x17], isr23, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x18], isr24, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x19], isr25, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1a], isr26, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1b], isr27, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1c], isr28, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1d], isr29, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1e], isr30, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x1f], isr31, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x80], isr0x80, 0x08, IDT_TYPE_INT, IDT_USER); // syscall
 
-    set_handler(&idt[0x20], irq0);
-    set_handler(&idt[0x21], irq1);
-    set_handler(&idt[0x22], irq2);
-    set_handler(&idt[0x23], irq3);
-    set_handler(&idt[0x24], irq4);
-    set_handler(&idt[0x25], irq5);
-    set_handler(&idt[0x26], irq6);
-    set_handler(&idt[0x27], irq7);
-    set_handler(&idt[0x28], irq8);
-    set_handler(&idt[0x29], irq9);
-    set_handler(&idt[0x2a], irq10);
-    set_handler(&idt[0x2b], irq11);
-    set_handler(&idt[0x2c], irq12);
-    set_handler(&idt[0x2d], irq13);
-    set_handler(&idt[0x2e], irq14);
-    set_handler(&idt[0x2f], irq15);
+    set_handler(&idt[0x20], irq0, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x21], irq1, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x22], irq2, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x23], irq3, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x24], irq4, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x25], irq5, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x26], irq6, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x27], irq7, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x28], irq8, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x29], irq9, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2a], irq10, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2b], irq11, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2c], irq12, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2d], irq13, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2e], irq14, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0x2f], irq15, 0x08, IDT_TYPE_INT, IDT_KERNEL);
 
     idt_record_t idtr;
     idtr.limit = 256 * sizeof(idt_entry_t) - 1;
@@ -128,11 +133,6 @@ void idt_load()
 
     asm ("lidt %0" :: "m"(idtr));
 
-    uint8_t a1, a2;
-    a1 = inb(PIC1_DATA);
-    a2 = inb(PIC2_DATA);
-
-    // Remap PIC
     outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
     outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
     outb(PIC1_DATA, 0x20);
@@ -141,8 +141,8 @@ void idt_load()
     outb(PIC2_DATA, 0x02);
     outb(PIC1_DATA, ICW4_8086);
     outb(PIC2_DATA, ICW4_8086);
-    outb(PIC1_DATA, a1);
-    outb(PIC2_DATA, a2);
+    outb(PIC1_DATA, 0x0);
+    outb(PIC2_DATA, 0x0);
 }
 
 void idt_set_irq(uint32_t id, void(*handler)(reg_ctx_t* r))
@@ -163,6 +163,32 @@ void irq_handler(uint64_t num, reg_ctx_t* r)
 
 void isr_handler(uint64_t num, reg_ctx_t* r)
 {
-    if (int_handlers[num])
-        int_handlers[num](r);
+    if (num == 0) panic("Divide by zero error");
+    else if (num == 4) panic("Overflow error");
+    else if (num == 6) panic("Invalid opcode");
+    else if (num == 7) panic("Device not available");
+    else if (num == 8) panic("Double fault");
+    else if (num == 9) panic("Coprocessor segment overrun");
+    else if (num == 10) panic("Invalid TSS");
+    else if (num == 11) panic("Segment not present");
+    else if (num == 12) panic("Stack-segment fault");
+    else if (num == 13) panic("General protection fault");
+    else if (num == 14) panic("Page fault");
+    else if (num == 16) panic("FPU error");
+    else if (num == 19) panic("Floating-point exception");
+    else panic("An error with unknown error code has occurred.");
+}
+
+void idt_disable_pic()
+{
+    outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
+    outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
+    outb(PIC1_DATA, 0xf0);
+    outb(PIC2_DATA, 0xf0);
+    outb(PIC1_DATA, 0x04);
+    outb(PIC2_DATA, 0x02);
+    outb(PIC1_DATA, ICW4_8086);
+    outb(PIC2_DATA, ICW4_8086);
+    outb(PIC1_DATA, 0xff);
+    outb(PIC2_DATA, 0xff);
 }
