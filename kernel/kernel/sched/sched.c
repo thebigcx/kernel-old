@@ -58,7 +58,6 @@ proc_t* mk_proc(void* entry)
 
 void sched_tick(reg_ctx_t* r)
 {
-    outb(PIC1_COMMAND, PIC_EOI);
     schedule(r);
 }
 

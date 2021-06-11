@@ -24,7 +24,8 @@ void pit_init(uint64_t frequency)
     outb(PIT_CHANNEL0, div & 0xff);
     outb(PIT_CHANNEL0, div >> 8);
 
-    idt_set_irq(0, pit_int_handler);
+    idt_set_int(32, pit_int_handler);
+    apicio_map_irq(0);
 }
 
 time_t pit_boot_time()

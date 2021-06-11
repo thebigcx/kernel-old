@@ -53,6 +53,5 @@ extern void(*isrs[16])();
 extern void(*irqs[16])();
 
 void idt_load();
-void idt_set_irq(uint32_t id, void(*handler)());
-void idt_set_isr(uint32_t id, void(*handler)());
+void idt_set_int(uint32_t id, void(*handler)());
 void idt_disable_pic();

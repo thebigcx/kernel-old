@@ -89,14 +89,12 @@ void mouse_handler(reg_ctx_t* r)
             cycle = 0;
             break;
     }
-
-    outb(PIC2_COMMAND, PIC_EOI);
-    outb(PIC1_COMMAND, PIC_EOI);
 }
 
 void mouse_map_int()
 {
-    idt_set_irq(12, mouse_handler);
+    idt_set_int(44, mouse_handler);
+    apicio_map_irq(12);
 }
 
 void mouse_init()

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <paging/paging.h>
 #include <system.h>
+#include <apic.h>
 
 extern void isr0();
 extern void isr1();
@@ -145,18 +146,16 @@ void idt_load()
     outb(PIC2_DATA, 0x0);
 }
 
-void idt_set_irq(uint32_t id, void(*handler)(reg_ctx_t* r))
-{
-    int_handlers[id + 32] = handler;
-}
-
-void idt_set_isr(uint32_t id, void(*handler)(reg_ctx_t* r))
+void idt_set_int(uint32_t id, void(*handler)(reg_ctx_t* r))
 {
     int_handlers[id] = handler;
 }
 
 void irq_handler(uint64_t num, reg_ctx_t* r)
 {
+    apicloc_eoi();
+    //outb(PIC1_COMMAND, PIC_EOI);
+
     if (int_handlers[num])
         int_handlers[num](r);
 }

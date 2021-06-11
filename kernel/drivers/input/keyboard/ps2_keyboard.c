@@ -21,13 +21,12 @@ void kb_interrupt_handler(reg_ctx_t* r)
         return;
 
     key_queue.keys[++key_queue.queue_end] = (uint32_t)scan_code;
-
-    outb(PIC1_COMMAND, PIC_EOI);
 }
 
 void kb_init()
 {
-    idt_set_irq(1, kb_interrupt_handler);
+    idt_set_int(33, kb_interrupt_handler);
+    apicio_map_irq(1);
 
     key_queue.queue_end = -1;
 

@@ -43,7 +43,7 @@ typedef struct
 
     psf1_font* font;
 
-    acpi_rsdt2_t* rsdp;
+    acpi_rsdp_t* rsdp;
 } boot_info_t;
 
 static void init_paging(boot_info_t* inf)
@@ -142,6 +142,10 @@ void _start(boot_info_t* inf)
     DONE();
     LOG("Loading IDT...");
     idt_load();
+    DONE();
+
+    LOG("Initializing ACPI...");
+    acpi_init(inf->rsdp->xsdt_addr);
     DONE();
 
     mouse_init();
