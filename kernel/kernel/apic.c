@@ -31,7 +31,7 @@ void apicloc_set_base(uint64_t val)
 void apicloc_init()
 {
     apicloc_base = apicloc_read_base();
-    page_kernel_map_memory(apicloc_base, apicloc_base);
+    page_kernel_map_memory((void*)apicloc_base, (void*)apicloc_base);
 
     idt_set_int(0xff, spur_int);
 

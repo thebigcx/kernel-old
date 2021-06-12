@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <paging/paging.h>
 #include <mem/heap.h>
+#include <string.h>
 // TEMP
 #include <console.h>
 
@@ -41,7 +42,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
 
         if (phdr.type == PT_LOAD)
         {
-            exec_base = kmalloc(phdr.mem_sz);
+            exec_base = (uint64_t)kmalloc(phdr.mem_sz);
 
             memcpy((void*)(exec_base + phdr.vaddr), elf_dat + phdr.offset, phdr.file_sz);
         }
@@ -50,7 +51,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     //char buffer[100];
     //console_write(itoa(*(uint8_t*)(exec_base), buffer, 16), 255, 0, 0);
     //while (1);
-    proc_t* proc = mk_proc(hdr.entry + exec_base);
+    proc_t* proc = mk_proc((void*)(hdr.entry + exec_base));
     //proc->addr_space = page_mk_map();
     return proc;
 }

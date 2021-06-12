@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <io.h>
 #include <system.h>
+#include <apic.h>
 
 #define KEY_QUEUE_SIZE 512
 

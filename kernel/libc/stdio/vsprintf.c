@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
 
 int vsprintf(char* str, const char* format, va_list list)
 {
@@ -28,7 +30,7 @@ int vsprintf(char* str, const char* format, va_list list)
                     itoa(va_arg(list, int), buffer, 10);
                     len = strlen(buffer);
 
-                    for (int j = 0; j < len; j++)
+                    for (size_t j = 0; j < len; j++)
                         str[stridx++] = buffer[j];
 
                     break;
@@ -36,7 +38,7 @@ int vsprintf(char* str, const char* format, va_list list)
                     arg = va_arg(list, const char*);
                     len = strlen(arg);
 
-                    for (int i = 0; i < len; i++)
+                    for (size_t i = 0; i < len; i++)
                         str[stridx++] = arg[i];
                     
                     break;

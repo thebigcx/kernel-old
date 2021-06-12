@@ -85,9 +85,16 @@ void kernel_proc()
     vfs_open(&mouse);
 
     fs_node_t* node = syscall(SYS_OPEN, "/system_folder/long_file_name.txt");
+    
 
     for (;;)
     {
+        for (int i = 0; i < 100; i++)
+        for (int j = 0; j < 100; j++)
+        {
+            video_putpix(i, j, 255, 0, 0);
+        }
+
         mouse_packet_t pack;
         if (vfs_read(&mouse, &pack, 0, 1))
         {
@@ -145,7 +152,7 @@ void _start(boot_info_t* inf)
     DONE();
 
     LOG("Initializing ACPI...");
-    acpi_init(inf->rsdp->xsdt_addr);
+    //acpi_init(inf->rsdp->xsdt_addr);
     DONE();
 
     mouse_init();
@@ -166,7 +173,7 @@ void _start(boot_info_t* inf)
     DONE();
 
     LOG("Initializing APIC...");
-    apic_init();
+    //apic_init();
     DONE();
     
     LOG("Creating kernel process...");

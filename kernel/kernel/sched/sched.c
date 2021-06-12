@@ -8,6 +8,7 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <stdint.h>
 #include <string.h>
+#include <mem/heap.h>
 
 proc_t* ready_lst_start;
 proc_t* ready_lst_end;
@@ -29,7 +30,7 @@ void schedule(reg_ctx_t* r)
         proc_t* task = ready_lst_start;
         ready_lst_start = task->next;
         last_proc = task;
-        task_switch(&(task->regs), task->addr_space);
+        task_switch(&(task->regs), (uint64_t)task->addr_space);
     }
 }
 
@@ -37,7 +38,6 @@ proc_t* mk_proc(void* entry)
 {
     proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
-    //proc->addr_space = page_get_kpml4(); // TODO: use page_mk_map()
     proc->addr_space = page_mk_map();
     proc->pid = 0;
     proc->next = NULL;
@@ -46,7 +46,7 @@ proc_t* mk_proc(void* entry)
     memset(stack, 0, 1000);
 
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
-    proc->regs.rip = entry;
+    proc->regs.rip = (uint64_t)entry;
     proc->regs.rflags = 0x202;
     proc->regs.cs = KERNEL_CS;
     proc->regs.ss = KERNEL_SS;

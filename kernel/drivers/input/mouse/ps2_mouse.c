@@ -3,6 +3,7 @@
 #include <gdt/idt.h>
 #include <stdio.h>
 #include <system.h>
+#include <apic.h>
 
 int8_t mouse_data[3];
 uint8_t cycle = 0;

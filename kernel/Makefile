@@ -3,7 +3,7 @@ ASM := $(shell find ./ -type f -name '*.s')
 OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.s, %.o, $(ASM))
 TARGET := kernel.elf
 LDFLAGS := -Tkernel.ld -static -Bsymbolic -nostdlib -Llibc
-CFLAGS := -ffreestanding -fshort-wchar -mno-red-zone -Wall -Wextra -O2 -nostdinc -Ilibc/include -Iinclude
+CFLAGS := -ffreestanding -fshort-wchar -fno-stack-protector -mno-red-zone -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -O2 -nostdinc -Ilibc/include -Iinclude
 
 kernel: $(TARGET)
 

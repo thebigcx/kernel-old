@@ -5,6 +5,11 @@
 vid_mode_t vidmode;
 psf1_font* font;
 
+static uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b)
+{
+    return r << 16 | g << 8 | b;
+}
+
 void video_init(vid_mode_t mode)
 {
     vidmode = mode;
@@ -15,9 +20,9 @@ void video_set_fnt(psf1_font* fnt)
     font = fnt;
 }
 
-vid_mode_t video_get_mode()
+const vid_mode_t* video_get_mode()
 {
-    return vidmode;
+    return &vidmode;
 }
 
 void video_putchar(char c, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b)
@@ -49,7 +54,7 @@ void video_puts(const char* str, uint32_t x, uint32_t y, uint8_t r, uint8_t g, u
     }
 }
 
-uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b)
+void video_putpix(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b)
 {
-    return r << 16 | g << 8 | b;
+    *((uint32_t*)vidmode.fb + x + (y * vidmode.width)) = rgbtopix(r, g, b);
 }

@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
 void printf(const char* format, ...)
 {
@@ -7,6 +9,6 @@ void printf(const char* format, ...)
     va_start(list, format);
     char* str = malloc(strlen(format));
     vsprintf(str, format, list);
-    puts(str); // TODO: output stream files
+    // TODO: write to /dev/stdout
     free(str);
 }

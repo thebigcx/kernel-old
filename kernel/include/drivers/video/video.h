@@ -29,7 +29,8 @@ typedef struct
 
 void video_init(vid_mode_t mode);
 void video_set_fnt(psf1_font* fnt);
-vid_mode_t video_get_mode();
+const vid_mode_t* video_get_mode();
+
 void video_putchar(char c, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
 void video_puts(const char* str, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
-uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b);
+void video_putpix(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);

@@ -2,6 +2,7 @@
 #include <paging/paging.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <mem/heap.h>
 
 bool fat_is_fat(dev_t* dev)
 {
@@ -45,7 +46,7 @@ void fat_init(fat_vol_t* dri, dev_t* dev)
 
 size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size)
 {
-    fat_file_read((fat_node_t*)file->priv, size, off, ptr);
+    return fat_file_read((fat_node_t*)file->priv, size, off, ptr);
 }
 
 size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)

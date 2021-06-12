@@ -4,6 +4,7 @@
 #include <paging/paging.h>
 #include <system.h>
 #include <apic.h>
+#include <mem/heap.h>
 
 extern void isr0();
 extern void isr1();
@@ -153,8 +154,9 @@ void idt_set_int(uint32_t id, void(*handler)(reg_ctx_t* r))
 
 void irq_handler(uint64_t num, reg_ctx_t* r)
 {
-    apicloc_eoi();
-    //outb(PIC1_COMMAND, PIC_EOI);
+    //apicloc_eoi();
+    outb(PIC1_COMMAND, PIC_EOI);
+    outb(PIC2_COMMAND, PIC_EOI);
 
     if (int_handlers[num])
         int_handlers[num](r);

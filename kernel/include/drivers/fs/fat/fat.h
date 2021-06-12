@@ -159,8 +159,8 @@ fs_node_t fat_find_file(fs_vol_t* dri, fs_node_t* dir, const char* name);
 
 // file.c
 fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name);
-void fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer);
-void fat_file_write(fat_node_t* file, size_t size, size_t off, void* buffer);
+size_t fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer);
+size_t fat_file_write(fat_node_t* file, size_t size, size_t off, void* buffer);
 void fat_write_cluster(fat_vol_t* dri, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c

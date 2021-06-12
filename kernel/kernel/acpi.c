@@ -3,6 +3,7 @@
 #include <string.h>
 #include <console.h>
 #include <apic.h>
+#include <paging/paging.h>
 
 acpi_rsdt_t* rsdt;
 acpi_xsdt_t* xsdt;

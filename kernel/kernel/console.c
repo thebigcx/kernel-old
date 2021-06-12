@@ -15,14 +15,16 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 
     video_putchar(c, curs_x * 8, curs_y * 16, r, g, b);
 
+    const vid_mode_t* mode = video_get_mode();
+
     curs_x++;
-    if (curs_x * 8 >= video_get_mode().width)
+    if (curs_x * 8 >= mode->width)
     {
         curs_x = 0;
         curs_y++;
     }
 
-    if (curs_y * 16 >= video_get_mode().height)
+    if (curs_y * 16 >= mode->height)
         curs_y = 0;
 }
 

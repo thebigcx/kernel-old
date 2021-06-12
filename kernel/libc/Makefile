@@ -1,7 +1,7 @@
 SOURCES := $(shell find ./ -type f -name '*.c')
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 TARGET := libc.a
-CFLAGS := -ffreestanding -O2 -Wall -Wextra -nostdinc -Iinclude
+CFLAGS := -ffreestanding -fno-stack-protector -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -nostdinc -Iinclude
 
 all: $(TARGET)
 

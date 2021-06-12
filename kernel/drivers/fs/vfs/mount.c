@@ -1,6 +1,8 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <drivers/fs/fat/fat.h>
+#include <mem/heap.h>
 #include <stdlib.h>
+#include <string.h>
 
 mount_t* root_mnt_pt;
 mount_lst_t fs_mnts;

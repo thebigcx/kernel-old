@@ -7,6 +7,8 @@
 #include <paging/paging.h>
 #include <string.h>
 #include <stdio.h>
+#include <mem/heap.h>
+#include <console.h>
 
 hba_memory_t* abar;
 ahci_portlist_t ahci_portlist;

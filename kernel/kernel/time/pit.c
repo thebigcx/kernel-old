@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <io.h>
 #include <sched/sched.h>
+#include <apic.h>
 
 uint64_t ticks;
 uint64_t freq;

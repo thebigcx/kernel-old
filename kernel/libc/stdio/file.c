@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-extern FILE* vfs_open(const char* path);
+/*extern FILE* vfs_open(const char* path);
 
 FILE* fopen(const char* path, const char* mode)
 {
@@ -26,4 +26,4 @@ extern FILE* vfs_write(const void* ptr, size_t size, FILE* stream);
 size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
     return vfs_write(ptr, size * nmemb, stream);
-}
+}*/

@@ -1,5 +1,6 @@
 #include <system.h>
 #include <stdio.h>
+#include <console.h>
 
 void panic(const char* msg)
 {
