@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <drivers/storage/dev.h>
+#include <dev.h>
 
 #define FS_TYPE_FAT32 0
 
@@ -12,7 +12,7 @@
 
 typedef struct fs_node
 {
-    void* priv;
+    void* derived;
 
     int (*open)(struct fs_node* file);
     size_t (*read)(struct fs_node* file, void* ptr, size_t off, size_t size);
@@ -23,36 +23,37 @@ typedef struct fs_node
 
 typedef struct fs_vol
 {
-    fs_node_t (*find_file)(struct fs_vol* dri, fs_node_t* dir, const char* name);
+    fs_node_t (*find_file)(struct fs_vol* vol, fs_node_t* dir, const char* name);
     
     int type;
-    void* priv;
+    void* derived;
+    char* mnt_pt;
 
 } fs_vol_t;
 
-typedef struct mount
+/*typedef struct mount
 {
     dev_t* dev;
-    fs_vol_t fs_dri;
+    fs_vol_t vol;
     char* mnt_pt;
 
-} mount_t;
+} mount_t;*/
 
 #define MOUNT_LST_MAX 100
 
 typedef struct mount_lst
 {
-    mount_t* mnts[MOUNT_LST_MAX];
+    fs_vol_t* mnts[MOUNT_LST_MAX];
     uint32_t cnt;
 
 } mount_lst_t;
 
-extern mount_t* root_mnt_pt;
+extern fs_vol_t* root_vol;
 extern mount_lst_t fs_mnts;
 
 // mount.c
 int fs_get_type(dev_t* dev);
-mount_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt);
+fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt);
 
 // vfs.c
 int vfs_open(fs_node_t* node);

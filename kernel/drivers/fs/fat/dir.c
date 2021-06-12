@@ -7,7 +7,7 @@ void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
 {
     uint64_t numclus = 0;
 
-    fat_dir_entry_t* dirs = fat_read_cluster_chain(node->dri, node->cluster, &numclus);
+    fat_dir_entry_t* dirs = fat_read_cluster_chain(node->vol, node->cluster, &numclus);
 
     fat_lfn_entry_t** lfn_entries = kmalloc(sizeof(fat_lfn_entry_t*) * 10);
     uint32_t lfn_cnt = 0;
@@ -36,7 +36,7 @@ void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
         {
             if (lfn_cnt)
             {
-                fat_get_lfn(node->dri, files[*cnt].name, lfn_entries, lfn_cnt);
+                fat_get_lfn(node->vol, files[*cnt].name, lfn_entries, lfn_cnt);
             }
             else
             {
@@ -49,7 +49,7 @@ void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
             files[*cnt].file_len = dirs[i].file_sz;
 
             files[*cnt].flags = dirs[i].attr & FAT_ATTR_DIR ? FAT_DIRECTORY : FAT_FILE;
-            files[*cnt].dri = node->dri;
+            files[*cnt].vol = node->vol;
             
             (*cnt)++;
         }

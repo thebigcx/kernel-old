@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <mem/heap.h>
 
-uint64_t fat_cluster_to_lba(fat_vol_t* dri, uint32_t cluster)
+uint64_t fat_cluster_to_lba(fat_vol_t* vol, uint32_t cluster)
 {
-    return dri->mnt_inf.first_clus + cluster * dri->mnt_inf.sects_per_clus - (2 * dri->mnt_inf.sects_per_clus);
+    return vol->mnt_inf.first_clus + cluster * vol->mnt_inf.sects_per_clus - (2 * vol->mnt_inf.sects_per_clus);
 }
 
-void* fat_read_cluster_chain(fat_vol_t* dri, uint32_t cluster, uint64_t* num_clus)
+void* fat_read_cluster_chain(fat_vol_t* vol, uint32_t cluster, uint64_t* num_clus)
 {
-    uint32_t* clusters = fat_get_cluster_chain(dri, cluster, num_clus);
+    uint32_t* clusters = fat_get_cluster_chain(vol, cluster, num_clus);
 
     uint8_t* buf = kmalloc(*num_clus * 512);
     uint8_t* _buf = buf;
 
     for (uint32_t i = 0; i < *num_clus; i++)
     {
-        dri->dev->read(dri->dev, fat_cluster_to_lba(dri, clusters[i]), 1, buf);
+        vol->dev->read(vol->dev, fat_cluster_to_lba(vol, clusters[i]), 1, buf);
 
         buf += 512;
     }
@@ -26,7 +26,7 @@ void* fat_read_cluster_chain(fat_vol_t* dri, uint32_t cluster, uint64_t* num_clu
     return _buf;
 }
 
-uint32_t* fat_get_cluster_chain(fat_vol_t* dri, uint32_t first_cluster, uint64_t* num_clus)
+uint32_t* fat_get_cluster_chain(fat_vol_t* vol, uint32_t first_cluster, uint64_t* num_clus)
 {
     uint32_t clus = first_cluster;
     uint32_t cchain = 0;
@@ -36,10 +36,10 @@ uint32_t* fat_get_cluster_chain(fat_vol_t* dri, uint32_t first_cluster, uint64_t
 
     do
     {
-        uint32_t fat_sector = dri->mnt_inf.res_sects + (clus * 4) / 512;
+        uint32_t fat_sector = vol->mnt_inf.res_sects + (clus * 4) / 512;
         uint32_t fat_off = (clus * 4) % 512;
 
-        dri->dev->read(dri->dev, fat_sector, 1, buf);
+        vol->dev->read(vol->dev, fat_sector, 1, buf);
         
         cchain = *((uint32_t*)&buf[fat_off]) & 0x0fffffff;
 
@@ -53,7 +53,7 @@ uint32_t* fat_get_cluster_chain(fat_vol_t* dri, uint32_t first_cluster, uint64_t
     return ret;
 }
 
-void fat_get_lfn(fat_vol_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt)
+void fat_get_lfn(fat_vol_t* vol, char* dst, fat_lfn_entry_t** entries, uint32_t cnt)
 {
     uint32_t name_idx = 0;
 
@@ -72,13 +72,13 @@ void fat_get_lfn(fat_vol_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t 
     dst[name_idx] = '\0';
 }
 
-uint32_t fat_find_free_clus(fat_vol_t* dri)
+uint32_t fat_find_free_clus(fat_vol_t* vol)
 {
     uint32_t cchain = 0;
 
 }
 
-void fat_alloc_clusters(fat_vol_t* dri, int* clusters, int num_clusters)
+void fat_alloc_clusters(fat_vol_t* vol, int* clusters, int num_clusters)
 {
     
 }

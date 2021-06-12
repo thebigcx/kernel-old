@@ -112,11 +112,11 @@ fs_node_t vfs_resolve_path(const char* path, const char* working_dir)
     {
         if (i == 0)
         {
-            node = root_mnt_pt->fs_dri.find_file(&root_mnt_pt->fs_dri, NULL, parts[i]);
+            node = root_vol->find_file(root_vol, NULL, parts[i]);
             continue;
         }
 
-        node = root_mnt_pt->fs_dri.find_file(&root_mnt_pt->fs_dri, &node, parts[i]);
+        node = root_vol->find_file(root_vol, &node, parts[i]);
     }
 
     for (int i = 0; i < 10; i++)

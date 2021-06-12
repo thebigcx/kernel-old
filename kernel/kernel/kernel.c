@@ -20,6 +20,8 @@
 #include <apic.h>
 #include <unistd.h>
 #include <syscall.h>
+#include <console.h>
+#include <rand.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -84,9 +86,6 @@ void kernel_proc()
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
     vfs_open(&mouse);
 
-    fs_node_t* node = syscall(SYS_OPEN, "/system_folder/long_file_name.txt");
-    
-
     for (;;)
     {
         for (int i = 0; i < 100; i++)
@@ -137,6 +136,14 @@ void _start(boot_info_t* inf)
     heap_init();
     DONE();
 
+    LOG("Initializing device files...");
+    dev_init();
+    DONE();
+
+    LOG("Initializing random number generator...");
+    rand_seed(305640980);
+    DONE();
+
     LOG("Initializing keyboard...");
     kb_init();
     DONE();
@@ -152,7 +159,7 @@ void _start(boot_info_t* inf)
     DONE();
 
     LOG("Initializing ACPI...");
-    //acpi_init(inf->rsdp->xsdt_addr);
+    acpi_init(inf->rsdp);
     DONE();
 
     mouse_init();
@@ -168,7 +175,7 @@ void _start(boot_info_t* inf)
     LOG("Mounting root directory...");
 
     dev_t dev = ahci_get_dev(0);
-    root_mnt_pt = fs_mnt_dev(&dev, "/");
+    root_vol = fs_mnt_dev(&dev, "/");
 
     DONE();
 

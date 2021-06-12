@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <drivers/storage/ahci.h>
 
+// Derived from fs_node_t
 typedef struct dev
 {
     int (*read)(struct dev* dev, uint64_t offset, uint32_t len, void* buffer);
@@ -11,9 +12,12 @@ typedef struct dev
 
 } dev_t;
 
-// Derived class data of dev_t
-typedef struct disk_dev
+// Derived from dev_t
+typedef struct dskdev
 {
     ahci_port_t* port;
 
-} disk_dev_t;
+} dskdev_t;
+
+// Initialize device files
+void dev_init();

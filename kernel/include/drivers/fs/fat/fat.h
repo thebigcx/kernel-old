@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <drivers/storage/dev.h>
+#include <dev.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <stddef.h>
 
@@ -130,7 +130,7 @@ typedef struct fat_node
     uint32_t flags;
     uint32_t file_len;
     uint32_t cluster;
-    fat_vol_t* dri;
+    fat_vol_t* vol;
 
 } fat_node_t;
 
@@ -149,26 +149,26 @@ typedef struct fat_lfn_entry
 
 // fat.c
 bool fat_is_fat(dev_t* dev);
-void fat_init(fat_vol_t* dri, dev_t* dev);
+void fat_init(fat_vol_t* vol, dev_t* dev);
 
 int fat_fopen(fs_node_t* file);
 void fat_fclose(fs_node_t* file);
 size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
-fs_node_t fat_find_file(fs_vol_t* dri, fs_node_t* dir, const char* name);
+fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
 
 // file.c
-fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name);
+fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name);
 size_t fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer);
 size_t fat_file_write(fat_node_t* file, size_t size, size_t off, void* buffer);
-void fat_write_cluster(fat_vol_t* dri, void* buf, uint32_t size, uint32_t cluster);
+void fat_write_cluster(fat_vol_t* vol, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c
 void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt);
 
 // fatent.c
-uint64_t fat_cluster_to_lba(fat_vol_t* dri, uint32_t cluster);
-uint32_t* fat_get_cluster_chain(fat_vol_t* dri, uint32_t first_cluster, uint64_t* num_clus);
-void* fat_read_cluster_chain(fat_vol_t* dri, uint32_t cluster, uint64_t* num_clus);
-void fat_get_lfn(fat_vol_t* dri, char* dst, fat_lfn_entry_t** entries, uint32_t cnt);
-void fat_alloc_clusters(fat_vol_t* dri, int* clusters, int num_clusters);
+uint64_t fat_cluster_to_lba(fat_vol_t* vol, uint32_t cluster);
+uint32_t* fat_get_cluster_chain(fat_vol_t* vol, uint32_t first_cluster, uint64_t* num_clus);
+void* fat_read_cluster_chain(fat_vol_t* vol, uint32_t cluster, uint64_t* num_clus);
+void fat_get_lfn(fat_vol_t* vol, char* dst, fat_lfn_entry_t** entries, uint32_t cnt);
+void fat_alloc_clusters(fat_vol_t* vol, int* clusters, int num_clusters);

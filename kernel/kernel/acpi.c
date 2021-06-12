@@ -7,28 +7,26 @@
 
 acpi_rsdt_t* rsdt;
 acpi_xsdt_t* xsdt;
+acpi_rsdp_t* desc;
 
-void acpi_init(acpi_xsdt_t* xsdt_hdr)
+void acpi_init(acpi_rsdp_t* rsdp)
 {
-    xsdt = xsdt_hdr;
+    desc = rsdp;
+    xsdt = rsdp->xsdt_addr;
+    rsdt = rsdp->rsdt_addr;
+
     acpi_read_madt();
 }
 
 void* acpi_find_tbl(const char* tbl)
 {
-    uint32_t entries = (xsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / 8;
+    uint32_t entries = (xsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / sizeof(uint64_t);
 
     for (uint32_t i = 0; i < entries; i++)
     {
         acpi_sdt_hdr_t* hdr = (acpi_sdt_hdr_t*)xsdt->sdts[i];
+
         page_kernel_map_memory(hdr, hdr);
-        
-        for (int j = 0; j < 4; j++)
-        {
-            console_putchar(hdr->sig[j], 255, 255, 255);
-        }
-        
-        console_putchar('\n', 255, 255, 255);
         
         if (!strncmp((char*)hdr->sig, tbl, 4))
             return hdr;
@@ -66,5 +64,7 @@ void acpi_read_madt()
             }
             break;
         }
+
+        madt_ent += ent->len;
     }
 }

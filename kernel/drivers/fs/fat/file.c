@@ -3,7 +3,7 @@
 #include <mem/heap.h>
 #include <console.h>
 
-fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name)
+fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 {
     fat_node_t file;
 
@@ -15,10 +15,10 @@ fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name)
     }
 
     // Look in root directory if dir is null
-    uint32_t cluster = dir != NULL ? dir->cluster : dri->mnt_inf.root_offset;
+    uint32_t cluster = dir != NULL ? dir->cluster : vol->mnt_inf.root_offset;
 
     uint64_t num_clusters = 0;
-    fat_dir_entry_t* dirs = fat_read_cluster_chain(dri, cluster, &num_clusters);
+    fat_dir_entry_t* dirs = fat_read_cluster_chain(vol, cluster, &num_clusters);
 
     fat_lfn_entry_t** lfn_entries = kmalloc(sizeof(fat_lfn_entry_t*) * 10);
     uint32_t lfn_cnt = 0;
@@ -49,7 +49,7 @@ fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name)
 
             if (lfn_cnt)
             {
-                fat_get_lfn(dri, _name, lfn_entries, lfn_cnt);
+                fat_get_lfn(vol, _name, lfn_entries, lfn_cnt);
             }
             else
             {
@@ -69,7 +69,7 @@ fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name)
                     file.flags = FAT_FILE;
 
                 file.file_len = dirs[i].file_sz;
-                file.dri = dri;
+                file.vol = vol;
 
                 kfree(lfn_entries);
                 return file;
@@ -87,7 +87,7 @@ fat_node_t fat_get_file(fat_vol_t* dri, fat_node_t* dir, const char* name)
 size_t fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
-    void* buf = fat_read_cluster_chain(file->dri, file->cluster, &cnt);
+    void* buf = fat_read_cluster_chain(file->vol, file->cluster, &cnt);
 
     memcpy(buffer, buf + off, size);
 
@@ -97,15 +97,15 @@ size_t fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer)
 size_t fat_file_write(fat_node_t* file, size_t size, size_t off, void* buffer)
 {
     uint64_t cnt = 0;
-    uint32_t* buf = fat_get_cluster_chain(file->dri, file->cluster, &cnt);
+    uint32_t* buf = fat_get_cluster_chain(file->vol, file->cluster, &cnt);
 
     return 1;
 }
 
-void fat_write_cluster(fat_vol_t* dri, void* buf, uint32_t size, uint32_t cluster)
+void fat_write_cluster(fat_vol_t* vol, void* buf, uint32_t size, uint32_t cluster)
 {
     uint64_t cnt = 0;
-    uint32_t* chain = fat_get_cluster_chain(dri, cluster, &cnt);
+    uint32_t* chain = fat_get_cluster_chain(vol, cluster, &cnt);
 
-    dri->dev->write(dri->dev, fat_cluster_to_lba(dri, chain[0]), 1, buf);
+    vol->dev->write(vol->dev, fat_cluster_to_lba(vol, chain[0]), 1, buf);
 }

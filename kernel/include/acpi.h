@@ -33,13 +33,14 @@ typedef struct acpi_sdt_hdr
 typedef struct acpi_rsdt
 {
     acpi_sdt_hdr_t hdr;
+    uint32_t* sdts;
 
 } __attribute__((packed)) acpi_rsdt_t;
 
 typedef struct acpi_xsdt
 {
     acpi_sdt_hdr_t hdr;
-    uint64_t* sdts;
+    uint64_t sdts[100];
 
 } __attribute__((packed)) acpi_xsdt_t;
 
@@ -58,6 +59,85 @@ typedef struct acpi_madt_ent
 
 } __attribute__((packed)) acpi_madt_ent_t;
 
+typedef struct gen_addr
+{
+    uint8_t addr_space;
+    uint8_t bit_width;
+    uint8_t bit_off;
+    uint8_t acc_size;
+    uint64_t addr;
+
+} __attribute__((packed)) gen_addr_t;
+
+typedef struct acpi_fadt
+{
+    acpi_sdt_hdr_t hdr;
+
+    uint32_t    firmware_ctrl;
+    uint32_t    dsdt;
+ 
+    // field used in ACPI 1.0; no longer in use, for compatibility only
+    uint8_t     res;
+ 
+    uint8_t     pref_pm_prof;
+    uint16_t    sci_int;
+    uint32_t    smi_cmd_port;
+    uint8_t     acpi_enable;
+    uint8_t     acpi_disable;
+    uint8_t     s4bios_req;
+    uint8_t     pstate_ctrl;
+    uint32_t    pm1a_evt_blk;
+    uint32_t    pm1b_evt_blk;
+    uint32_t    pm1a_ctrl_blk;
+    uint32_t    pm1b_ctrl_blk;
+    uint32_t    pm2_ctrl_blk;
+    uint32_t    pm_time_blk;
+    uint32_t    gpe0_blk;
+    uint32_t    gpe1_blk;
+    uint8_t     pm1_evt_len;
+    uint8_t     pm1_ctrl_len;
+    uint8_t     pm2_ctrl_len;
+    uint8_t     pm_time_len;
+    uint8_t     gpe0_len;
+    uint8_t     gpe1_len;
+    uint8_t     gpe1_base;
+    uint8_t     cstate_ctrl;
+    uint16_t    worst_c2_lat;
+    uint16_t    worst_c3_lat;
+    uint16_t    flush_size;
+    uint16_t    flush_stride;
+    uint8_t     duty_off;
+    uint8_t     duty_width;
+    uint8_t     day_alrm;
+    uint8_t     month_alrm;
+    uint8_t     cent;
+ 
+    // reserved in ACPI 1.0; used since ACPI 2.0+
+    uint16_t    boot_arch_flags;
+ 
+    uint8_t     res2;
+    uint32_t    flags;
+
+    gen_addr_t  reset_reg;
+ 
+    uint8_t     reset_val;
+    uint8_t     res3[3];
+ 
+    // 64-bit pointers - available on ACPI 2.0+
+    uint64_t    x_fw_ctrl;
+    uint64_t    x_dsdt;
+ 
+    gen_addr_t  x_pm1a_evt_blk;
+    gen_addr_t  x_pm1abevt_blk;
+    gen_addr_t  x_pm1a_ctrl_blk;
+    gen_addr_t  x_pm1b_ctrl_blk;
+    gen_addr_t  x_pm2_ctrl_blk;
+    gen_addr_t  x_pm_time_blk;
+    gen_addr_t  x_gpe0_blk;
+    gen_addr_t  x_gpe1_blk;
+
+} __attribute__((packed)) acpi_fadt_t;
+
 #define ACPI_MADT_TYPE_APICLOC          0
 #define ACPI_MADT_TYPE_APICIO           1
 #define ACPI_MADT_TYPE_APICIO_ISO       2
@@ -75,7 +155,7 @@ typedef struct acpi_mcfg_hdr
 
 typedef struct apicio
 {
-    acpi_madt_ent_t* ent;
+    acpi_madt_ent_t ent;
     uint8_t apicid;
     uint8_t res;
     uint32_t addr;
@@ -83,6 +163,6 @@ typedef struct apicio
 
 } __attribute__((packed)) apicio_t;
 
-void acpi_init(acpi_xsdt_t* xsdt_hdr);
+void acpi_init(acpi_rsdp_t* rsdp);
 void* acpi_find_tbl(const char* tbl);
 void acpi_read_madt();

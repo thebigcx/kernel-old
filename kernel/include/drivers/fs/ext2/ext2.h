@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <drivers/storage/dev.h>
+#include <dev.h>
 #include <stdarg.h>
 
 #define EXT2_SUPERBLOCK_LOC 1024
