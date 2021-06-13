@@ -36,3 +36,12 @@ void console_write(const char* str, uint8_t r, uint8_t g, uint8_t b)
         str++;
     }
 }
+
+void console_clear()
+{
+    const vid_mode_t* mode = video_get_mode();
+    memset(mode->fb, 0, mode->width * mode->height * (mode->depth / 8));
+
+    curs_x = 0;
+    curs_y = 0;
+}

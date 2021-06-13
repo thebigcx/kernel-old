@@ -11,7 +11,7 @@ uint64_t freq;
 void pit_int_handler(reg_ctx_t* r)
 {
     ticks++;
-
+    
     sched_tick(r);
 }
 

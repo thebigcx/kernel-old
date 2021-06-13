@@ -97,8 +97,9 @@ void kernel_proc()
     vfs_open(&mouse);
 
     fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
-    vfs_open(&test);
+    
     char buffer[100];
+    
     vfs_read(&test, buffer, 0, 100);
     vfs_close(&test);
 

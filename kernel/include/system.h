@@ -27,4 +27,4 @@ typedef struct reg_ctx
 
 } reg_ctx_t;
 
-void panic(const char* msg);
+void panic(const char* msg, reg_ctx_t* regs);

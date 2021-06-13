@@ -170,20 +170,20 @@ void irq_handler(uint64_t num, reg_ctx_t* r)
 
 void isr_handler(uint64_t num, reg_ctx_t* r)
 {
-    if (num == 0) panic("Divide by zero error");
-    else if (num == 4) panic("Overflow error");
-    else if (num == 6) panic("Invalid opcode");
-    else if (num == 7) panic("Device not available");
-    else if (num == 8) panic("Double fault");
-    else if (num == 9) panic("Coprocessor segment overrun");
-    else if (num == 10) panic("Invalid TSS");
-    else if (num == 11) panic("Segment not present");
-    else if (num == 12) panic("Stack-segment fault");
-    else if (num == 13) panic("General protection fault");
-    else if (num == 14) panic("Page fault");
-    else if (num == 16) panic("FPU error");
-    else if (num == 19) panic("Floating-point exception");
-    else panic("An error with unknown error code has occurred.");
+    if (num == 0) panic("Divide by zero error", r);
+    else if (num == 4) panic("Overflow error", r);
+    else if (num == 6) panic("Invalid opcode", r);
+    else if (num == 7) panic("Device not available", r);
+    else if (num == 8) panic("Double fault", r);
+    else if (num == 9) panic("Coprocessor segment overrun", r);
+    else if (num == 10) panic("Invalid TSS", r);
+    else if (num == 11) panic("Segment not present", r);
+    else if (num == 12) panic("Stack-segment fault", r);
+    else if (num == 13) panic("General protection fault", r);
+    else if (num == 14) panic("Page fault", r);
+    else if (num == 16) panic("FPU error", r);
+    else if (num == 19) panic("Floating-point exception", r);
+    else panic("An error with unknown error code has occurred.", r);
 }
 
 void idt_disable_pic()

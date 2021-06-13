@@ -122,5 +122,7 @@ fs_node_t vfs_resolve_path(const char* path, const char* working_dir)
     for (int i = 0; i < 10; i++)
         kfree(parts[i]);
 
+        
+
     return node;
 }
