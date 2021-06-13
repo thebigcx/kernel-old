@@ -8,12 +8,15 @@
 acpi_rsdt_t* rsdt;
 acpi_xsdt_t* xsdt;
 acpi_rsdp_t* desc;
+iso_lst_t acpi_isos;
 
 void acpi_init(acpi_rsdp_t* rsdp)
 {
     desc = rsdp;
     xsdt = rsdp->xsdt_addr;
     rsdt = rsdp->rsdt_addr;
+
+    acpi_isos.cnt = 0;
 
     acpi_read_madt();
 }
@@ -55,6 +58,12 @@ void acpi_read_madt()
 
         switch (ent->type)
         {
+            case ACPI_MADT_TYPE_APICLOC:
+            {
+                
+            }
+            break;
+
             case ACPI_MADT_TYPE_APICIO:
             {
                 apicio_t* apicio = (apicio_t*)ent;
@@ -63,6 +72,29 @@ void acpi_read_madt()
                     apicio_set_base(apicio->addr);
             }
             break;
+
+            case ACPI_MADT_TYPE_APICIO_ISO:
+            {
+                apic_iso_t* iso = (apic_iso_t*)ent;
+                acpi_isos.data[acpi_isos.cnt++] = iso;
+            }
+            break;
+
+            case ACPI_MADT_TYPE_APICLOC_NONMASK:
+            {
+
+            }
+            break;
+
+            case ACPI_MADT_TYPE_APICLOC_ADDR:
+            {
+
+            }
+            break;
+
+            default:
+                console_write("[ACPI] Invalid MADT entry", 255, 0, 0);
+                break;
         }
 
         madt_ent += ent->len;

@@ -77,6 +77,16 @@ static void init_paging(boot_info_t* inf)
 
 void kernel_proc()
 {
+    DONE(); // "Jumping to multitasking..."
+
+    LOG("Initializing keyboard...");
+    kb_init();
+    DONE();
+    LOG("Initializing mouse...");
+    mouse_init();
+    DONE();
+    LOG("Initializing random number generator...");
+    rand_seed(305640980);
     DONE();
 
     // TESTS
@@ -86,12 +96,26 @@ void kernel_proc()
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
     vfs_open(&mouse);
 
+    fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    vfs_open(&test);
+    char buffer[100];
+    vfs_read(&test, buffer, 0, 100);
+    vfs_close(&test);
+
+    for (int i = 0; i < 100; i++)
+    {
+        console_putchar(buffer[i], 255, 255, 255);
+    }
+
+    float x = 0;
     for (;;)
     {
+        x += 0.1;
+
         for (int i = 0; i < 100; i++)
         for (int j = 0; j < 100; j++)
         {
-            video_putpix(i, j, 255, 0, 0);
+            video_putpix(i + x, j, 255, 0, 0);
         }
 
         mouse_packet_t pack;
@@ -140,20 +164,10 @@ void _start(boot_info_t* inf)
     dev_init();
     DONE();
 
-    LOG("Initializing random number generator...");
-    rand_seed(305640980);
-    DONE();
-
-    LOG("Initializing keyboard...");
-    kb_init();
-    DONE();
     LOG("Initializing PIT...");
     pit_init(1600);
     DONE();
 
-    LOG("Initializing mouse...");
-    mouse_map_int();
-    DONE();
     LOG("Loading IDT...");
     idt_load();
     DONE();
@@ -161,8 +175,6 @@ void _start(boot_info_t* inf)
     LOG("Initializing ACPI...");
     acpi_init(inf->rsdp);
     DONE();
-
-    mouse_init();
 
     LOG("Enumerating PCI devices...");
     pci_enumerate();
@@ -172,33 +184,22 @@ void _start(boot_info_t* inf)
     ahci_init(&pci_devices);
     DONE();
 
-    LOG("Mounting root directory...");
+    LOG("Mounting root directory (disk 0)...");
 
     dev_t dev = ahci_get_dev(0);
-    root_vol = fs_mnt_dev(&dev, "/");
+    root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
 
     DONE();
 
     LOG("Initializing APIC...");
-    //apic_init();
+    apic_init();
     DONE();
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
     proc->addr_space = page_get_kpml4(); // Kernel process gets to use kernel pml4
-    
     sched_spawn_proc(proc);
     DONE();
-
-    // TEST
-    fs_node_t node = vfs_resolve_path("/system_folder/executable.elf", NULL);
-    vfs_open(&node);
-    uint8_t* elf_dat = kmalloc(4904);
-    vfs_read(&node, elf_dat, 0, 4904);
-    vfs_close(&node);
-
-    proc_t* elfproc = mk_elf_proc(elf_dat);
-    //sched_spawn_proc(elfproc);
     
     LOG("Jumping to multitasking...");
     sched_init();

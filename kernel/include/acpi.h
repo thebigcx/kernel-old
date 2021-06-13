@@ -163,6 +163,25 @@ typedef struct apicio
 
 } __attribute__((packed)) apicio_t;
 
+typedef struct apic_iso
+{
+    acpi_madt_ent_t ent;
+    uint8_t bus_src;
+    uint8_t irq_src;
+    uint32_t gsi;
+    uint16_t flags;
+
+} __attribute__((packed)) apic_iso_t;
+
+typedef struct iso_lst
+{
+    apic_iso_t* data[200];
+    uint32_t cnt;
+
+} iso_lst_t;
+
+extern iso_lst_t acpi_isos;
+
 void acpi_init(acpi_rsdp_t* rsdp);
 void* acpi_find_tbl(const char* tbl);
 void acpi_read_madt();

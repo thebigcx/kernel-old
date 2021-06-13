@@ -46,7 +46,7 @@ void ahci_probe_ports()
     ahci_portlist.count = 0;
 
     uint32_t ports_impl = abar->ports_impl;
-    for (uint32_t i = 0; i < 32; i++) // TEMP: 1 port implemented
+    for (uint32_t i = 0; i < 32; i++)
     {
         if (ports_impl & (1 << i))
         {
@@ -147,7 +147,7 @@ static int32_t find_cmd_slot(hba_port_t* port)
         slots >>= 1;
     }
 
-    console_write("[ERROR] AHCI : Could not find free command list entry.\n", 255, 0, 0);
+    console_write("[AHCI] Could not find free command list entry\n", 255, 0, 0);
     return -1;
 }
 
@@ -222,7 +222,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     }
     if (spin == 1000000)
     {
-        console_write("[ERROR] AHCI : Port has hung.\n", 255, 0, 0);
+        console_write("[AHCI] Port has hung\n", 255, 0, 0);
         return false;
     }
 
@@ -235,7 +235,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
             break;
         if (port->int_stat & HBA_PXIS_TFES) // Task file error
         {
-            console_write("[ERROR] AHCI : Read disk error.\n", 255, 0, 0);
+            console_write("[AHCI] Read disk error\n", 255, 0, 0);
             return false;
         }
     }
@@ -243,7 +243,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     // Check again
     if (port->int_stat & HBA_PXIS_TFES)
     {
-        console_write("[ERROR] AHCI : Read disk error.\n", 255, 0, 0);
+        console_write("[AHCI] Read disk error\n", 255, 0, 0);
         return false;
     }
 
@@ -262,6 +262,11 @@ int ahci_storage_dev_write(dev_t* dev, uint64_t offset, uint32_t len, void* buff
 
 dev_t ahci_get_dev(int idx)
 {
+    if (idx >= ahci_portlist.count)
+    {
+        console_write("[AHCI] Invalid AHCI port\n", 255, 0, 0);
+    }
+
     dev_t dev;
     dev.read = ahci_storage_dev_read;
     dev.write = ahci_storage_dev_write;

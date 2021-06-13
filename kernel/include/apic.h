@@ -35,6 +35,9 @@
 
 #define APICIO_REGSEL   0x0
 #define APICIO_WIN      0x10
+#define APICIO_ID       0x0
+#define APICIO_VERS     0x1
+#define APICIO_ARB      0x2
 
 #define APICIO_RED_TBL_ENT(x) (0x10 + 2 * x)
 

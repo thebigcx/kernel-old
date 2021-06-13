@@ -92,12 +92,6 @@ void mouse_handler(reg_ctx_t* r)
     }
 }
 
-void mouse_map_int()
-{
-    idt_set_int(44, mouse_handler);
-    apicio_map_irq(12);
-}
-
 void mouse_init()
 {
     mouse_queue.packet_end = -1;
@@ -121,6 +115,9 @@ void mouse_init()
 
     mouse_write(0xf4);
     mouse_read();
+
+    idt_set_int(44, mouse_handler);
+    apicio_map_irq(12);
 
     fs_node_t node;
     node.read = mouse_vfs_read;

@@ -2,28 +2,31 @@
 
 #include <stdint.h>
 
-#define IDT_PRESENT     (1 << 7)
-#define IDT_KERNEL      (0)
-#define IDT_USER        (3)
-#define IDT_STOR        (0)
-#define IDT_TYPE_TASK   (0x5)
-#define IDT_TYPE_INT    (0xe)
-#define IDT_TYPE_TRAP   (0xf)
+#define IDT_PRESENT             (1 << 7)
+#define IDT_KERNEL              (0)
+#define IDT_USER                (3)
+#define IDT_STOR                (0)
+#define IDT_TYPE_TASK           (0x5)
+#define IDT_TYPE_INT            (0xe)
+#define IDT_TYPE_TRAP           (0xf)
 
 #define IDT_TA_INT_GATE         0x8e
 #define IDT_TA_CALL_GATE        0x8c
 #define IDT_TA_TRAP_GATE        0x8f
 #define IDT_TA_USER_INT_GATE    0xee
 
-#define PIC1_COMMAND 0x20
-#define PIC1_DATA    0x21
-#define PIC2_COMMAND 0xA0
-#define PIC2_DATA    0xA1
-#define PIC_EOI      0x20
+#define PIC1_COMMAND            0x20
+#define PIC1_DATA               0x21
+#define PIC2_COMMAND            0xA0
+#define PIC2_DATA               0xA1
+#define PIC_EOI                 0x20
 
-#define ICW1_INIT    0x10
-#define ICW1_ICW4    0x01
-#define ICW4_8086    0x01
+#define ICW1_INIT               0x10
+#define ICW1_ICW4               0x01
+#define ICW4_8086               0x01
+
+#define IPI_HALT                0xfe
+#define IPI_SCHED               0xfd
 
 typedef struct idt_entry
 {

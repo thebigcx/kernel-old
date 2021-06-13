@@ -18,7 +18,6 @@ typedef struct mouse_packet
 } mouse_packet_t;
 
 void mouse_init();
-void mouse_map_int();
 bool mouse_get_packet(mouse_packet_t* packet);
 
 size_t mouse_vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size);

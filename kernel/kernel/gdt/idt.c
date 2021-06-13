@@ -71,6 +71,12 @@ static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t t
     entry->type = type;
 }
 
+void ipi_halt(reg_ctx_t* regs)
+{
+    asm ("cli");
+    asm ("hlt");
+}
+
 idt_entry_t* idt;
 
 void idt_load()
@@ -145,6 +151,8 @@ void idt_load()
     outb(PIC2_DATA, ICW4_8086);
     outb(PIC1_DATA, 0x0);
     outb(PIC2_DATA, 0x0);
+
+    idt_set_int(IPI_HALT, ipi_halt);
 }
 
 void idt_set_int(uint32_t id, void(*handler)(reg_ctx_t* r))
@@ -154,9 +162,7 @@ void idt_set_int(uint32_t id, void(*handler)(reg_ctx_t* r))
 
 void irq_handler(uint64_t num, reg_ctx_t* r)
 {
-    //apicloc_eoi();
-    outb(PIC1_COMMAND, PIC_EOI);
-    outb(PIC2_COMMAND, PIC_EOI);
+    apicloc_eoi();
 
     if (int_handlers[num])
         int_handlers[num](r);

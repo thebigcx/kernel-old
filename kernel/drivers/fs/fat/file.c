@@ -9,7 +9,7 @@ fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 
     if (dir != NULL && dir->flags != FAT_DIRECTORY)
     {
-        console_write("[FAT] Error: cannot list contents of file (not a directory).\n", 255, 0, 0);
+        console_write("[FAT32] Cannot list contents (not a directory)\n", 255, 0, 0);
         file.flags = FAT_INVALID;
         return file;
     }
@@ -79,7 +79,7 @@ fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 
     kfree(lfn_entries);
     
-    console_write("[FAT] Error: could not find file in directory.\n", 255, 0, 0);
+    console_write("[FAT32] Could not find file in directory\n", 255, 0, 0);
     file.flags = FAT_INVALID;
     return file;
 }

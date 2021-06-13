@@ -16,6 +16,12 @@ void* fat_read_cluster_chain(fat_vol_t* vol, uint32_t cluster, uint64_t* num_clu
 
     for (uint32_t i = 0; i < *num_clus; i++)
     {
+        /*if (!vol->dev->read(vol->dev, fat_cluster_to_lba(vol, clusters[i]), 1, buf))
+        {
+            console_write("[FAT32] Device failed to read sector\n", 255, 0, 0);
+            kfree(clusters);
+            return _buf;
+        }*/
         vol->dev->read(vol->dev, fat_cluster_to_lba(vol, clusters[i]), 1, buf);
 
         buf += 512;
@@ -39,6 +45,12 @@ uint32_t* fat_get_cluster_chain(fat_vol_t* vol, uint32_t first_cluster, uint64_t
         uint32_t fat_sector = vol->mnt_inf.res_sects + (clus * 4) / 512;
         uint32_t fat_off = (clus * 4) % 512;
 
+        /*if (!vol->dev->read(vol->dev, fat_sector, 1, buf))
+        {
+            console_write("[FAT32] Device failed to read sector\n", 255, 0, 0);
+            kfree(buf);
+            return ret;
+        }*/
         vol->dev->read(vol->dev, fat_sector, 1, buf);
         
         cchain = *((uint32_t*)&buf[fat_off]) & 0x0fffffff;

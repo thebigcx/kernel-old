@@ -3,8 +3,10 @@
 #include <cpuid.h>
 #include <console.h>
 #include <paging/paging.h>
+#include <acpi.h>
 
 uint64_t apicloc_base;
+volatile uint64_t apicloc_vbase;
 
 // Spurious interrupt handler
 void spur_int()
@@ -17,7 +19,7 @@ uint64_t apicloc_read_base()
     uint64_t low, high;
     asm ("rdmsr" : "=a"(low), "=d"(high) : "c"(0x1b));
 
-    return ((high << 32) | low) & APIC_LOC_BASE;
+    return ((high << 32) | low);
 }
 
 void apicloc_set_base(uint64_t val)
@@ -30,23 +32,25 @@ void apicloc_set_base(uint64_t val)
 
 void apicloc_init()
 {
-    apicloc_base = apicloc_read_base();
-    page_kernel_map_memory((void*)apicloc_base, (void*)apicloc_base);
+    apicloc_base = apicloc_read_base() & APIC_LOC_BASE;
+    apicloc_vbase = page_request();
+
+    page_kernel_map_memory((void*)apicloc_vbase, (void*)apicloc_base);
 
     idt_set_int(0xff, spur_int);
 
-    apicloc_set_base(apicloc_read_base());
+    apicloc_set_base(apicloc_read_base() | (1ul << 11));
     apicloc_write(APIC_LOC_SIVR, apicloc_read(APIC_LOC_SIVR) | 0x1ff);
 }
 
 void apicloc_write(uint32_t off, uint32_t val)
 {
-    *((volatile uint32_t*)(apicloc_base + off)) = val;
+    *((volatile uint32_t*)(apicloc_vbase + off)) = val;
 }
 
 uint32_t apicloc_read(uint32_t off)
 {
-    return *((volatile uint32_t*)(apicloc_base + off));
+    return *((volatile uint32_t*)(apicloc_vbase + off));
 }
 
 void apicloc_eoi()
@@ -55,13 +59,29 @@ void apicloc_eoi()
 }
 
 uint64_t apicio_base;
-uint32_t* regsel;
-uint32_t* io_win;
+uint64_t apicio_vbase; // Virtual base
+volatile uint32_t* regsel;
+volatile uint32_t* io_win;
+
+uint32_t apic_ints;
+uint32_t apic_id;
 
 void apicio_init()
 {
-    regsel = (uint32_t*)(apicio_base + APICIO_REGSEL);
-    io_win = (uint32_t*)(apicio_base + APICIO_WIN);
+    apicio_vbase = page_request();
+    page_kernel_map_memory(apicio_vbase, apicio_base);
+
+    regsel = (uint32_t*)(apicio_vbase + APICIO_REGSEL);
+    io_win = (uint32_t*)(apicio_vbase + APICIO_WIN);
+
+    apic_ints = apicio_read32(APICIO_VERS) >> 16;
+    apic_id = apicio_read32(APICIO_ID) >> 24;
+
+    for (uint32_t i = 0; i < acpi_isos.cnt; i++)
+    {
+        apic_iso_t* iso = acpi_isos.data[i];
+        apicio_redirect(iso->gsi, iso->irq_src + 32, ICR_MSG_TYPE_LOW_PRIORITY);
+    }
 }
 
 void apicio_set_base(uint64_t base)
@@ -81,7 +101,8 @@ void apicio_redirect(uint8_t irq, uint8_t vec, uint32_t delivery)
 
 uint32_t apicio_read32(uint32_t reg)
 {
-
+    *regsel = reg;
+    return *io_win;
 }
 
 uint64_t apicio_read64(uint32_t reg)
@@ -114,12 +135,12 @@ void apic_init()
         return;
     }
 
-    asm ("cli");
+    //asm ("cli");
 
     idt_disable_pic();
 
     apicloc_init();
     apicio_init();
 
-    asm ("sti");
+    //asm ("sti");
 }
