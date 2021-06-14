@@ -1,6 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <types.h>
 #include <drivers/video/video.h>
 #include <paging/paging.h>
 #include <mem/mem.h>
@@ -18,7 +16,6 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <sched/sched.h>
 #include <apic.h>
-#include <unistd.h>
 #include <syscall.h>
 #include <console.h>
 #include <rand.h>

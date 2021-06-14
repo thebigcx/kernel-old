@@ -1,4 +1,5 @@
 #include <console.h>
+#include <stdlib.h>
 #include <drivers/video/video.h>
 
 uint32_t curs_x = 0;
@@ -44,4 +45,13 @@ void console_clear()
 
     curs_x = 0;
     curs_y = 0;
+}
+
+void console_printf(const char* format, uint8_t r, uint8_t g, uint8_t b, ...)
+{
+    va_list list;
+    va_start(list, b);
+    char str[4096];
+    vsnprintf(str, format, list);
+    console_write(str, r, g, b);
 }

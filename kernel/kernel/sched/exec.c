@@ -1,10 +1,8 @@
 #include <sched/sched.h>
 #include <elf.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include <paging/paging.h>
 #include <mem/heap.h>
-#include <string.h>
+#include <stdlib.h>
 // TEMP
 #include <console.h>
 

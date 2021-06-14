@@ -1,5 +1,5 @@
 #include <drivers/fs/fat/fat.h>
-#include <stdlib.h>
+
 #include <mem/heap.h>
 
 uint64_t fat_cluster_to_lba(fat_vol_t* vol, uint32_t cluster)

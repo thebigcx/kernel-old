@@ -1,5 +1,5 @@
 #include <drivers/fs/fat/fat.h>
-#include <string.h>
+#include <stdlib.h>
 #include <mem/heap.h>
 #include <console.h>
 
@@ -9,7 +9,7 @@ fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 
     if (dir != NULL && dir->flags != FAT_DIRECTORY)
     {
-        console_write("[FAT32] Cannot list contents (not a directory)\n", 255, 0, 0);
+        console_printf("[FAT32] Cannot list contents of \"%s\" (not a directory)", 255, 0, 0, dir->name);
         file.flags = FAT_INVALID;
         return file;
     }
@@ -79,7 +79,7 @@ fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 
     kfree(lfn_entries);
     
-    console_write("[FAT32] Could not find file in directory\n", 255, 0, 0);
+    console_printf("[FAT32] Could not find file \"%s\" in directory \"%s\"\n", 255, 0, 0, name, dir->name);
     file.flags = FAT_INVALID;
     return file;
 }

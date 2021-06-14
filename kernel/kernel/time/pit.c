@@ -1,6 +1,6 @@
 #include <time/time.h>
 #include <gdt/idt.h>
-#include <stdio.h>
+
 #include <io.h>
 #include <sched/sched.h>
 #include <apic.h>

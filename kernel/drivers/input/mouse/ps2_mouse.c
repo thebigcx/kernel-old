@@ -1,7 +1,7 @@
 #include <drivers/input/mouse/ps2_mouse.h>
 #include <io.h>
 #include <gdt/idt.h>
-#include <stdio.h>
+
 #include <system.h>
 #include <apic.h>
 

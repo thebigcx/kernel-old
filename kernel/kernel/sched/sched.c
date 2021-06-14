@@ -1,13 +1,12 @@
 #include <sched/sched.h>
-#include <stddef.h>
 #include <paging/paging.h>
 #include <gdt/idt.h>
 #include <drivers/input/keyboard/ps2_keyboard.h>
 #include <drivers/input/mouse/ps2_mouse.h>
 #include <elf.h>
 #include <drivers/fs/vfs/vfs.h>
-#include <stdint.h>
-#include <string.h>
+#include <types.h>
+#include <stdlib.h>
 #include <mem/heap.h>
 
 proc_t* ready_lst_start;

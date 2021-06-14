@@ -1,6 +1,6 @@
 #include <gdt/idt.h>
 #include <io.h>
-#include <string.h>
+#include <stdlib.h>
 #include <paging/paging.h>
 #include <system.h>
 #include <apic.h>

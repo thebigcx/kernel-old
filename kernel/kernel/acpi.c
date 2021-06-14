@@ -1,6 +1,5 @@
 #include <acpi.h>
-#include <stddef.h>
-#include <string.h>
+#include <stdlib.h>
 #include <console.h>
 #include <apic.h>
 #include <paging/paging.h>
@@ -44,7 +43,7 @@ void acpi_read_madt()
 
     if (!madt)
     {
-        console_write("[ACPI] Could not find MADT", 255, 0, 0);
+        console_write("[ACPI] Could not find MADT\n", 255, 0, 0);
         return;
     }
 
@@ -93,7 +92,7 @@ void acpi_read_madt()
             break;
 
             default:
-                console_write("[ACPI] Invalid MADT entry", 255, 0, 0);
+                console_printf("[ACPI] Invalid MADT entry %d\n", 255, 0, 0, ent->type);
                 break;
         }
 

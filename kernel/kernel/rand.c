@@ -1,5 +1,5 @@
 #include <rand.h>
-#include <math.h>
+#include <types.h>
 
 static uint64_t next = 1;
 

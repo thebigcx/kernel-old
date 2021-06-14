@@ -36,13 +36,9 @@ $(FATTARGET): $(EFITARGET)
 
 $(EFITARGET):
 	@echo ""
-	@echo "<========= Compiling libc =========>"
+	@echo "<========= Compiling libraries ========>"
 	@echo ""
-	@cd kernel/libc && make
-	@echo ""
-	@echo "<========= Compiling libos ========>"
-	@echo ""
-	@cd kernel/lib && make
+	@cd lib && make
 	@echo ""
 	@echo "<====== Compiling boot loader =====>"
 	@echo ""
@@ -59,14 +55,12 @@ clean:
 	@echo "Cleaning FAT image..."
 	@rm -f bin/$(FATTARGET)
 	@rm -rf bin/iso
-	@echo "Cleaning libos..."
-	@cd kernel/lib && make clean
+	@echo "Cleaning libraries..."
+	@cd lib && make clean
 	@echo "Cleaning kernel..."
 	@cd kernel && make clean
 	@echo "Cleaning boot loader..."
 	@cd boot && make clean
-	@echo "Cleaning libc..."
-	@cd kernel/libc && make clean
 
 qemu:
 	qemu-system-x86_64 -L /usr/share/OVMF/x64 -bios /usr/share/OVMF/x64/OVMF_CODE.fd -cdrom bin/$(ISOTARGET)

@@ -1,7 +1,7 @@
 #include <drivers/fs/fat/fat.h>
 #include <paging/paging.h>
-#include <stdlib.h>
-#include <stdio.h>
+
+
 #include <mem/heap.h>
 
 bool fat_is_fat(dev_t* dev)

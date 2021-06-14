@@ -1,8 +1,7 @@
 #include <paging/paging.h>
-#include <string.h>
+#include <stdlib.h>
 #include <bitmap.h>
 #include <gdt/idt.h>
-#include <stdio.h>
 #include <system.h>
 
 // Definitions

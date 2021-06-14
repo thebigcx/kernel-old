@@ -2,11 +2,8 @@
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata.h>
 #include <dev.h>
-
-#include <stdlib.h>
 #include <paging/paging.h>
-#include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <mem/heap.h>
 #include <console.h>
 
