@@ -1,5 +1,6 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <drivers/fs/fat/fat.h>
+#include <drivers/fs/ext2/ext2.h>
 #include <mem/heap.h>
 
 #include <stdlib.h>
@@ -9,7 +10,7 @@ mount_lst_t fs_mnts;
 
 int fs_get_type(dev_t* dev)
 {
-    return FS_TYPE_FAT32; // TODO: other filesystems
+    return FS_TYPE_EXT2; // TODO: other filesystems
 }
 
 fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
@@ -24,6 +25,13 @@ fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
 
         mnt->derived = kmalloc(sizeof(fat_vol_t));
         fat_init((fat_vol_t*)mnt->derived, dev);
+    }
+    else if (fs_get_type(dev) == FS_TYPE_EXT2)
+    {
+        mnt->find_file = ext2_find_file;
+
+        mnt->derived = kmalloc(sizeof(ext2_vol_t));
+        ext2_init((ext2_vol_t*)mnt->derived, dev);
     }
 
     fs_mnts.mnts[fs_mnts.cnt++] = mnt;

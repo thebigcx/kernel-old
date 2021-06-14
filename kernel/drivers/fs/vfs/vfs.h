@@ -5,6 +5,7 @@
 #include <dev.h>
 
 #define FS_TYPE_FAT32 0
+#define FS_TYPE_EXT2  1
 
 #define FS_SEEK_BEGIN 0
 #define FS_SEEK_CURR 1
@@ -30,14 +31,6 @@ typedef struct fs_vol
     char* mnt_pt;
 
 } fs_vol_t;
-
-/*typedef struct mount
-{
-    dev_t* dev;
-    fs_vol_t vol;
-    char* mnt_pt;
-
-} mount_t;*/
 
 #define MOUNT_LST_MAX 100
 

@@ -2,8 +2,11 @@
 
 #include <types.h>
 #include <dev.h>
+#include <drivers/fs/vfs/vfs.h>
 
-#define EXT2_SUPERBLOCK_LOC 1024
+#define EXT2_SB_LOC     1024
+#define EXT2_SB_LBA     2
+#define EXT2_ROOT_DIR   2
 
 #define EXT2_FS_STATE_CLEAN 1
 #define EXT2_FS_STATE_ERR   2
@@ -82,17 +85,17 @@
 
 typedef struct ext2_superblock
 {
-    uint32_t total_inodes;      // Total number of inodes in filesystem
-    uint32_t total_blocks;      // Total number of blocks in filesystem
+    uint32_t inode_cnt;         // Total number of inodes in filesystem
+    uint32_t blk_cnt;           // Total number of blocks in filesystem
     uint32_t res_blocks;        // Number of blocks reserved for superuser
     uint32_t free_blocks;       // Number of unallocated blocks
     uint32_t free_inodes;       // Number of free inodes
     uint32_t first_dat_block;   // Block containing this superblock
     uint32_t log_block_sz;      // log2(block_sz) - 10
     uint32_t log_frag_sz;       // log2(frag_sz) - 10
-    uint32_t blocks_per_group;  // Number of blocks per block group
-    uint32_t frags_per_group;   // Number of fragments per block group
-    uint32_t inodes_per_group;  // Number of inodes per block group
+    uint32_t blks_per_grp;      // Number of blocks per block group
+    uint32_t frags_per_grp;     // Number of fragments per block group
+    uint32_t inodes_per_grp;    // Number of inodes per block group
     uint32_t mnt_time;          // Last mount time (POSIX time)
     uint32_t write_time;        // Last write time (POSIX time)
 
@@ -144,6 +147,8 @@ typedef struct ext2_group_desc_tbl
     uint32_t free_blocks;           // Number of free blocks in group
     uint32_t free_inodes;           // Number of free inodes in group
     uint32_t dir_cnt;               // Number of directories in group
+    uint16_t padding;
+    uint8_t res[12];
 
 } __attribute__((packed)) ext2_group_desc_tbl_t;
 
@@ -186,19 +191,41 @@ typedef struct ext2_dir_entry
 
 typedef struct ext2_vol
 {
+    dev_t* dev;
+    uint32_t blk_sz;
+    ext2_group_desc_tbl_t* blk_grps;
+    uint32_t blk_grp_cnt;
+
     struct
     {
         ext2_superblock_t super;
-        ext2_superblock_t superext;
+        ext2_superblock_ext_t superext;
     } __attribute__((packed));
 
 } ext2_vol_t;
 
-#define EXT2_SB_LBA 2
+typedef struct ext2_node
+{
+    ext2_inode_t ino;
+    ext2_vol_t* vol;
+
+} ext2_node_t;
 
 // inode.c
-void ext2_write_inode(ext2_superblock_t* sb, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
-void ext2_write_superblock(ext2_superblock_t* block, dev_t* dev);
+void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
+void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
+uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
+
+// file.c
+fs_node_t ext2_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
+
+size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size);
+size_t ext2_fread(fs_node_t* node, void* ptr, size_t off, size_t size);
 
 // super.c
 void ext2_init(ext2_vol_t* vol, dev_t* dev);
+uint32_t ext2_inode_bg(ext2_vol_t* vol, uint32_t inode);
+uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode);
+uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode);
+uint32_t ext2_loc_to_blk(ext2_vol_t* vol, uint64_t loc);
+uint64_t ext2_blk_to_lba(ext2_vol_t* vol, uint64_t blk);

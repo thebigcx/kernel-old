@@ -186,6 +186,7 @@ void _start(boot_info_t* inf)
 
     dev_t dev = ahci_get_dev(0);
     root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
+    while (1);
 
     DONE();
 
@@ -193,7 +194,7 @@ void _start(boot_info_t* inf)
     apic_init();
     DONE();
 
-    fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    /*fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
     char buffer[100];
     
@@ -203,7 +204,7 @@ void _start(boot_info_t* inf)
     for (int i = 0; i < 100; i++)
     {
         console_putchar(buffer[i], 255, 255, 255);
-    }
+    }*/
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
