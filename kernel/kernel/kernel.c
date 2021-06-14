@@ -96,17 +96,17 @@ void kernel_proc()
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
     vfs_open(&mouse);
 
-    fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    /*fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
     char buffer[100];
-    
+
     vfs_read(&test, buffer, 0, 100);
     vfs_close(&test);
 
     for (int i = 0; i < 100; i++)
     {
         console_putchar(buffer[i], 255, 255, 255);
-    }
+    }*/
 
     float x = 0;
     for (;;)
@@ -195,6 +195,18 @@ void _start(boot_info_t* inf)
     LOG("Initializing APIC...");
     apic_init();
     DONE();
+
+    fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    
+    char buffer[100];
+    
+    vfs_read(&test, buffer, 0, 100);
+    vfs_close(&test);
+
+    for (int i = 0; i < 100; i++)
+    {
+        console_putchar(buffer[i], 255, 255, 255);
+    }
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);

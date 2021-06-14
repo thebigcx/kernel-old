@@ -1,0 +1,52 @@
+/*#include <sched/sched.h>
+#include <mem/heap.h>
+
+// sched.c
+extern proc_t* last_proc;
+
+semaphore_t* mk_semaphore(uint32_t max_cnt)
+{
+    semaphore_t* sem = kmalloc(sizeof(semaphore_t));
+    sem->curr_cnt = 0;
+    sem->max_cnt = max_cnt;
+    sem->first_wait_tsk = NULL;
+    sem->last_wait_tsk = NULL;
+    return sem;
+}
+
+void acquire_semaphore(semaphore_t* sem)
+{
+    if (sem->curr_cnt < sem->max_cnt)
+    {
+        sem->curr_cnt++;
+    }
+    else
+    {
+        last_proc->next = NULL;
+        if (sem->first_wait_tsk == NULL)
+        {
+            sem->first_wait_tsk = last_proc;
+        }
+        else
+        {
+            sem->last_wait_tsk->next = last_proc;
+        }
+
+        sem->last_wait_tsk = last_proc;
+        sched_block(PROC_STATE_WAIT_LOCK);
+    }
+}
+
+void release_semaphore(semaphore_t* sem)
+{
+    if (sem->first_wait_tsk != NULL)
+    {
+        proc_t* proc = sem->first_wait_tsk;
+        sem->first_wait_tsk = proc->next;
+        sched_unblock(proc);
+    }
+    else
+    {
+        sem->curr_cnt--;
+    }
+}*/

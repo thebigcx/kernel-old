@@ -14,7 +14,8 @@ proc_t* ready_lst_start;
 proc_t* ready_lst_end;
 proc_t* last_proc;
 
-extern void kernel_proc();
+uint32_t post_tsk_cnt = 0;
+uint32_t tsk_post_flag = 0;
 
 void sched_init()
 {
@@ -24,13 +25,31 @@ void sched_init()
 
 void schedule(reg_ctx_t* r)
 {
+    if (post_tsk_cnt != 0)
+    {
+        tsk_post_flag = 1;
+        return;
+    }
+
     if (ready_lst_start != NULL)
     {
         last_proc->regs = *r;
+        last_proc->state = PROC_STATE_READY;
+
         proc_t* task = ready_lst_start;
         ready_lst_start = task->next;
         last_proc = task;
+        task->state = PROC_STATE_RUNNING;
+
         task_switch(&(task->regs), (uint64_t)task->addr_space);
+    }
+    else if (last_proc->state == PROC_STATE_RUNNING)
+    {
+        // Let it continue running
+    }
+    else
+    {
+
     }
 }
 
@@ -38,7 +57,7 @@ proc_t* mk_proc(void* entry)
 {
     proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_mk_map();
+    proc->addr_space = page_get_kpml4();
     proc->pid = 0;
     proc->next = NULL;
 
@@ -63,6 +82,8 @@ void sched_tick(reg_ctx_t* r)
 
 void sched_spawn_proc(proc_t* proc)
 {
+    sched_lock();
+
     if (!ready_lst_start || !ready_lst_end) // First process
     {
         ready_lst_start = proc;
@@ -73,9 +94,93 @@ void sched_spawn_proc(proc_t* proc)
     proc_t* last = ready_lst_end;
     last->next = proc;
     ready_lst_end = proc;
+
+    sched_unlock();
 }
 
-void sched_kill_proc(proc_t* proc)
+void sched_kill_proc()
 {
-    
+    /*sched_lock();
+
+    last_proc->next = kill_tsk_lst;
+    kill_tsk_lst = last_proc;
+
+    sched_unlock();
+
+    sched_block(PROC_STATE_KILLED);
+
+    sched_unblock();*/
+}
+
+void sched_block(uint32_t state)
+{
+    sched_lock();
+
+    last_proc->state = state;
+    //schedule(&(last_proc->regs));
+
+    sched_unlock();
+}
+
+void sched_unblock(proc_t* proc)
+{
+    sched_lock();
+
+    if (ready_lst_start == NULL)
+    {
+        // Switch straight to it
+        task_switch(&(proc->regs), proc->addr_space);
+    }
+    else
+    {
+        // Need to wait (other processes running)
+        ready_lst_end->next = proc;
+        ready_lst_end = proc;
+        proc->state = PROC_STATE_READY;
+    }
+
+    sched_unlock();
+}
+
+int irq_disable_cnt = 0;
+
+void sched_lock()
+{
+    asm ("cli");
+    irq_disable_cnt++;
+}
+
+void sched_unlock()
+{
+    irq_disable_cnt--;
+    if (irq_disable_cnt == 0)
+    {
+        asm ("sti");
+    }
+}
+
+void sched_lock_stuff()
+{
+    asm ("cli");
+    irq_disable_cnt++;
+    post_tsk_cnt++;
+}
+
+void sched_unlock_stuff()
+{
+    post_tsk_cnt--;
+    if (post_tsk_cnt == 0)
+    {
+        if (tsk_post_flag != 0)
+        {
+            tsk_post_flag = 0;
+            //schedule();
+        }
+    }
+
+    irq_disable_cnt--;
+    if (irq_disable_cnt == 0)
+    {
+        asm ("sti");
+    }
 }

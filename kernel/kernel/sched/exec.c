@@ -48,10 +48,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
         }
     }
 
-    //char buffer[100];
-    //console_write(itoa(*(uint8_t*)(exec_base), buffer, 16), 255, 0, 0);
-    //while (1);
     proc_t* proc = mk_proc((void*)(hdr.entry + exec_base));
-    //proc->addr_space = page_mk_map();
+    proc->addr_space = page_mk_map();
     return proc;
 }
