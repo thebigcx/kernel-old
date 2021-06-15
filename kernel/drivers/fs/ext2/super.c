@@ -10,14 +10,14 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
     vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t));
 
     uint64_t block_glba = ext2_blk_to_lba(vol, ext2_loc_to_blk(vol, EXT2_SB_LOC) + 1);
-    dev->read(dev, block_glba,vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t), vol->blk_grps);
+    dev->read(dev, block_glba, vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t), vol->blk_grps);
 
     ext2_inode_t root;
     ext2_read_inode(vol, vol->superext.first_inode, &root);
 
     ext2_node_t node = { .ino = root, .vol = vol };
 
-    char buffer[100];
+    char buffer[512];
     //dev->read(dev, 104, 1, buffer);
     ext2_read(&node, buffer, 0, 100);
 
@@ -25,8 +25,6 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
     {
         console_putchar(buffer[i], 255, 255, 255);
     }
-
-    while (1);
 }
 
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode)

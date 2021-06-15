@@ -55,13 +55,13 @@ void heap_init()
     }
     
     
-    size_t heap_len = 100 * PAGE_SIZE;
+    size_t heap_len = 1000 * PAGE_SIZE;
 
     heap_start = addr;
     heap_end = (void*)((size_t)heap_start + heap_len);
 
     heap_block_t* start_block = (heap_block_t*)addr;
-    start_block->len = heap_len - sizeof(heap_block_t);
+    start_block->len = 0;
     start_block->next = NULL;
     start_block->prev = NULL;
     start_block->free = true;
@@ -125,29 +125,14 @@ void* krealloc(void* ptr, size_t size)
 
 void heap_expand(size_t n)
 {
-    // Must be page-aligned
-    if (n % PAGE_SIZE != 0)
-    {
-        n -= n % PAGE_SIZE;
-        n += PAGE_SIZE;
-    }
-
     size_t pg_cnt = n / PAGE_SIZE;
-    heap_block_t* new = (heap_block_t*)heap_end;
-
-    /*for (size_t i = 0; i < pg_cnt; i++)
-    {
-        // Map the heap_end address to a new page
-        page_kernel_map_memory(heap_end, page_request());
-        memset(heap_end, 0, PAGE_SIZE);
-        heap_end = (void*)((uint64_t)heap_end + PAGE_SIZE);
-    }*/
+    heap_block_t* new = (uint64_t)last_block + last_block->len + sizeof(heap_block_t);
 
     new->free = true;
     new->prev = last_block;
     last_block->next = new;
     last_block = new;
     new->next = NULL;
-    new->len = n - sizeof(heap_block_t);
+    new->len = n;
     heap_combine_back(new);
 }
