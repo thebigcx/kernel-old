@@ -16,15 +16,13 @@ size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size)
     uint32_t blk_lim = ext2_loc_to_blk(node->vol, off + size);
 
     uint8_t* buf = kmalloc(node->vol->blk_sz);
-    //while (1);
 
     uint32_t blk_cnt = blk_lim - blk_idx + 1;
     uint32_t* blks = ext2_get_inode_blks(node->vol, blk_idx, blk_cnt, &node->ino);
 
     for (uint32_t i = 0; i < blk_cnt; i++)
     {
-        //node->vol->dev->read(node->vol->dev, ext2_blk_to_lba(node->vol, blks[i]), node->vol->blk_sz / 512, buf);
-        node->vol->dev->read(node->vol->dev, 104, 1, buf);
+        node->vol->dev->read(node->vol->dev, ext2_blk_to_lba(node->vol, blks[i]), node->vol->blk_sz / 512, buf);
 
         memcpy(ptr + i * node->vol->blk_sz, buf, size);
     }

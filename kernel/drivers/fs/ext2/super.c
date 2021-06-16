@@ -27,6 +27,18 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
     }
 }
 
+uint8_t ext2_is_ext2(dev_t* dev)
+{
+    ext2_sb_t* sb = kmalloc(512);
+    
+    dev->read(dev, EXT2_SB_LBA, 1, sb);
+    uint16_t sig = sb->sb.ext2_sig;
+
+    kfree(sb);
+
+    return sig == 0xef53;
+}
+
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode)
 {
     return (inode - 1) % vol->super.inode_cnt;

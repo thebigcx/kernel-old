@@ -139,6 +139,13 @@ typedef struct ext2_superblock_ext
 
 } __attribute__((packed)) ext2_superblock_ext_t;
 
+typedef struct ext2_sb
+{
+    ext2_superblock_t sb;
+    ext2_superblock_ext_t sbext;
+
+} __attribute__((packed)) ext2_sb_t;
+
 typedef struct ext2_group_desc_tbl
 {
     uint32_t block_bitmap_addr;     // Block address of block usage bitmap
@@ -224,6 +231,7 @@ size_t ext2_fread(fs_node_t* node, void* ptr, size_t off, size_t size);
 
 // super.c
 void ext2_init(ext2_vol_t* vol, dev_t* dev);
+uint8_t ext2_is_ext2(dev_t* dev);
 uint32_t ext2_inode_bg(ext2_vol_t* vol, uint32_t inode);
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode);
 uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode);

@@ -54,7 +54,6 @@ void heap_init()
         page_kernel_map_memory(addr + i * PAGE_SIZE, page_request());
     }
     
-    
     size_t heap_len = 1000 * PAGE_SIZE;
 
     heap_start = addr;
@@ -125,7 +124,6 @@ void* krealloc(void* ptr, size_t size)
 
 void heap_expand(size_t n)
 {
-    size_t pg_cnt = n / PAGE_SIZE;
     heap_block_t* new = (uint64_t)last_block + last_block->len + sizeof(heap_block_t);
 
     new->free = true;
