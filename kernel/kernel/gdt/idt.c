@@ -57,7 +57,9 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-void(*int_handlers[256])(reg_ctx_t* r);
+extern void ipi0xfd();
+
+int_fn_t int_handlers[256];
 
 static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t type, uint8_t dpl)
 {
@@ -73,7 +75,7 @@ static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t t
 
 void ipi_halt(reg_ctx_t* regs)
 {
-    asm ("cli");
+    cli();
     asm ("hlt");
 }
 
@@ -135,6 +137,8 @@ void idt_load()
     set_handler(&idt[0x2e], irq14, 0x08, IDT_TYPE_INT, IDT_KERNEL);
     set_handler(&idt[0x2f], irq15, 0x08, IDT_TYPE_INT, IDT_KERNEL);
 
+    set_handler(&idt[0xfd], ipi0xfd, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+
     idt_record_t idtr;
     idtr.limit = 256 * sizeof(idt_entry_t) - 1;
     idtr.base = (uint64_t)idt;
@@ -155,9 +159,9 @@ void idt_load()
     idt_set_int(IPI_HALT, ipi_halt);
 }
 
-void idt_set_int(uint32_t id, void(*handler)(reg_ctx_t* r))
+void idt_set_int(uint32_t id, int_fn_t fn)
 {
-    int_handlers[id] = handler;
+    int_handlers[id] = fn;
 }
 
 void irq_handler(uint64_t num, reg_ctx_t* r)
@@ -184,6 +188,14 @@ void isr_handler(uint64_t num, reg_ctx_t* r)
     else if (num == 16) panic("FPU error", r);
     else if (num == 19) panic("Floating-point exception", r);
     else panic("An error with unknown error code has occurred.", r);
+}
+
+void ipi_handler(uint64_t num, reg_ctx_t* r)
+{
+    apicloc_eoi();
+
+    if (int_handlers[num])
+        int_handlers[num](r);
 }
 
 void idt_disable_pic()

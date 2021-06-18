@@ -72,9 +72,18 @@ static void init_paging(boot_info_t* inf)
     asm volatile ("mov %0, %%cr3"::"r"(page_get_kpml4()));
 }
 
+void test_proc()
+{
+    sched_block(PROC_STATE_WAITING);
+    console_printf("TEST", 255, 255, 255);
+    for(;;);
+}
+
 void kernel_proc()
 {
     DONE(); // "Jumping to multitasking..."
+    //sched_block(PROC_STATE_PAUSED);
+    //sleep(1);
 
     LOG("Initializing keyboard...");
     kb_init();
@@ -186,7 +195,7 @@ void _start(boot_info_t* inf)
 
     dev_t dev = ahci_get_dev(0);
     root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
-    while (1);
+    //while (1);
 
     DONE();
 
@@ -208,7 +217,6 @@ void _start(boot_info_t* inf)
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
-    proc->addr_space = page_get_kpml4(); // Kernel process gets to use kernel pml4
     sched_spawn_proc(proc);
     DONE();
     

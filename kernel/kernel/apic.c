@@ -135,12 +135,12 @@ void apic_init()
         return;
     }
 
-    //asm ("cli");
+    //cli();
 
     idt_disable_pic();
 
     apicloc_init();
     apicio_init();
 
-    //asm ("sti");
+    //sti();
 }

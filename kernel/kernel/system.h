@@ -28,3 +28,17 @@ typedef struct reg_ctx
 } reg_ctx_t;
 
 void panic(const char* msg, reg_ctx_t* regs);
+inline void cli()
+{
+    asm ("cli");
+}
+
+inline void sti()
+{
+    asm ("sti");
+}
+
+inline void hlt()
+{
+    asm ("hlt");
+}

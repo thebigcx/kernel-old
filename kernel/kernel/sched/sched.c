@@ -8,48 +8,73 @@
 #include <types.h>
 #include <stdlib.h>
 #include <mem/heap.h>
+#include <system.h>
+#include <sched/spinlock.h>
+
+void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
 
 proc_t* ready_lst_start;
 proc_t* ready_lst_end;
+lock_t ready_lst_lock = 0;
 proc_t* last_proc;
 
-uint32_t post_tsk_cnt = 0;
-uint32_t tsk_post_flag = 0;
+proc_t* idle_proc;
+
+void idle()
+{
+    while (1);
+    //hlt();
+}
 
 void sched_init()
 {
-    asm ("sti");
+    idt_set_int(IPI_SCHED, schedule); // Software interrupt for schedule (0xfd)
+
+    idle_proc = mk_proc(idle);
+
+    sti();
     for (;;);
 }
 
 void schedule(reg_ctx_t* r)
 {
-    if (post_tsk_cnt != 0)
-    {
-        tsk_post_flag = 1;
-        return;
-    }
+    proc_t* tsk = ready_lst_start;
 
-    if (ready_lst_start != NULL)
+    //if (!tsk) tsk = idle_proc;
+
+    if (tsk != NULL)
     {
         last_proc->regs = *r;
-        last_proc->state = PROC_STATE_READY;
+        if (last_proc->state == PROC_STATE_RUNNING)
+            last_proc->state = PROC_STATE_READY;
 
-        proc_t* task = ready_lst_start;
-        ready_lst_start = task->next;
-        last_proc = task;
-        task->state = PROC_STATE_RUNNING;
+        ready_lst_start = tsk->next;
+        last_proc = tsk;
+        tsk->state = PROC_STATE_RUNNING;
 
-        task_switch(&(task->regs), (uint64_t)task->addr_space);
+        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space);
     }
-    else if (last_proc->state == PROC_STATE_RUNNING)
+    //else if (last_proc->state == PROC_STATE_RUNNING)
     {
         // Let it continue running
     }
-    else
+    /*else
     {
+        proc_t* tsk = last_proc;
+        last_proc = NULL;
+    
+        do
+        {
+            hlt();
+        } while (ready_lst_start == NULL); // Wait for task
 
-    }
+        last_proc = tsk;
+        tsk = ready_lst_start;
+        if (tsk != last_proc)
+        {
+            ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space);
+        }
+    }*/
 }
 
 proc_t* mk_proc(void* entry)
@@ -59,6 +84,7 @@ proc_t* mk_proc(void* entry)
     proc->addr_space = page_get_kpml4();
     proc->pid = 0;
     proc->next = NULL;
+    proc->sleep_exp = 0;
 
     void* stack = kmalloc(1000);
     memset(stack, 0, 1000);
@@ -76,25 +102,51 @@ proc_t* mk_proc(void* entry)
 
 void sched_tick(reg_ctx_t* r)
 {
+    cli();
+
+    proc_t* next = sleep_tsk_lst;
+    proc_t* this;
+    sleep_tsk_lst = NULL;
+
+    while (next != NULL)
+    {
+        this = next;
+        next = this->next;
+
+        if (this->sleep_exp <= pit_boot_time() * 1000)
+        {
+            sched_unblock(this);
+        }
+        else
+        {
+            this->next = sleep_tsk_lst;
+            sleep_tsk_lst = this;
+        }
+    }
+
+    sti();
+
     schedule(r);
 }
 
 void sched_spawn_proc(proc_t* proc)
 {
-    sched_lock();
+    //acquire_lock(ready_lst_lock);
 
     if (!ready_lst_start || !ready_lst_end) // First process
     {
         ready_lst_start = proc;
         ready_lst_end = proc;
+        //proc->next = proc;
         return;
     }
 
     proc_t* last = ready_lst_end;
     last->next = proc;
     ready_lst_end = proc;
+    //proc->next = ready_lst_start;
 
-    sched_unlock();
+    //release_lock(ready_lst_lock);
 }
 
 void sched_kill_proc()
@@ -113,73 +165,30 @@ void sched_kill_proc()
 
 void sched_block(uint32_t state)
 {
-    sched_lock();
+    cli();
 
     last_proc->state = state;
-    //schedule(&(last_proc->regs));
+    asm ("int $0xfd"); // Send IPI schedule
 
-    sched_unlock();
+    sti();
 }
 
 void sched_unblock(proc_t* proc)
 {
-    sched_lock();
+    cli();
 
-    if (ready_lst_start == NULL)
-    {
-        // Switch straight to it
-        task_switch(&(proc->regs), proc->addr_space);
-    }
-    else
+    if (ready_lst_start)
     {
         // Need to wait (other processes running)
         ready_lst_end->next = proc;
         ready_lst_end = proc;
         proc->state = PROC_STATE_READY;
     }
-
-    sched_unlock();
-}
-
-int irq_disable_cnt = 0;
-
-void sched_lock()
-{
-    asm ("cli");
-    irq_disable_cnt++;
-}
-
-void sched_unlock()
-{
-    irq_disable_cnt--;
-    if (irq_disable_cnt == 0)
+    else
     {
-        asm ("sti");
-    }
-}
-
-void sched_lock_stuff()
-{
-    asm ("cli");
-    irq_disable_cnt++;
-    post_tsk_cnt++;
-}
-
-void sched_unlock_stuff()
-{
-    post_tsk_cnt--;
-    if (post_tsk_cnt == 0)
-    {
-        if (tsk_post_flag != 0)
-        {
-            tsk_post_flag = 0;
-            //schedule();
-        }
+        ready_lst_start = proc;
+        ready_lst_end = proc;
     }
 
-    irq_disable_cnt--;
-    if (irq_disable_cnt == 0)
-    {
-        asm ("sti");
-    }
+    sti();
 }

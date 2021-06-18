@@ -18,12 +18,6 @@ $(FATTARGET): $(EFITARGET)
 	@mkdir -p bin
 	@dd if=/dev/zero of=bin/$@ bs=1k count=1440
 	@mformat -i bin/$@ -f 1440 ::
-#	@mmd -i bin/$@ ::/EFI
-#	@mmd -i bin/$@ ::/EFI/BOOT
-#	@echo "Copying kernel to image..."
-#	@mcopy -i bin/$@ $< ::/EFI/BOOT
-#	@mcopy -i bin/$@ $(KERNEL) ::
-#	@mcopy -i bin/$@ $(FONT) ::
 	@mkdir -p bin/fat
 	@mount bin/$@ bin/fat
 	@mkdir bin/fat/EFI

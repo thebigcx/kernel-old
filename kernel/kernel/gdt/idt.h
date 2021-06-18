@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types.h>
+#include <system.h>
 
 #define IDT_PRESENT             (1 << 7)
 #define IDT_KERNEL              (0)
@@ -25,8 +26,8 @@
 #define ICW1_ICW4               0x01
 #define ICW4_8086               0x01
 
-#define IPI_HALT                0xfe
 #define IPI_SCHED               0xfd
+#define IPI_HALT                0xfe
 
 typedef struct idt_entry
 {
@@ -51,10 +52,8 @@ typedef struct idt_record
     uint64_t base;
 } __attribute__((packed)) idt_record_t;
 
-// Interrupt callbacks
-extern void(*isrs[16])();
-extern void(*irqs[16])();
+typedef void (*int_fn_t)(reg_ctx_t* r);
 
 void idt_load();
-void idt_set_int(uint32_t id, void(*handler)());
+void idt_set_int(uint32_t id, int_fn_t fn);
 void idt_disable_pic();
