@@ -1,10 +1,10 @@
 #include <drivers/input/keyboard/ps2_keyboard.h>
-#include <gdt/idt.h>
+#include <intr/idt.h>
 
 
-#include <io.h>
-#include <system.h>
-#include <apic.h>
+#include <sys/io.h>
+#include <sys/system.h>
+#include <intr/apic.h>
 
 #define KEY_QUEUE_SIZE 512
 
@@ -27,7 +27,7 @@ void kb_interrupt_handler(reg_ctx_t* r)
 void kb_init()
 {
     idt_set_int(33, kb_interrupt_handler);
-    apicio_map_irq(1);
+    ioapic_map_irq(1);
 
     key_queue.queue_end = -1;
 

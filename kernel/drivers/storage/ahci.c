@@ -2,10 +2,10 @@
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata.h>
 #include <dev.h>
-#include <paging/paging.h>
-#include <stdlib.h>
+#include <mem/paging.h>
+#include <util/stdlib.h>
 #include <mem/heap.h>
-#include <console.h>
+#include <sys/console.h>
 
 hba_memory_t* abar;
 ahci_portlist_t ahci_portlist;

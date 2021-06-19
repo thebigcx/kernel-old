@@ -3,7 +3,7 @@
 #include <drivers/fs/ext2/ext2.h>
 #include <mem/heap.h>
 
-#include <stdlib.h>
+#include <util/stdlib.h>
 
 fs_vol_t* root_vol;
 mount_lst_t fs_mnts;

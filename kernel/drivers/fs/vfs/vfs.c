@@ -1,5 +1,5 @@
 #include <drivers/fs/vfs/vfs.h>
-#include <stdlib.h>
+#include <util/stdlib.h>
 #include <mem/heap.h>
 
 struct dev_node

@@ -1,7 +1,7 @@
 #include <drivers/fs/fat/fat.h>
-#include <stdlib.h>
+#include <util/stdlib.h>
 #include <mem/heap.h>
-#include <console.h>
+#include <sys/console.h>
 
 fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name)
 {

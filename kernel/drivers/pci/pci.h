@@ -1,8 +1,8 @@
 #pragma once
 
-#include <types.h>
+#include <util/types.h>
 
-#include <acpi.h>
+#include <acpi/acpi.h>
 
 #define PCI_CFG_ADDR 0xcf8
 #define PCI_CFG_DATA 0xcfc

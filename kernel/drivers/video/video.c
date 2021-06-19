@@ -1,5 +1,5 @@
 #include <drivers/video/video.h>
-#include <stdlib.h>
+#include <util/stdlib.h>
 
 vid_mode_t vidmode;
 psf1_font* font;

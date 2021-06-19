@@ -1,25 +1,19 @@
-SOURCES := $(shell find ./kernel ./drivers -type f -name '*.c')
+SOURCES := $(shell find ./ -type f -name '*.c')
 ASM := $(shell find ./ -type f -name '*.s')
 OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.s, %.o, $(ASM))
 TARGET := kernel.elf
 LDFLAGS := -Tkernel.ld -static -Bsymbolic -nostdlib
-CFLAGS := -ffreestanding -fshort-wchar -fno-stack-protector -mno-red-zone -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -O2 -nostdinc -Ikernel -I.
+CFLAGS := -ffreestanding -fshort-wchar -fno-stack-protector -mno-red-zone -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -O2 -nostdinc -I.
 
-kernel: $(TARGET)
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	ld $(LDFLAGS) -o $(TARGET) $(OBJS)
 
-kernel/%.o: %.c
+%.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
 
-drivers/%.o: %.c
-	gcc $(CFLAGS) -c -o $@ $<
-
-kernel/%.o: %.s
-	as $< -o $@
-
-drivers/%.o: %.s
+%.o: %.s
 	as $< -o $@
 
 .PHONY:

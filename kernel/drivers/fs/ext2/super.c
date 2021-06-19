@@ -18,7 +18,7 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
     ext2_node_t node = { .ino = root, .vol = vol };
 
     char buffer[512];
-    dev->read(dev, 104, 1, buffer);
+    dev->read(dev, ext2_blk_to_lba(vol, node.ino.blocks[0]), 1, buffer);
     //ext2_read(&node, buffer, 0, 100);
 
     for (int i = 0; i < 100; i++)

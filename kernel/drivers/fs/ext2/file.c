@@ -1,5 +1,5 @@
 #include <drivers/fs/ext2/ext2.h>
-#include <stdlib.h>
+#include <util/stdlib.h>
 #include <mem/heap.h>
 
 fs_node_t ext2_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name)

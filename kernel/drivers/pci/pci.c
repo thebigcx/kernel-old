@@ -1,7 +1,7 @@
 #include <drivers/pci/pci.h>
-#include <paging/paging.h>
-#include <io.h>
-#include <stdlib.h>
+#include <mem/paging.h>
+#include <sys/io.h>
+#include <util/stdlib.h>
 
 pci_devlist_t pci_devices;
 
