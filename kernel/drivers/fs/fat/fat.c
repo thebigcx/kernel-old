@@ -62,6 +62,11 @@ void fat_fclose(fs_node_t* file)
 
 }
 
+size_t fat_fget_size(fs_node_t* file)
+{
+    return ((fat_node_t*)file->derived)->file_len;
+}
+
 fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name)
 {
     fat_node_t* fatfile = kmalloc(sizeof(fat_node_t));
@@ -75,6 +80,7 @@ fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name)
     node.write = fat_fwrite;
     node.open = fat_fopen;
     node.close = fat_fclose;
+    node.get_size = fat_fget_size;
 
     return node;
 }

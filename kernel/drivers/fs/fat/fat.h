@@ -156,6 +156,7 @@ void fat_fclose(fs_node_t* file);
 size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
 fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
+size_t fat_fget_size(fs_node_t* file);
 
 // file.c
 fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name);

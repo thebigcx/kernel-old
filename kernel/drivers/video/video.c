@@ -1,5 +1,6 @@
 #include <drivers/video/video.h>
 #include <util/stdlib.h>
+#include <util/bmp.h>
 
 vid_mode_t vidmode;
 psf1_font* font;
@@ -55,5 +56,18 @@ void video_puts(const char* str, uint32_t x, uint32_t y, uint8_t r, uint8_t g, u
 
 void video_putpix(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b)
 {
+    if (x > vidmode.width || x < 0 || y > vidmode.height || y < 0) return;
+    
     *((uint32_t*)vidmode.fb + x + (y * vidmode.width)) = rgbtopix(r, g, b);
+}
+
+void video_draw_img(uint32_t x, uint32_t y, uint32_t w, uint32_t h, void* data)
+{
+    uint32_t* pixels = (uint32_t*)data;
+
+    for (uint64_t j = y; j < y + h; j++)
+    for (uint64_t i = x; i < x + w; i++)
+    {
+        *((uint32_t*)vidmode.fb + i + (j * vidmode.width)) = pixels[w * (j - y) + (i - x)];
+    }
 }

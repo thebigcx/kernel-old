@@ -36,7 +36,7 @@ uint32_t* fat_get_cluster_chain(fat_vol_t* vol, uint32_t first_cluster, uint64_t
 {
     uint32_t clus = first_cluster;
     uint32_t cchain = 0;
-    uint32_t* ret = kmalloc(100 * sizeof(uint32_t));
+    uint32_t* ret = kmalloc(1000 * sizeof(uint32_t));
 
     uint8_t* buf = kmalloc(512);
 

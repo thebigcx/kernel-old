@@ -19,6 +19,7 @@ typedef struct fs_node
     size_t (*read)(struct fs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct fs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct fs_node* file);
+    size_t (*get_size)(struct fs_node* file);
 
 } fs_node_t;
 
@@ -55,4 +56,4 @@ size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(fs_node_t* file);
 fs_node_t vfs_resolve_path(const char* path, const char* working_dir);
 void vfs_mk_dev_file(fs_node_t node, const char* path);
-uint64_t vfs_get_size(fs_node_t* node);
+size_t vfs_get_size(fs_node_t* node);

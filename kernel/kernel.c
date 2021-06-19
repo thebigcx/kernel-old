@@ -21,6 +21,7 @@
 #include <util/rand.h>
 #include <cpu/smp.h>
 #include <intr/pic.h>
+#include <util/bmp.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -229,6 +230,25 @@ void _start(boot_info_t* inf)
     }*/
 
     cli();
+
+    fs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
+    vfs_open(&icon);
+    size_t size = vfs_get_size(&icon);
+
+    uint8_t* buffer = kmalloc(size);
+    
+    vfs_read(&icon, buffer, 0, size);
+    vfs_close(&icon);
+
+    int w, h;
+    uint8_t* data = bmp_load(buffer, &w, &h);
+    kfree(buffer);
+
+    video_draw_img(0, 0, w, h, data);
+
+    kfree(data);
+
+    while (1);
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);

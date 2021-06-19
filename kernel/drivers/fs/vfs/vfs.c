@@ -37,6 +37,11 @@ size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
     return file->write(file, ptr, off, size);
 }
 
+size_t vfs_get_size(fs_node_t* file)
+{
+    return file->get_size(file);
+}
+
 void strsplit(char** arr, const char* str, char c, uint32_t* cnt)
 {
     size_t len = strlen(str);

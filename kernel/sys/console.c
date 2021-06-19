@@ -11,10 +11,11 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
     {
         curs_y++;
         curs_x = 0;
-        return;
     }
-
-    video_putchar(c, curs_x * 8, curs_y * 16, r, g, b);
+    else
+    {
+        video_putchar(c, curs_x * 8, curs_y * 16, r, g, b);
+    }
 
     const vid_mode_t* mode = video_get_mode();
 
@@ -26,7 +27,9 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
     }
 
     if (curs_y * 16 >= mode->height)
-        curs_y = 0;
+    {
+        console_clear();
+    }
 }
 
 void console_write(const char* str, uint8_t r, uint8_t g, uint8_t b)

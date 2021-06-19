@@ -21,3 +21,4 @@ char* strcpy(char* dst, const char* src);
 char* strsep(char** str, const char* delim);
 char* itoa(int value, char* str, int base);
 int abs(int n);
+double floor(double x);
