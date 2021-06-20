@@ -151,7 +151,7 @@ typedef struct fat_lfn_entry
 bool fat_is_fat(dev_t* dev);
 void fat_init(fat_vol_t* vol, dev_t* dev);
 
-int fat_fopen(fs_node_t* file);
+fs_fd_t* fat_fopen(fs_node_t* file, uint32_t flags);
 void fat_fclose(fs_node_t* file);
 size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);

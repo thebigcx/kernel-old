@@ -52,14 +52,18 @@ size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)
 
 }
 
-int fat_fopen(fs_node_t* file)
+fs_fd_t* fat_fopen(fs_node_t* file, uint32_t flags)
 {
-    return file->derived == NULL;
+    fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
+    fd->node = file;
+    fd->pos = 0;
+    fd->flags = flags;
+    return fd;
 }
 
 void fat_fclose(fs_node_t* file)
 {
-
+    
 }
 
 size_t fat_fget_size(fs_node_t* file)

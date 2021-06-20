@@ -18,6 +18,7 @@ char* strrev(char* str);
 int strcmp(const char* str1, const char* str2);
 int strncmp(const char* str1, const char* str2, size_t n);
 char* strcpy(char* dst, const char* src);
+char* strncpy(char* dst, const char* src, size_t n);
 char* strsep(char** str, const char* delim);
 char* itoa(int value, char* str, int base);
 int abs(int n);

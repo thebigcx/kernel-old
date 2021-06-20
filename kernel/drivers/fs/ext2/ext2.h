@@ -186,15 +186,17 @@ typedef struct ext2_inode
 
 } __attribute__((packed)) ext2_inode_t;
 
-typedef struct ext2_dir_entry
+#define EXT2_DIRENT_NAME_OFF 8
+
+typedef struct ext2_dir_ent
 {
     uint32_t inode;     // Inode
     uint16_t size;      // Total size of this field
     uint8_t name_len;   // Name length least-significant 8 bits
     uint8_t file_type;  // Type indicator
-    char* name;         // Name
+    // Name here
 
-} __attribute__((packed)) ext2_dir_entry_t;
+} __attribute__((packed)) ext2_dir_ent_t;
 
 typedef struct ext2_vol
 {
@@ -213,6 +215,8 @@ typedef struct ext2_vol
 
 typedef struct ext2_node
 {
+    char* name;
+    uint32_t type;
     ext2_inode_t ino;
     ext2_vol_t* vol;
 
@@ -222,12 +226,21 @@ typedef struct ext2_node
 void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
 void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
 uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
+uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino);
 
 // file.c
 fs_node_t ext2_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
 
-size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size);
+fs_fd_t* ext2_fopen(fs_node_t* file, uint32_t flags);
 size_t ext2_fread(fs_node_t* node, void* ptr, size_t off, size_t size);
+size_t ext2_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
+void ext2_fclose(fs_node_t* file);
+size_t ext2_fget_size(fs_node_t* file);
+
+size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size);
+
+// dir.c
+ext2_node_t ext2_find_dir(ext2_vol_t* vol, ext2_node_t* node, const char* name);
 
 // super.c
 void ext2_init(ext2_vol_t* vol, dev_t* dev);

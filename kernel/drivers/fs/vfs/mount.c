@@ -24,8 +24,8 @@ fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
 {
     fs_vol_t* mnt = kmalloc(sizeof(fs_vol_t));
     //mnt->type = fs_get_type(dev);
-    //mnt->type = FS_TYPE_EXT2;
-    mnt->type = FS_TYPE_FAT32;
+    mnt->type = FS_TYPE_EXT2;
+    //mnt->type = FS_TYPE_FAT32;
     strcpy(mnt->mnt_pt, mnt_pt);
 
     if (mnt->type == FS_TYPE_FAT32)

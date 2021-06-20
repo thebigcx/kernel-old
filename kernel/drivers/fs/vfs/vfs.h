@@ -15,13 +15,22 @@ typedef struct fs_node
 {
     void* derived;
 
-    int (*open)(struct fs_node* file);
+    fs_fd_t* (*open)(struct fs_node* file, uint32_t flags);
     size_t (*read)(struct fs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct fs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct fs_node* file);
     size_t (*get_size)(struct fs_node* file);
 
 } fs_node_t;
+
+// File descriptor
+typedef struct fs_fd
+{
+    fs_node_t* node;
+    size_t pos;
+    uint32_t flags;
+
+} fs_fd_t;
 
 typedef struct fs_vol
 {
@@ -50,7 +59,7 @@ int fs_get_type(dev_t* dev);
 fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt);
 
 // vfs.c
-int vfs_open(fs_node_t* node);
+fs_fd_t* vfs_open(fs_node_t* node, uint32_t flags);
 size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(fs_node_t* file);

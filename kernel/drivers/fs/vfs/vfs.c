@@ -16,10 +16,9 @@ void vfs_mk_dev_file(fs_node_t node, const char* path)
     dev_node_cnt++;
 }
 
-// Returns true if file doesn't exist, etc
-int vfs_open(fs_node_t* file)
+fs_fd_t* vfs_open(fs_node_t* file, uint32_t flags)
 {
-    return file->open(file);
+    return file->open(file, flags);
 }
 
 void vfs_close(fs_node_t* file)
@@ -126,8 +125,6 @@ fs_node_t vfs_resolve_path(const char* path, const char* working_dir)
 
     for (int i = 0; i < 10; i++)
         kfree(parts[i]);
-
-        
 
     return node;
 }

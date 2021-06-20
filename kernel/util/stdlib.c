@@ -67,18 +67,15 @@ int strcmp(const char* str1, const char* str2)
 
 char* strcpy(char* dst, const char* src)
 {
-    char* ptr = dst;
+    return strncpy(dst, src, strlen(src));
+}
 
-    while (*src != '\0')
-    {
-        *dst = *src;
-        dst++;
-        src++;
-    }
+char* strncpy(char* dst, const char* src, size_t n)
+{
+    for (size_t i = 0; i < n && src[i] != '\0'; i++)
+        dst[i] = src[i];
 
-    *dst = '\0';
-
-    return ptr;
+    return dst;
 }
 
 size_t strlen(const char* str)

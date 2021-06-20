@@ -1,16 +1,12 @@
 make ARCH=x86_64_efi ARCHDIR=x86_64/efi ARCHTARGET=BOOTX64.EFI
 
-# EXT2
-#dd if=/dev/zero of=bin/sata.img bs=1k count=1440
-#mkfs.ext2 bin/sata.img 1440
-#mkdir bin/sata
-#mount bin/sata.img bin/sata
-#cp -r base/* bin/sata
-#umount bin/sata
-#rm -rf bin/sata
-# FAT32
 dd if=/dev/zero of=bin/sata.img bs=1k count=14400
-mkdosfs -F32 bin/sata.img 14400
+
+# FAT32
+#mkdosfs -F32 bin/sata.img 14400
+# EXT2
+mkfs.ext2 bin/sata.img 1440
+
 mkdir -p bin/sata
 mount bin/sata.img bin/sata
 cp -r base/* bin/sata

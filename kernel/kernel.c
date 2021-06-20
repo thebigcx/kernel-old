@@ -209,11 +209,45 @@ void _start(boot_info_t* inf)
     ahci_init(&pci_devices);
     DONE();
 
-    LOG("Mounting root directory (disk 0)...");
+    LOG("Mounting sda0 to \'/\'...");
 
     dev_t dev = ahci_get_dev(0);
     root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
-    //while (1);
+
+    fs_node_t test = vfs_resolve_path("/text/test.txt", NULL);
+    vfs_open(&test);
+
+    char buffer[100];
+
+    vfs_read(&test, buffer, 0, 100);
+    vfs_close(&test);
+
+    for (int i = 0; i < 100; i++)
+    {
+        console_putchar(buffer[i], 255, 255, 255);
+    }
+
+    console_printf("Size: %d\n", 255, 255, 255, vfs_get_size(&test));
+
+    /*fs_node_t icon = vfs_resolve_path("/images/venus.bmp", NULL);
+    vfs_open(&icon);
+    size_t size = vfs_get_size(&icon);
+
+    uint8_t* buffer = kmalloc(size);
+    
+    vfs_read(&icon, buffer, 0, size);
+    vfs_close(&icon);
+
+    int w, h;
+    uint8_t* data = bmp_load(buffer, &w, &h);
+    kfree(buffer);
+
+    video_draw_img(0, 0, w, h, data);
+
+    kfree(data);*/
+
+    
+    while (1);
 
     DONE();
 
@@ -231,7 +265,7 @@ void _start(boot_info_t* inf)
 
     cli();
 
-    fs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
+    /*fs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
     vfs_open(&icon);
     size_t size = vfs_get_size(&icon);
 
@@ -246,7 +280,7 @@ void _start(boot_info_t* inf)
 
     video_draw_img(0, 0, w, h, data);
 
-    kfree(data);
+    kfree(data);*/
 
     while (1);
     

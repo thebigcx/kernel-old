@@ -28,3 +28,9 @@ uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_
 
     return ret;
 }
+
+uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino)
+{
+    // TODO: double and triple indirect blocks
+    return ino->blocks[idx];
+}
