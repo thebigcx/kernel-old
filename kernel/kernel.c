@@ -22,6 +22,7 @@
 #include <cpu/smp.h>
 #include <intr/pic.h>
 #include <util/bmp.h>
+#include <util/stdlib.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -101,9 +102,9 @@ void kernel_proc()
     // TESTS
 
     fs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
-    vfs_open(&kb);
+    vfs_open(&kb, 0);
     fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
-    vfs_open(&mouse);
+    vfs_open(&mouse, 0);
 
     /*fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
@@ -214,8 +215,8 @@ void _start(boot_info_t* inf)
     dev_t dev = ahci_get_dev(0);
     root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
 
-    fs_node_t test = vfs_resolve_path("/text/test.txt", NULL);
-    vfs_open(&test);
+    /*fs_node_t test = vfs_resolve_path("/text/test.txt", NULL);
+    vfs_open(&test, 0);
 
     char buffer[100];
 
@@ -227,16 +228,16 @@ void _start(boot_info_t* inf)
         console_putchar(buffer[i], 255, 255, 255);
     }
 
-    console_printf("Size: %d\n", 255, 255, 255, vfs_get_size(&test));
+    console_printf("Size: %d\n", 255, 255, 255, vfs_get_size(&test));*/
 
-    /*fs_node_t icon = vfs_resolve_path("/images/venus.bmp", NULL);
-    vfs_open(&icon);
+    fs_node_t icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
+    vfs_open(&icon, 0);
     size_t size = vfs_get_size(&icon);
 
-    uint8_t* buffer = kmalloc(size);
+    uint8_t* buffer = kmalloc(1000000);
     
     vfs_read(&icon, buffer, 0, size);
-    vfs_close(&icon);
+    //vfs_close(&icon);
 
     int w, h;
     uint8_t* data = bmp_load(buffer, &w, &h);
@@ -244,9 +245,8 @@ void _start(boot_info_t* inf)
 
     video_draw_img(0, 0, w, h, data);
 
-    kfree(data);*/
+    kfree(data);
 
-    
     while (1);
 
     DONE();

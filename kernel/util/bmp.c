@@ -50,6 +50,9 @@ static void bmp_load_pix24(void* data, int w, int h, uint8_t* dst)
 uint8_t* bmp_load(void* data, int* w, int* h)
 {
     bmp_hdr_t* hdr = (bmp_hdr_t*)data;
+
+    if (hdr->magic[0] != 'B' || hdr->magic[1] != 'M') return NULL;
+
     bmp_inf_hdr_t* inf = (bmp_inf_hdr_t*)(data + sizeof(bmp_hdr_t));
     bmp_pal_t* pal = NULL;
 

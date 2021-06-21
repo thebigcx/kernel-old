@@ -11,6 +11,15 @@
 #define FS_SEEK_CURR 1
 #define FS_SEEK_END 2
 
+// File descriptor
+typedef struct fs_fd
+{
+    struct fs_node* node;
+    size_t pos;
+    uint32_t flags;
+
+} fs_fd_t;
+
 typedef struct fs_node
 {
     void* derived;
@@ -22,15 +31,6 @@ typedef struct fs_node
     size_t (*get_size)(struct fs_node* file);
 
 } fs_node_t;
-
-// File descriptor
-typedef struct fs_fd
-{
-    fs_node_t* node;
-    size_t pos;
-    uint32_t flags;
-
-} fs_fd_t;
 
 typedef struct fs_vol
 {

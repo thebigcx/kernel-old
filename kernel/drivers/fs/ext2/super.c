@@ -11,24 +11,6 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
 
     uint64_t block_glba = ext2_blk_to_lba(vol, ext2_loc_to_blk(vol, EXT2_SB_LOC) + 1);
     dev->read(dev, block_glba, vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t), vol->blk_grps);
-
-    /*ext2_inode_t root;
-    ext2_read_inode(vol, 2, &root);
-
-    ext2_node_t node = { .ino = root, .vol = vol };
-
-    char buffer[512];
-    //dev->read(dev, ext2_blk_to_lba(vol, node.ino.blocks[0]), 1, buffer);
-    
-    ext2_node_t txt = ext2_find_dir(vol, &node, "test.txt");
-    console_printf("%s %d\n", 255, 255, 255, txt.name, txt.type);
-    while (1);
-    ext2_read(&node, buffer, 0, 100);
-
-    for (int i = 0; i < 100; i++)
-    {
-        //console_putchar(buffer[i], 255, 255, 255);
-    }*/
 }
 
 uint8_t ext2_is_ext2(dev_t* dev)
