@@ -2,54 +2,7 @@
 #include <util/stdlib.h>
 #include <mem/heap.h>
 
-fs_node_t ext2_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name)
-{
-    ext2_node_t* parent = dir ? dir->derived : NULL;
-    ext2_node_t* enode = kmalloc(sizeof(ext2_node_t));
-
-    fs_node_t node;
-    node.open = ext2_fopen;
-    node.close = ext2_fclose;
-    node.read = ext2_fread;
-    node.write = ext2_fwrite;
-    node.get_size = ext2_fget_size;
-
-    node.derived = (void*)enode;
-    *enode = ext2_find_dir((ext2_vol_t*)vol->derived, parent, name);
-
-    return node;
-}
-
-size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size)
-{
-    // TEMP
-    off = 0;
-
-    uint32_t blk_idx = ext2_loc_to_blk(node->vol, off);
-    uint32_t blk_lim = ext2_loc_to_blk(node->vol, off + size);
-
-    uint8_t* buf = kmalloc(node->vol->blk_sz);
-
-    uint32_t blk_cnt = blk_lim - blk_idx + 1;
-    uint32_t* blks = ext2_get_inode_blks(node->vol, blk_idx, blk_cnt, &node->ino);
-
-    uint32_t blk_off = 0;
-
-    for (uint32_t i = 0; i < blk_cnt; i++)
-    {
-        blk_off = i * node->vol->blk_sz;
-        node->vol->dev->read(node->vol->dev, ext2_blk_to_lba(node->vol, blks[i]), node->vol->blk_sz / 512, buf);
-
-        memcpy(ptr + blk_off, buf, node->vol->blk_sz);
-    }
-    
-    kfree(buf);
-    kfree(blks);
-    
-    return size;
-}
-
-fs_fd_t* ext2_fopen(fs_node_t* file, uint32_t flags)
+fs_fd_t* ext2_open(fs_node_t* file, uint32_t flags)
 {
     fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
     fd->node = file;
@@ -58,23 +11,50 @@ fs_fd_t* ext2_fopen(fs_node_t* file, uint32_t flags)
     return fd;
 }
 
-size_t ext2_fread(fs_node_t* node, void* ptr, size_t off, size_t size)
+size_t ext2_read(fs_node_t* node, void* ptr, size_t off, size_t size)
 {
-    return ext2_read(node->derived, ptr, off, size);
+    ext2_vol_t* vol = ((ext2_node_t*)node->derived)->vol;
+    // TEMP
+    off = 0;
+
+    uint32_t blk_idx = ext2_loc_to_blk(vol, off);
+    uint32_t blk_lim = ext2_loc_to_blk(vol, off + size);
+
+    uint8_t* buf = kmalloc(vol->blk_sz);
+
+    ext2_inode_t ino;
+    ext2_read_inode(vol, ((ext2_node_t*)node->derived)->ino, &ino);
+
+    uint32_t blk_cnt = blk_lim - blk_idx + 1;
+    uint32_t* blks = ext2_get_inode_blks(vol, blk_idx, blk_cnt, &ino);
+
+    uint32_t blk_off = 0;
+
+    for (uint32_t i = 0; i < blk_cnt; i++)
+    {
+        blk_off = i * vol->blk_sz;
+        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, blks[i]), vol->blk_sz / 512, buf);
+
+        memcpy(ptr + blk_off, buf, vol->blk_sz);
+    }
+    
+    kfree(buf);
+    kfree(blks);
+    
+    return size;
 }
 
-size_t ext2_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)
+size_t ext2_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
 {
 
 }
 
-void ext2_fclose(fs_node_t* file)
+void ext2_close(fs_node_t* file)
 {
 
 }
 
-size_t ext2_fget_size(fs_node_t* file)
+size_t ext2_get_size(ext2_inode_t* ino)
 {
-    ext2_inode_t* inode = &((ext2_node_t*)file->derived)->ino;
-    return (uint64_t)inode->size + ((uint64_t)inode->size_u << 32);
+    return (uint64_t)ino->size + ((uint64_t)ino->size_u << 32);
 }

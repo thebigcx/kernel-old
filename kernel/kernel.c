@@ -232,7 +232,7 @@ void _start(boot_info_t* inf)
 
     fs_node_t icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
     vfs_open(&icon, 0);
-    size_t size = vfs_get_size(&icon);
+    size_t size = icon.size;
 
     uint8_t* buffer = kmalloc(1000000);
     

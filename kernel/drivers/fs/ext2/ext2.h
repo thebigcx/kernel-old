@@ -74,14 +74,14 @@
 #define EXT2_FL_JOURNAL     0x00040000 // Journal file data
 
 // File types
-#define EXT2_FTYPE_UNKNOWN 0 // Unknown file
-#define EXT2_FTYPE_REG     1 // Regular file
-#define EXT2_FTYPE_DIR     2 // Directory
-#define EXT2_CHAR_DEV      3 // Character device
-#define EXT2_BLOCK_DEV     4 // Block device
-#define EXT2_FIFO          5 // FIFO
-#define EXT2_SOCKET        6 // Socket
-#define EXT2_SYMLINK       7 // Symbolic link
+#define EXT2_UNKNOWN        0 // Unknown file
+#define EXT2_REGFILE        1 // Regular file
+#define EXT2_DIR            2 // Directory
+#define EXT2_CHAR_DEV       3 // Character device
+#define EXT2_BLOCK_DEV      4 // Block device
+#define EXT2_FIFO           5 // FIFO
+#define EXT2_SOCKET         6 // Socket
+#define EXT2_SYMLINK        7 // Symbolic link
 
 typedef struct ext2_superblock
 {
@@ -215,9 +215,7 @@ typedef struct ext2_vol
 
 typedef struct ext2_node
 {
-    char* name;
-    uint32_t type;
-    ext2_inode_t ino;
+    uint32_t ino;
     ext2_vol_t* vol;
 
 } ext2_node_t;
@@ -227,20 +225,19 @@ void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
 void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
 uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
 uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino);
+size_t ext2_get_size(ext2_inode_t* ino);
 
 // file.c
-fs_node_t ext2_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
-
-fs_fd_t* ext2_fopen(fs_node_t* file, uint32_t flags);
-size_t ext2_fread(fs_node_t* node, void* ptr, size_t off, size_t size);
-size_t ext2_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
-void ext2_fclose(fs_node_t* file);
-size_t ext2_fget_size(fs_node_t* file);
-
-size_t ext2_read(ext2_node_t* node, void* ptr, size_t off, size_t size);
+fs_fd_t* ext2_open(fs_node_t* file, uint32_t flags);
+size_t ext2_read(fs_node_t* node, void* ptr, size_t off, size_t size);
+size_t ext2_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
+void ext2_close(fs_node_t* file);
 
 // dir.c
-ext2_node_t ext2_find_dir(ext2_vol_t* vol, ext2_node_t* node, const char* name);
+fs_node_t ext2_finddir(fs_vol_t* vol, fs_node_t* node, const char* name);
+fs_node_t* ext2_read_dir(ext2_vol_t* vol, fs_node_t* parent, uint32_t* cnt);
+
+fs_node_t ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
 
 // super.c
 void ext2_init(ext2_vol_t* vol, dev_t* dev);

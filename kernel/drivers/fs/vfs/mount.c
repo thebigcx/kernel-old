@@ -30,14 +30,14 @@ fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
 
     if (mnt->type == FS_TYPE_FAT32)
     {
-        mnt->find_file = fat_find_file;
+        mnt->finddir = fat_find_file;
 
         mnt->derived = kmalloc(sizeof(fat_vol_t));
         fat_init((fat_vol_t*)mnt->derived, dev);
     }
     else if (mnt->type == FS_TYPE_EXT2)
     {
-        mnt->find_file = ext2_find_file;
+        mnt->finddir = ext2_finddir;
         
         mnt->derived = kmalloc(sizeof(ext2_vol_t));
         ext2_init((ext2_vol_t*)mnt->derived, dev);
