@@ -2,13 +2,9 @@
 #include <drivers/fs/fat/fat.h>
 #include <drivers/fs/ext2/ext2.h>
 #include <mem/heap.h>
-
 #include <util/stdlib.h>
 
-fs_vol_t* root_vol;
-mount_lst_t fs_mnts;
-
-int fs_get_type(dev_t* dev)
+int vfs_get_type(vfs_node_t* dev)
 {
     if (fat_is_fat(dev))
     {
@@ -20,9 +16,22 @@ int fs_get_type(dev_t* dev)
     }
 }
 
-fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
+void vfs_mount(vfs_node_t* dev, const char* mnt_pt)
 {
-    fs_vol_t* mnt = kmalloc(sizeof(fs_vol_t));
+    vfs_path_t* path = vfs_mkpath(mnt_pt, NULL);
+
+    if (path->parts->cnt == 0) // Root directory
+    {
+        vfs_root = kmalloc(sizeof(vfs_node_t));
+        vfs_root->device = kmalloc(sizeof(ext2_vol_t));
+        ext2_init(vfs_root->device, dev);
+        vfs_root->finddir = ext2_finddir;
+        vfs_root->inode_num = 2;
+    }
+
+    vfs_destroy_path(path);
+
+    /*fs_vol_t* mnt = kmalloc(sizeof(fs_vol_t));
     //mnt->type = fs_get_type(dev);
     mnt->type = FS_TYPE_EXT2;
     //mnt->type = FS_TYPE_FAT32;
@@ -44,5 +53,13 @@ fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt)
     }
 
     fs_mnts.mnts[fs_mnts.cnt++] = mnt;
-    return mnt;
+    return mnt;*/
+}
+
+vfs_node_t* vfs_get_mountpoint(vfs_path_t* path)
+{
+    //if (path->parts->cnt == 0)
+    {
+        return vfs_root;
+    }
 }

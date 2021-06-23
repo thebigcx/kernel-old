@@ -67,7 +67,10 @@ int strcmp(const char* str1, const char* str2)
 
 char* strcpy(char* dst, const char* src)
 {
-    return strncpy(dst, src, strlen(src));
+    size_t len = strlen(src);
+    strncpy(dst, src, len);
+    dst[len] = 0;
+    return dst;
 }
 
 char* strncpy(char* dst, const char* src, size_t n)
@@ -150,6 +153,13 @@ char* strsep(char** str, const char* delim)
     }
 
     return begin;
+}
+
+char* strdup(const char* str)
+{
+    char* ret = kmalloc(strlen(str) + 1);
+    strcpy(ret, str);
+    return ret;
 }
 
 char* itoa(int value, char* str, int base)

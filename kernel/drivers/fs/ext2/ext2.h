@@ -1,8 +1,8 @@
 #pragma once
 
 #include <util/types.h>
-#include <dev.h>
 #include <drivers/fs/vfs/vfs.h>
+#include <util/list.h>
 
 #define EXT2_SB_LOC     1024
 #define EXT2_SB_LBA     2
@@ -200,7 +200,7 @@ typedef struct ext2_dir_ent
 
 typedef struct ext2_vol
 {
-    dev_t* dev;
+    vfs_node_t* dev;
     uint32_t blk_sz;
     ext2_group_desc_tbl_t* blk_grps;
     uint32_t blk_grp_cnt;
@@ -222,26 +222,26 @@ typedef struct ext2_node
 
 // inode.c
 void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
-void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx, dev_t* dev);
+void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx);
 uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
 uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino);
 size_t ext2_get_size(ext2_inode_t* ino);
 
 // file.c
-fs_fd_t* ext2_open(fs_node_t* file, uint32_t flags);
-size_t ext2_read(fs_node_t* node, void* ptr, size_t off, size_t size);
-size_t ext2_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
-void ext2_close(fs_node_t* file);
+fs_fd_t* ext2_open(vfs_node_t* file, uint32_t flags);
+size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size);
+size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
+void ext2_close(vfs_node_t* file);
 
 // dir.c
-fs_node_t ext2_finddir(fs_vol_t* vol, fs_node_t* node, const char* name);
-fs_node_t* ext2_read_dir(ext2_vol_t* vol, fs_node_t* parent, uint32_t* cnt);
+vfs_node_t ext2_finddir(vfs_node_t* dir, const char* name);
+list_t* ext2_read_dir(ext2_vol_t* vol, vfs_node_t* parent);
 
-fs_node_t ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
+vfs_node_t ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
 
 // super.c
-void ext2_init(ext2_vol_t* vol, dev_t* dev);
-uint8_t ext2_is_ext2(dev_t* dev);
+void ext2_init(ext2_vol_t* vol, vfs_node_t* dev);
+uint8_t ext2_is_ext2(vfs_node_t* dev);
 uint32_t ext2_inode_bg(ext2_vol_t* vol, uint32_t inode);
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode);
 uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode);

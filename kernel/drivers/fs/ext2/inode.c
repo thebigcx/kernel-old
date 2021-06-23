@@ -4,7 +4,7 @@
 #define EXT2_INO_DIND 13 // Doubly indirect
 #define EXT2_INO_TIND 14 // Triply indirect
 
-void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx, dev_t* dev)
+void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx)
 {
     uint32_t group = idx / vol->super.inode_cnt;
 }
@@ -14,7 +14,7 @@ void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode)
     uint8_t* buf = kmalloc(vol->blk_sz);
     uint64_t lba = ext2_inode_lba(vol, num);
 
-    vol->dev->read(vol->dev, lba, 1, buf);
+    vol->dev->read(vol->dev, buf, lba, 1);
 
     memcpy(inode, (buf + (ext2_inode_bg_idx(vol, num) * vol->superext.inode_sz) % 512), sizeof(ext2_inode_t));
     kfree(buf);
@@ -40,7 +40,7 @@ uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_
     {
         uint32_t* buf = kmalloc(vol->blk_sz);
 
-        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_SIND]), vol->blk_sz / 512, buf);
+        vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_SIND]), vol->blk_sz / 512);
 
         while (i < dind_strt && i < idx + cnt)
         {
@@ -56,13 +56,13 @@ uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_
         uint32_t* blk_ptrs = kmalloc(vol->blk_sz);
         uint32_t* buf = kmalloc(vol->blk_sz);
 
-        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_DIND]), vol->blk_sz / 512, blk_ptrs);
+        vol->dev->read(vol->dev, blk_ptrs, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_DIND]), vol->blk_sz / 512);
 
         while (i < tind_strt && i < idx + cnt)
         {
             uint32_t blk_ptr = blk_ptrs[(i - dind_strt) / bpp];
 
-            vol->dev->read(vol->dev, ext2_blk_to_lba(vol, blk_ptr), vol->blk_sz / 512, buf);
+            vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, blk_ptr), vol->blk_sz / 512);
 
             uint32_t blk_ptr_cnt = i + (bpp - (i - dind_strt) % bpp);
             while (i < blk_ptr_cnt && i < idx + cnt)
@@ -101,7 +101,7 @@ uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino)
     {
         uint32_t* buf = kmalloc(vol->blk_sz / sizeof(uint32_t));
 
-        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_SIND]), vol->blk_sz / 512, buf);
+        vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_SIND]), vol->blk_sz / 512);
 
         uint32_t ret = buf[idx - EXT2_INO_SIND];
         kfree(buf);
@@ -112,10 +112,10 @@ uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino)
         uint32_t* blk_ptrs = kmalloc(vol->blk_sz / sizeof(uint32_t));
         uint32_t* buf = kmalloc(vol->blk_sz / sizeof(uint32_t));
 
-        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_DIND]), vol->blk_sz / 512, blk_ptrs);
+        vol->dev->read(vol->dev, blk_ptrs, ext2_blk_to_lba(vol, ino->blocks[EXT2_INO_DIND]), vol->blk_sz / 512);
 
         uint32_t blk_ptr = blk_ptrs[(idx - dind_strt) / bpp];
-        vol->dev->read(vol->dev, ext2_blk_to_lba(vol, blk_ptr), vol->blk_sz / 512, buf);
+        vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, blk_ptr), vol->blk_sz / 512);
         uint32_t ret = buf[(idx - dind_strt) % bpp];
 
         kfree(buf);

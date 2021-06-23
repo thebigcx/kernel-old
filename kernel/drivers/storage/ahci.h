@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-
+#include <drivers/fs/vfs/vfs.h>
 #include <drivers/pci/pci.h>
 
 #define AHCI_PORT_NULL 0
@@ -186,6 +186,12 @@ typedef struct ahci_port
 
 } ahci_port_t;
 
+typedef struct ahci_dev
+{
+    ahci_port_t* port;
+
+} ahci_dev_t;
+
 #define AHCI_PORTLIST_MAX 32
 
 typedef struct ahci_portlist
@@ -197,8 +203,6 @@ typedef struct ahci_portlist
 
 extern ahci_portlist_t ahci_portlist;
 
-typedef struct dev dev_t;
-
 void ahci_probe_ports();
 void ahci_port_rebase(ahci_port_t* port);
 void ahci_init_dev(pci_dev_t* pci_base_addr);
@@ -206,10 +210,10 @@ void ahci_start_cmd(ahci_port_t* port);
 void ahci_stop_cmd(ahci_port_t* port);
 
 bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer, int write);
-bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer);
-bool ahci_write();
+size_t ahci_read(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len);
+size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len);
 
-dev_t ahci_get_dev(int idx);
+vfs_node_t* ahci_get_dev(int idx);
 
 // Initialize AHCI, devs is a list of all PCI devices
 void ahci_init(pci_devlist_t* devs);

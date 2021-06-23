@@ -1,7 +1,6 @@
 #include <drivers/storage/ahci.h>
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata.h>
-#include <dev.h>
 #include <mem/paging.h>
 #include <util/stdlib.h>
 #include <mem/heap.h>
@@ -148,16 +147,6 @@ static int32_t find_cmd_slot(hba_port_t* port)
     return -1;
 }
 
-bool ahci_read(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer)
-{
-    return ahci_access(ahciport, sector, cnt, buffer, 0);
-}
-
-bool ahci_write(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer)
-{
-    return ahci_access(ahciport, sector, cnt, buffer, 1);
-}
-
 bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buffer, int write)
 {
     hba_port_t* port = ahciport->hba_port;
@@ -247,28 +236,31 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     return true;
 }
 
-int ahci_storage_dev_read(dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+size_t ahci_read(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
-    return ahci_read(((dskdev_t*)dev->derived)->port, offset, len, buffer);
+    return ahci_access(((ahci_dev_t*)node->device)->port, off, len, ptr, 0);
 }
 
-int ahci_storage_dev_write(dev_t* dev, uint64_t offset, uint32_t len, void* buffer)
+size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
-    return ahci_write(((dskdev_t*)dev->derived)->port, offset, len, buffer);
+    return ahci_access(((ahci_dev_t*)node->device)->port, off, len, ptr, 1);
 }
 
-dev_t ahci_get_dev(int idx)
+vfs_node_t* ahci_get_dev(int idx)
 {
     if (idx >= ahci_portlist.count)
     {
         console_write("[AHCI] Invalid AHCI port\n", 255, 0, 0);
     }
 
-    dev_t dev;
-    dev.read = ahci_storage_dev_read;
-    dev.write = ahci_storage_dev_write;
-    dev.derived = kmalloc(sizeof(dskdev_t));
-    ((dskdev_t*)dev.derived)->port = ahci_portlist.ports[idx];
+    vfs_node_t* dev = kmalloc(sizeof(vfs_node_t));
+
+    dev->read = ahci_read;
+    dev->write = ahci_write;
+    dev->device = kmalloc(sizeof(ahci_dev_t));
+
+    ((ahci_dev_t*)dev->device)->port = ahci_portlist.ports[idx];
+
     return dev;
 }
 

@@ -31,12 +31,12 @@ void kb_init()
 
     key_queue.queue_end = -1;
 
-    fs_node_t node;
+    vfs_node_t node;
     node.read = kb_read;
     node.write = kb_write;
     node.open = kb_open;
     node.close = kb_close;
-    vfs_mk_dev_file(node, "/dev/keyboard");
+    vfs_mount(&node, "/dev/keyboard");
 }
 
 bool kb_get_key(uint32_t* key)
@@ -49,7 +49,7 @@ bool kb_get_key(uint32_t* key)
     return true;
 }
 
-size_t kb_read(fs_node_t* file, void* ptr, size_t off, size_t size)
+size_t kb_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
 {
     size_t i = 0;
     for (; i < size; i++)
@@ -61,17 +61,17 @@ size_t kb_read(fs_node_t* file, void* ptr, size_t off, size_t size)
     return i;
 }
 
-size_t kb_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
+size_t kb_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 {
     return 0;
 }
 
-int kb_open(fs_node_t* file)
+int kb_open(vfs_node_t* file)
 {
     return 0;
 }
 
-void kb_close(fs_node_t* file)
+void kb_close(vfs_node_t* file)
 {
 
 }

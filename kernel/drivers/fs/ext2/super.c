@@ -1,8 +1,8 @@
 #include <drivers/fs/ext2/ext2.h>
 
-void ext2_init(ext2_vol_t* vol, dev_t* dev)
+void ext2_init(ext2_vol_t* vol, vfs_node_t* dev)
 {
-    dev->read(dev, EXT2_SB_LBA, 1, &vol->super);
+    dev->read(dev, &vol->super, EXT2_SB_LBA, 1);
     vol->dev = dev;
     vol->blk_sz = 1024u << vol->super.log_block_sz;
 
@@ -10,14 +10,14 @@ void ext2_init(ext2_vol_t* vol, dev_t* dev)
     vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t));
 
     uint64_t block_glba = ext2_blk_to_lba(vol, ext2_loc_to_blk(vol, EXT2_SB_LOC) + 1);
-    dev->read(dev, block_glba, vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t), vol->blk_grps);
+    dev->read(dev, vol->blk_grps, block_glba, vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t));
 }
 
-uint8_t ext2_is_ext2(dev_t* dev)
+uint8_t ext2_is_ext2(vfs_node_t* dev)
 {
     ext2_sb_t* sb = kmalloc(512);
     
-    dev->read(dev, EXT2_SB_LBA, 1, sb);
+    dev->read(dev, sb, EXT2_SB_LBA, 1);
     uint16_t sig = sb->sb.ext2_sig;
 
     kfree(sb);

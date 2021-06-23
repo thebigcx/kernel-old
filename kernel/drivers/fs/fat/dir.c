@@ -1,13 +1,12 @@
 #include <drivers/fs/fat/fat.h>
 #include <util/stdlib.h>
-
 #include <mem/heap.h>
 
-void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
+void fat_read_dir(vfs_node_t* node, vfs_node_t* files, uint32_t* cnt)
 {
-    uint64_t numclus = 0;
+    /*uint64_t numclus = 0;
 
-    fat_dir_entry_t* dirs = fat_read_cluster_chain(node->vol, node->cluster, &numclus);
+    fat_dir_entry_t* dirs = fat_read_cluster_chain((fat_vol_t*)node->device, node->inode_num, &numclus);
 
     fat_lfn_entry_t** lfn_entries = kmalloc(sizeof(fat_lfn_entry_t*) * 10);
     uint32_t lfn_cnt = 0;
@@ -45,7 +44,7 @@ void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
                 files[*cnt].name[11] = '\0';
             }
 
-            files[*cnt].cluster = (((uint32_t)dirs[i].cluster_u) << 16) | dirs[i].cluster;
+            files[*cnt].inode_num = (((uint32_t)dirs[i].cluster_u) << 16) | dirs[i].cluster;
             files[*cnt].file_len = dirs[i].file_sz;
 
             files[*cnt].flags = dirs[i].attr & FAT_ATTR_DIR ? FAT_DIRECTORY : FAT_FILE;
@@ -55,5 +54,5 @@ void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt)
         }
     }
 
-    kfree(lfn_entries);
+    kfree(lfn_entries);*/
 }

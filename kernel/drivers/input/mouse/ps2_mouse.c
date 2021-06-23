@@ -119,12 +119,12 @@ void mouse_init()
     idt_set_int(44, mouse_handler);
     ioapic_map_irq(12);
 
-    fs_node_t node;
+    vfs_node_t node;
     node.read = mouse_vfs_read;
     node.write = mouse_vfs_write;
     node.open = mouse_open;
     node.close = mouse_close;
-    vfs_mk_dev_file(node, "/dev/mouse");
+    vfs_mount(&node, "/dev/mouse");
 }
 
 bool mouse_get_packet(mouse_packet_t* packet)
@@ -137,7 +137,7 @@ bool mouse_get_packet(mouse_packet_t* packet)
     return true;
 }
 
-size_t mouse_vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)
+size_t mouse_vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
 {
     size_t i = 0;
     for (; i < size; i++)
@@ -149,17 +149,17 @@ size_t mouse_vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)
     return i;
 }
 
-size_t mouse_vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
+size_t mouse_vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 {
     return 0;
 }
 
-int mouse_open(fs_node_t* file)
+int mouse_open(vfs_node_t* file)
 {
     return 0;
 }
 
-void mouse_close(fs_node_t* file)
+void mouse_close(vfs_node_t* file)
 {
 
 }

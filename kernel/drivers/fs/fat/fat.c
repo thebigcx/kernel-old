@@ -2,11 +2,11 @@
 #include <mem/paging.h>
 #include <mem/heap.h>
 
-bool fat_is_fat(dev_t* dev)
+bool fat_is_fat(vfs_node_t* dev)
 {
     fat_bootrecord_t* record = kmalloc(512);
 
-    dev->read(dev, 0, 1, record);
+    dev->read(dev, record, 0, 1);
 
     if (record->ebr.sig == 0x28 || record->ebr.sig == 0x29)
     {
@@ -21,10 +21,10 @@ bool fat_is_fat(dev_t* dev)
     return false;
 }
 
-void fat_init(fat_vol_t* vol, dev_t* dev)
+void fat_init(fat_vol_t* vol, vfs_node_t* dev)
 {
     fat_bootrecord_t* record = kmalloc(512);
-    dev->read(dev, 0, 1, record);
+    dev->read(dev, record, 0, 1);
 
     vol->mnt_inf.sect_cnt = record->bpb.sector_cnt;
     vol->mnt_inf.fat_off = 1;
@@ -40,51 +40,4 @@ void fat_init(fat_vol_t* vol, dev_t* dev)
     vol->dev = dev;
 
     kfree(record);
-}
-
-size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size)
-{
-    return fat_file_read((fat_node_t*)file->derived, size, off, ptr);
-}
-
-size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size)
-{
-
-}
-
-fs_fd_t* fat_fopen(fs_node_t* file, uint32_t flags)
-{
-    fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
-    fd->node = file;
-    fd->pos = 0;
-    fd->flags = flags;
-    return fd;
-}
-
-void fat_fclose(fs_node_t* file)
-{
-    
-}
-
-size_t fat_fget_size(fs_node_t* file)
-{
-    return ((fat_node_t*)file->derived)->file_len;
-}
-
-fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name)
-{
-    fat_node_t* fatfile = kmalloc(sizeof(fat_node_t));
-    fat_node_t* parent = dir ? (fat_node_t*)dir->derived : NULL;
-    
-    *fatfile = fat_get_file((fat_vol_t*)(vol->derived), parent, name);
-
-    fs_node_t node;
-    node.derived = fatfile;
-    node.read = fat_fread;
-    node.write = fat_fwrite;
-    node.open = fat_fopen;
-    node.close = fat_fclose;
-    node.get_size = fat_fget_size;
-
-    return node;
 }

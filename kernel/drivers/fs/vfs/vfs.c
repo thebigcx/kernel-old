@@ -2,124 +2,57 @@
 #include <util/stdlib.h>
 #include <mem/heap.h>
 
-struct dev_node
-{
-    const char* path;
-    fs_node_t node;
-} dev_nodes[128];
-uint32_t dev_node_cnt = 0;
+tree_t* vfs_tree;
+vfs_node_t* vfs_root;
 
-void vfs_mk_dev_file(fs_node_t node, const char* path)
+void vfs_init()
 {
-    dev_nodes[dev_node_cnt].path = path;
-    dev_nodes[dev_node_cnt].node = node;
-    dev_node_cnt++;
+    vfs_tree = tree_create();
+    vfs_ent_t* root = kmalloc(sizeof(vfs_ent_t));
+    root->name = strdup("root");
+    root->file = NULL;
+    tree_insert(vfs_tree, vfs_tree->root, root);
 }
 
-fs_fd_t* vfs_open(fs_node_t* file, uint32_t flags)
+// Special function for traversing mounted
+// filesystems as well as physical fs.
+vfs_node_t open_file(char* name, uint32_t flags)
+{
+    
+}
+
+fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags)
 {
     return file->open(file, flags);
 }
 
-void vfs_close(fs_node_t* file)
+void vfs_close(vfs_node_t* file)
 {
     file->close(file);
 }
 
-size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size)
+size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
 {
     return file->read(file, ptr, off, size);
 }
 
-size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size)
+size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 {
     return file->write(file, ptr, off, size);
 }
 
-void strsplit(char** arr, const char* str, char c, uint32_t* cnt)
+vfs_node_t vfs_resolve_path(const char* pathstr, const char* working_dir)
 {
-    size_t len = strlen(str);
-    int arr_len = 0;
+    vfs_path_t* path = vfs_mkpath(pathstr, working_dir);
 
-    char* token = kmalloc(len);
-    int tok_size = 0;
-    for (size_t i = 0; i < len + 1; i++)
+    vfs_node_t node = *vfs_get_mountpoint(path);
+
+    list_foreach(path->parts, part)
     {
-        if (str[i] == c || str[i] == '\0')
-        {
-            if (tok_size)
-            {
-                token[tok_size] = '\0';
-                strcpy(arr[arr_len++], token);
-                tok_size = 0;
-            }
-            continue;
-        }
-
-        token[tok_size++] = str[i];
+        node = node.finddir(&node, part->val);
     }
 
-    kfree(token);
-
-    *cnt = arr_len;
-}
-
-fs_node_t vfs_resolve_path(const char* path, const char* working_dir)
-{
-    for (uint32_t i = 0; i < dev_node_cnt; i++)
-    {
-        if (path[0] != '/' && working_dir)
-        {
-            char* new_path = kmalloc(strlen(path) + strlen(working_dir) + 1);
-            strcpy(new_path, working_dir);
-            new_path[strlen(working_dir)] = '/';
-            strcpy(new_path + strlen(working_dir) + 1, path);
-
-            if (strcmp(dev_nodes[i].path, new_path) == 0)
-                return dev_nodes[i].node;
-        }
-        else
-        {
-            if (strcmp(dev_nodes[i].path, path) == 0)
-                return dev_nodes[i].node;
-        }
-    }
-
-    char* parts[10];
-    for (int i = 0; i < 10; i++)
-        parts[i] = kmalloc(32);
-
-    uint32_t part_cnt;
-
-    if (working_dir && path[0] != '/')
-    {
-        uint32_t cnt;
-        
-        strsplit(parts, working_dir, '/', &cnt);
-        strsplit(parts + cnt, path, '/', &part_cnt);
-        
-        part_cnt += cnt;
-    }
-    else
-    {
-        strsplit(parts, path, '/', &part_cnt);
-    }
-
-    fs_node_t node;
-
-    for (uint32_t i = 0; i < part_cnt; i++)
-    {
-        if (i == 0)
-        {
-            node = root_vol->finddir(root_vol, NULL, parts[i]);
-            continue;
-        }
-
-        node = root_vol->finddir(root_vol, &node, parts[i]);
-    }
-
-    for (int i = 0; i < 10; i++)
-        kfree(parts[i]);
+    vfs_destroy_path(path);
 
     return node;
 }

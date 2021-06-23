@@ -1,8 +1,8 @@
 #pragma once
 
-
 #include <util/types.h>
-#include <dev.h>
+#include <util/list.h>
+#include <util/tree.h>
 
 #define FS_TYPE_FAT32   0
 #define FS_TYPE_EXT2    1
@@ -29,50 +29,51 @@ typedef struct fs_fd
 
 } fs_fd_t;
 
-typedef struct fs_node
+typedef struct vfs_node
 {
-    fs_fd_t* (*open)(struct fs_node* file, uint32_t flags);
-    size_t (*read)(struct fs_node* file, void* ptr, size_t off, size_t size);
-    size_t (*write)(struct fs_node* file, const void* ptr, size_t off, size_t size);
-    void (*close)(struct fs_node* file);
+    fs_fd_t* (*open)(struct vfs_node* file, uint32_t flags);
+    size_t (*read)(struct vfs_node* file, void* ptr, size_t off, size_t size);
+    size_t (*write)(struct vfs_node* file, const void* ptr, size_t off, size_t size);
+    void (*close)(struct vfs_node* file);
+    struct vfs_node (*finddir)(struct vfs_node* dir, const char* name);
 
-    void* derived;
+    void* device;
     uint32_t flags;
     char* name;
     uint32_t size;
+    uint32_t inode_num;
 
-} fs_node_t;
+} vfs_node_t;
 
-typedef struct fs_vol
+typedef struct vfs_ent
 {
-    fs_node_t (*finddir)(struct fs_vol* vol, fs_node_t* dir, const char* name);
-    
-    int type;
-    void* derived;
-    char* mnt_pt;
+    char* name;
+    vfs_node_t* file;
 
-} fs_vol_t;
+} vfs_ent_t;
 
-#define MOUNT_LST_MAX 100
-
-typedef struct mount_lst
+typedef struct vfs_path
 {
-    fs_vol_t* mnts[MOUNT_LST_MAX];
-    uint32_t cnt;
+    list_t* parts;
 
-} mount_lst_t;
+} vfs_path_t;
 
-extern fs_vol_t* root_vol;
-extern mount_lst_t fs_mnts;
+extern tree_t* vfs_tree;
+extern vfs_node_t* vfs_root;
 
 // mount.c
-int fs_get_type(dev_t* dev);
-fs_vol_t* fs_mnt_dev(dev_t* dev, const char* mnt_pt);
+int vfs_get_type(vfs_node_t* dev);
+void vfs_mount(vfs_node_t* dev, const char* mnt_pt);
+vfs_node_t* vfs_get_mountpoint(vfs_path_t* path);
+
+// path.c
+vfs_path_t* vfs_mkpath(const char* pathstr, const char* working_dir);
+void vfs_destroy_path(vfs_path_t* path);
 
 // vfs.c
-fs_fd_t* vfs_open(fs_node_t* node, uint32_t flags);
-size_t vfs_read(fs_node_t* file, void* ptr, size_t off, size_t size);
-size_t vfs_write(fs_node_t* file, const void* ptr, size_t off, size_t size);
-void vfs_close(fs_node_t* file);
-fs_node_t vfs_resolve_path(const char* path, const char* working_dir);
-void vfs_mk_dev_file(fs_node_t node, const char* path);
+void vfs_init();
+fs_fd_t* vfs_open(vfs_node_t* node, uint32_t flags);
+size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
+size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
+void vfs_close(vfs_node_t* file);
+vfs_node_t vfs_resolve_path(const char* path, const char* working_dir);

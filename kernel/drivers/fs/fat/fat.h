@@ -1,10 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-
-#include <dev.h>
 #include <drivers/fs/vfs/vfs.h>
-
 
 #define FAT_FSINFO_LEAD_SIG     0x41615252
 #define FAT_FSINFO_SIG          0x61417272
@@ -119,20 +116,10 @@ typedef struct fat_vol_inf
 // FAT32 filesystem volume
 typedef struct fat_vol
 {
-    dev_t* dev;
+    vfs_node_t* dev;
     fat_vol_inf_t mnt_inf;
 
 } fat_vol_t;
-
-typedef struct fat_node
-{
-    char name[32];
-    uint32_t flags;
-    uint32_t file_len;
-    uint32_t cluster;
-    fat_vol_t* vol;
-
-} fat_node_t;
 
 typedef struct fat_lfn_entry
 {
@@ -148,24 +135,23 @@ typedef struct fat_lfn_entry
 } __attribute__((packed)) fat_lfn_entry_t;
 
 // fat.c
-bool fat_is_fat(dev_t* dev);
-void fat_init(fat_vol_t* vol, dev_t* dev);
+bool fat_is_fat(vfs_node_t* dev);
+void fat_init(fat_vol_t* vol, vfs_node_t* dev);
 
-fs_fd_t* fat_fopen(fs_node_t* file, uint32_t flags);
-void fat_fclose(fs_node_t* file);
-size_t fat_fread(fs_node_t* file, void* ptr, size_t off, size_t size);
-size_t fat_fwrite(fs_node_t* file, const void* ptr, size_t off, size_t size);
-fs_node_t fat_find_file(fs_vol_t* vol, fs_node_t* dir, const char* name);
-size_t fat_fget_size(fs_node_t* file);
+fs_fd_t* fat_open(vfs_node_t* file, uint32_t flags);
+void fat_close(vfs_node_t* file);
+size_t fat_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
+size_t fat_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
+vfs_node_t fat_finddir(vfs_node_t* dir, const char* name);
 
 // file.c
-fat_node_t fat_get_file(fat_vol_t* vol, fat_node_t* dir, const char* name);
-size_t fat_file_read(fat_node_t* file, size_t size, size_t off, void* buffer);
-size_t fat_file_write(fat_node_t* file, size_t size, size_t off, void* buffer);
+//vfs_node_t fat_get_file(vfs_node_t* dir, const char* name);
+//size_t fat_file_read(vfs_node_t* file, size_t size, size_t off, void* buffer);
+//size_t fat_file_write(vfs_node_t* file, size_t size, size_t off, void* buffer);
 void fat_write_cluster(fat_vol_t* vol, void* buf, uint32_t size, uint32_t cluster);
 
 // dir.c
-void fat_read_dir(fat_node_t* node, fat_node_t* files, uint32_t* cnt);
+void fat_read_dir(vfs_node_t* node, vfs_node_t* files, uint32_t* cnt);
 
 // fatent.c
 uint64_t fat_cluster_to_lba(fat_vol_t* vol, uint32_t cluster);

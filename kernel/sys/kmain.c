@@ -101,12 +101,12 @@ void kernel_proc()
 
     // TESTS
 
-    fs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
+    vfs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
     vfs_open(&kb, 0);
-    fs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
+    vfs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
     vfs_open(&mouse, 0);
 
-    /*fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
     char buffer[100];
 
@@ -173,10 +173,6 @@ void _start(boot_info_t* inf)
     heap_init();
     DONE();
 
-    LOG("Initializing device files...");
-    dev_init();
-    DONE();
-
     LOG("Loading IDT...");
     idt_load();
     pic_init();
@@ -212,10 +208,10 @@ void _start(boot_info_t* inf)
 
     LOG("Mounting sda0 to \'/\'...");
 
-    dev_t dev = ahci_get_dev(0);
-    root_vol = fs_mnt_dev(&dev, "/"); // Root mount point
+    vfs_node_t* dev = ahci_get_dev(0);
+    vfs_mount(dev, "/"); // Root mount point
 
-    /*fs_node_t test = vfs_resolve_path("/text/test.txt", NULL);
+    /*vfs_node_t test = vfs_resolve_path("/menu.cfg", NULL);
     vfs_open(&test, 0);
 
     char buffer[100];
@@ -226,11 +222,9 @@ void _start(boot_info_t* inf)
     for (int i = 0; i < 100; i++)
     {
         console_putchar(buffer[i], 255, 255, 255);
-    }
+    }*/
 
-    console_printf("Size: %d\n", 255, 255, 255, vfs_get_size(&test));*/
-
-    fs_node_t icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
+    vfs_node_t icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
     vfs_open(&icon, 0);
     size_t size = icon.size;
 
@@ -251,7 +245,7 @@ void _start(boot_info_t* inf)
 
     DONE();
 
-    /*fs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
+    /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
     char buffer[100];
     
@@ -265,7 +259,7 @@ void _start(boot_info_t* inf)
 
     cli();
 
-    /*fs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
+    /*vfs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
     vfs_open(&icon);
     size_t size = vfs_get_size(&icon);
 
