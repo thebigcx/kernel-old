@@ -49,6 +49,7 @@ void* list_pop_back(list_t* list)
     list_node_t* node = list->tail;
     list->tail = node->prev;
     list->tail->next = NULL;
+    list->cnt--;
     void* val = node->val;
     kfree(node);
 
@@ -82,6 +83,7 @@ void* list_pop_front(list_t* list)
     list_node_t* node = list->head;
     list->head = list->head->next;
     list->head->prev = NULL;
+    list->cnt--;
     void* val = node->val;
     kfree(node);
 

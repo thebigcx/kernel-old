@@ -33,9 +33,6 @@ void kb_init()
 
     vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
     node->read = kb_read;
-    node->write = kb_write;
-    node->open = kb_open;
-    node->close = kb_close;
     node->flags = FS_BLKDEV;
     node->name = strdup("keyboard");
     vfs_mount(node, "/dev/keyboard");
@@ -61,19 +58,4 @@ size_t kb_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
     }
 
     return i;
-}
-
-size_t kb_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
-{
-    return 0;
-}
-
-int kb_open(vfs_node_t* file)
-{
-    return 0;
-}
-
-void kb_close(vfs_node_t* file)
-{
-
 }

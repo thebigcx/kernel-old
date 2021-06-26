@@ -97,9 +97,6 @@ enum KEYBOARD_LAYOUT
 #define KEY_F12 88
 
 size_t kb_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
-size_t kb_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
-int kb_open(vfs_node_t* file);
-void kb_close(vfs_node_t* file);
 
 bool kb_get_key(uint32_t* key);
 void kb_init();

@@ -1,6 +1,7 @@
 #include <sys/console.h>
 #include <util/stdlib.h>
 #include <drivers/video/video.h>
+#include <drivers/fs/vfs/vfs.h>
 
 uint32_t curs_x = 0;
 uint32_t curs_y = 0;
@@ -57,4 +58,23 @@ void console_printf(const char* format, uint8_t r, uint8_t g, uint8_t b, ...)
     char str[4096];
     vsnprintf(str, format, list);
     console_write(str, r, g, b);
+}
+
+size_t conwrite(vfs_node_t* node, const void* ptr, size_t off, size_t size)
+{
+    for (uint32_t i = off; i < size + off; i++)
+    {
+        console_putchar(((char*)ptr)[i], 255, 255, 255);
+    }
+
+    return size;
+}
+
+void console_init()
+{
+    vfs_node_t* stdout = kmalloc(sizeof(vfs_node_t));
+    stdout->write = conwrite;
+    stdout->flags = FS_CHARDEV;
+    stdout->name = strdup("stdout");
+    vfs_mount(stdout, "/dev/stdout");
 }

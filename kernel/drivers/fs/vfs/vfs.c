@@ -15,22 +15,36 @@ void vfs_init()
 
 fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags)
 {
-    return file->open(file, flags);
+    if (file->open)
+        file->open(file, flags);
+
+    fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
+    fd->node = file;
+    fd->pos = 0;
+    fd->flags = flags;
+    return fd;
 }
 
 void vfs_close(vfs_node_t* file)
 {
-    file->close(file);
+    if (file->close)
+        file->close(file);
 }
 
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
 {
-    return file->read(file, ptr, off, size);
+    if (file->read)
+        return file->read(file, ptr, off, size);
+
+    return 0;
 }
 
 size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 {
-    return file->write(file, ptr, off, size);
+    if (file->write)
+        return file->write(file, ptr, off, size);
+
+    return 0;
 }
 
 vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
@@ -38,7 +52,7 @@ vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
     vfs_path_t* path = vfs_mkpath(pathstr, working_dir);
     vfs_node_t* node = vfs_get_mountpoint(path);
 
-    if (node->flags == FS_BLKDEV) // Device file
+    if (node->flags == FS_BLKDEV || node->flags == FS_CHARDEV) // Device file
     {
         return node;
     }

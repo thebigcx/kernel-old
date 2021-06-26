@@ -83,11 +83,13 @@ void* kmalloc(size_t n)
             {
                 heap_split_block(curr, n);
                 curr->free = false;
+                memset((void*)((uint64_t)curr + sizeof(heap_block_t)), 0, n);
                 return (void*)((uint64_t)curr + sizeof(heap_block_t));
             }
             if (curr->len == n)
             {
                 curr->free = false;
+                memset((void*)((uint64_t)curr + sizeof(heap_block_t)), 0, n);
                 return (void*)((uint64_t)curr + sizeof(heap_block_t));
             }
         }

@@ -11,6 +11,7 @@
 #include <sys/system.h>
 #include <sched/spinlock.h>
 #include <intr/apic.h>
+#include <time/time.h>
 
 void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
 
@@ -20,6 +21,8 @@ lock_t ready_lst_lock = 0;
 proc_t* last_proc;
 
 proc_t* idle_proc;
+
+proc_t* sleep_tsk_lst;
 
 int scheduler_ready = 0;
 
@@ -90,6 +93,11 @@ proc_t* mk_proc(void* entry)
     proc->pid = 0;
     proc->next = NULL;
     proc->sleep_exp = 0;
+    proc->file_descs = list_create();
+
+    vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
+    fs_fd_t* stdout = vfs_open(node, 0);
+    list_push_back(proc->file_descs, stdout);
 
     void* stack = kmalloc(1000);
     memset(stack, 0, 1000);
@@ -109,7 +117,7 @@ void sched_tick(reg_ctx_t* r)
 {
     if (!scheduler_ready) return;
 
-    cli();
+    /*cli();
 
     proc_t* next = sleep_tsk_lst;
     proc_t* this;
@@ -131,7 +139,7 @@ void sched_tick(reg_ctx_t* r)
         }
     }
 
-    sti();
+    sti();*/
 
     schedule(r);
 }
@@ -198,4 +206,84 @@ void sched_unblock(proc_t* proc)
     }
 
     sti();
+}
+
+proc_t* sched_get_currproc()
+{
+    return last_proc;
+}
+
+static void nano_sleep_until(uint64_t t)
+{
+    cli();
+
+    if (t < pit_uptime() * 1000)
+    {
+        sti();
+        return;
+    }
+
+    last_proc->sleep_exp = t;
+    last_proc->next = sleep_tsk_lst;
+    sleep_tsk_lst = last_proc;
+
+    sti();
+
+    sched_block(PROC_STATE_SLEEP);
+}
+
+void nano_sleep(uint64_t ns)
+{
+    nano_sleep_until(pit_uptime() * 1000 + ns);
+}
+
+void sleep(uint64_t s)
+{
+    nano_sleep(s * 1000000000);
+}
+
+bool check_elf_hdr(elf64_hdr_t* hdr)
+{
+    if (hdr->ident[0] != ELFMAG0 ||
+        hdr->ident[1] != ELFMAG1 ||
+        hdr->ident[2] != ELFMAG2 ||
+        hdr->ident[3] != ELFMAG3)
+    {
+        
+        return false;
+    }
+
+    if (hdr->ident[EI_CLASS] != ELFCLASS64) return false;
+
+    return true;
+}
+
+proc_t* mk_elf_proc(uint8_t* elf_dat)
+{
+    elf64_hdr_t hdr;
+
+    memcpy(&hdr, elf_dat, sizeof(elf64_hdr_t));
+
+    if (!check_elf_hdr(&hdr))
+        return NULL;
+
+    uint64_t exec_base = 0;
+
+    for (uint16_t i = 0; i < hdr.ph_num; i++)
+    {
+        elf64_phdr_t phdr;
+        memcpy(&phdr, elf_dat + hdr.ph_off + hdr.ph_ent_size * i, sizeof(elf64_phdr_t));
+
+        if (phdr.type == PT_LOAD)
+        {
+            exec_base = (uint64_t)kmalloc(phdr.file_sz);
+
+            //memcpy((void*)(exec_base + phdr.vaddr), elf_dat + phdr.offset, phdr.file_sz);
+            memcpy((void*)(exec_base), elf_dat + phdr.offset, phdr.file_sz);
+        }
+    }
+
+    proc_t* proc = mk_proc((void*)(hdr.entry + exec_base));
+    //proc->addr_space = page_mk_map();
+    return proc;
 }

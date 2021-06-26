@@ -2,6 +2,7 @@
 
 #include <util/types.h>
 #include <sys/system.h>
+#include <util/list.h>
 
 #define PROC_STATE_RUNNING      0
 #define PROC_STATE_READY        1
@@ -23,6 +24,7 @@ typedef struct proc
     uint8_t state;
     uint64_t sleep_exp;
     struct proc* next;
+    list_t* file_descs;
 
     reg_ctx_t regs;
 
@@ -40,6 +42,8 @@ void sched_spawn_proc(proc_t* proc);
 void sched_kill_proc();
 void sched_block(uint32_t state);
 void sched_unblock(proc_t* proc);
+
+proc_t* sched_get_currproc();
 
 // exec.c
 proc_t* mk_elf_proc(uint8_t* elf_dat);

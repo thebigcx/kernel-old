@@ -79,12 +79,12 @@ vfs_node_t* vfs_get_mountpoint_recur(tree_node_t* node, vfs_path_t* path, uint32
 
     bool found = false;
     char* name = (char*)list_get(path->parts, depth)->val;
-
+    
     list_foreach(node->children, child)
     {
         tree_node_t* tnode = (tree_node_t*)child->val;
         vfs_ent_t* ent = (vfs_ent_t*)tnode->data;
-
+        
         if (strcmp(ent->name, name) == 0)
         {
             found = true;

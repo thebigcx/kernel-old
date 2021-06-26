@@ -23,6 +23,7 @@
 #include <intr/pic.h>
 #include <util/bmp.h>
 #include <util/stdlib.h>
+#include <util/elf.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -89,16 +90,6 @@ void kernel_proc()
     //sched_block(PROC_STATE_PAUSED);
     //sleep(1);
 
-    LOG("Initializing keyboard...");
-    kb_init();
-    DONE();
-    LOG("Initializing mouse...");
-    mouse_init();
-    DONE();
-    LOG("Initializing random number generator...");
-    rand_seed(305640980);
-    DONE();
-
     // TESTS
     
     vfs_node_t* kb = vfs_resolve_path("/dev/keyboard", NULL);
@@ -122,7 +113,7 @@ void kernel_proc()
     float x = 0;
     for (;;)
     {
-        x += 0.1;
+        x += 0.2;
 
         for (int i = 0; i < 100; i++)
         for (int j = 0; j < 100; j++)
@@ -215,20 +206,9 @@ void _start(boot_info_t* inf)
     vfs_node_t* root = ext2_init(dev);
     vfs_mount(root, "/"); // Mount root file system
 
-    /*vfs_node_t test = vfs_resolve_path("/menu.cfg", NULL);
-    vfs_open(&test, 0);
-
-    char buffer[100];
-
-    vfs_read(&test, buffer, 0, 100);
-    vfs_close(&test);
-
-    for (int i = 0; i < 100; i++)
-    {
-        console_putchar(buffer[i], 255, 255, 255);
-    }*/
+    console_init();
     
-    vfs_node_t* text = vfs_resolve_path("/text/test.txt", NULL);
+    /*vfs_node_t* text = vfs_resolve_path("/text/test.txt", NULL);
     vfs_open(text, 0);
     char buf[1024];
     memset(buf, 'L', 1024);
@@ -258,45 +238,39 @@ void _start(boot_info_t* inf)
 
     //video_draw_img(0, 0, w, h, data);
 
-    kfree(data);
+    kfree(data);*/
 
     DONE();
 
-    /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
-    
-    char buffer[100IPI_SCHEDULE];
-    
-    vfs_read(&test, buffer, 0, 100);
-    vfs_close(&test);
-
-    for (int i = 0; i < 100; i++)
-    {
-        console_putchar(buffer[i], 255, 255, 255);
-    }*/
-
     cli();
 
-    /*vfs_node_t icon = vfs_resolve_path("/color_test.bmp", NULL);
-    vfs_open(&icon);
-    size_t size = vfs_get_size(&icon);
+    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
+    vfs_open(test, 0);
 
-    uint8_t* buffer = kmalloc(size);
+    uint8_t* buf = kmalloc(512 - (test->size % 512) + test->size);
     
-    vfs_read(&icon, buffer, 0, size);
-    vfs_close(&icon);
+    vfs_read(test, buf, 0, test->size);
+    /*vfs_close(test);*/
 
-    int w, h;
-    uint8_t* data = bmp_load(buffer, &w, &h);
-    kfree(buffer);
-
-    video_draw_img(0, 0, w, h, data);
-
-    kfree(data);*/
+    LOG("Initializing keyboard...");
+    kb_init();
+    DONE();
+    LOG("Initializing mouse...");
+    mouse_init();
+    DONE();
+    LOG("Initializing random number generator...");
+    rand_seed(305640980);
+    DONE();
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
     sched_spawn_proc(proc);
     DONE();
+
+    proc_t* elfproc = mk_elf_proc(buf);
+    sched_spawn_proc(elfproc);
+    elfproc->next = proc;
+    proc->next = elfproc;
     
     LOG("Jumping to multitasking...");
     sched_init();

@@ -21,6 +21,3 @@ void mouse_init();
 bool mouse_get_packet(mouse_packet_t* packet);
 
 size_t mouse_vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
-size_t mouse_vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
-int mouse_open(vfs_node_t* file);
-void mouse_close(vfs_node_t* file);

@@ -229,7 +229,7 @@ size_t ext2_get_size(ext2_inode_t* ino);
 void ext2_alloc_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t ino_num);
 
 // file.c
-fs_fd_t* ext2_open(vfs_node_t* file, uint32_t flags);
+void ext2_open(vfs_node_t* file, uint32_t flags);
 size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size);
 size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 void ext2_close(vfs_node_t* file);

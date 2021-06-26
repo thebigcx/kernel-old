@@ -2,13 +2,9 @@
 #include <util/stdlib.h>
 #include <mem/heap.h>
 
-fs_fd_t* ext2_open(vfs_node_t* file, uint32_t flags)
+void ext2_open(vfs_node_t* file, uint32_t flags)
 {
-    fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
-    fd->node = file;
-    fd->pos = 0;
-    fd->flags = flags;
-    return fd;
+    
 }
 
 size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size)

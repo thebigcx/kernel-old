@@ -23,7 +23,7 @@
 // File descriptor
 typedef struct fs_fd
 {
-    struct fs_node* node;
+    struct vfs_node* node;
     size_t pos;
     uint32_t flags;
 
@@ -31,7 +31,7 @@ typedef struct fs_fd
 
 typedef struct vfs_node
 {
-    fs_fd_t* (*open)(struct vfs_node* file, uint32_t flags);
+    void (*open)(struct vfs_node* file, uint32_t flags);
     size_t (*read)(struct vfs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct vfs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct vfs_node* file);

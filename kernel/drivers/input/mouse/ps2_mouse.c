@@ -121,9 +121,6 @@ void mouse_init()
 
     vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
     node->read = mouse_vfs_read;
-    node->write = mouse_vfs_write;
-    node->open = mouse_open;
-    node->close = mouse_close;
     node->flags = FS_BLKDEV;
     node->name = strdup("mouse");
     vfs_mount(node, "/dev/mouse");
@@ -149,19 +146,4 @@ size_t mouse_vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)
     }
 
     return i;
-}
-
-size_t mouse_vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
-{
-    return 0;
-}
-
-int mouse_open(vfs_node_t* file)
-{
-    return 0;
-}
-
-void mouse_close(vfs_node_t* file)
-{
-
 }
