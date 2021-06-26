@@ -54,3 +54,53 @@ void* list_pop_back(list_t* list)
 
     return val;
 }
+
+list_node_t* list_push_front(list_t* list, void* val)
+{
+    if (!list->head && !list->tail)
+    {
+        return list_push_back(list, val); // Doesn't matter if front or back
+    }
+
+    list_node_t* node = kmalloc(sizeof(list_node_t));
+
+    node->prev = NULL;
+    node->next = list->head;
+    node->val = val;
+    list->head->prev = node;
+    list->head = node;
+    list->cnt++;
+
+    return node;
+}
+
+void* list_pop_front(list_t* list)
+{
+    if (list->cnt == 0)
+        return;
+
+    list_node_t* node = list->head;
+    list->head = list->head->next;
+    list->head->prev = NULL;
+    void* val = node->val;
+    kfree(node);
+
+    return val;
+}
+
+list_node_t* list_get(list_t* list, uint32_t idx)
+{
+    if (idx >= list->cnt)
+        return NULL;
+
+    uint32_t i = 0;
+    list_foreach(list, node)
+    {
+        if (i++ == idx)
+        {
+            return node;
+        }
+    }
+
+    return NULL;
+}

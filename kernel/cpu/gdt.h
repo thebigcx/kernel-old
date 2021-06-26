@@ -43,6 +43,7 @@ typedef struct gdt
 } __attribute__((packed)) 
   __attribute__((aligned(PAGE_SIZE))) gdt_t;
 
-extern gdt_t def_gdt;
+extern gdt_t gdt_def;
+extern gdt_desc_t gdt_desc;
 // Defined in assembly
 extern void gdt_load(gdt_desc_t* gdt_desc);

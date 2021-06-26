@@ -17,7 +17,7 @@ typedef struct tree
 
 tree_t* tree_create();
 void tree_destroy(tree_t* tree);
-void tree_insert(tree_t* tree, tree_node_t* parent, void* data);
+tree_node_t* tree_insert(tree_t* tree, tree_node_t* parent, void* data);
 void* tree_remove(tree_t* tree, tree_node_t* node);
 tree_node_t* tree_node_create(void* data);
 void* tree_node_destroy(tree_t* tree, tree_node_t* node);

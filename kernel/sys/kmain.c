@@ -100,11 +100,12 @@ void kernel_proc()
     DONE();
 
     // TESTS
+    
+    vfs_node_t* kb = vfs_resolve_path("/dev/keyboard", NULL);
+    vfs_open(kb, 0);
 
-    vfs_node_t kb = vfs_resolve_path("/dev/keyboard", NULL);
-    vfs_open(&kb, 0);
-    vfs_node_t mouse = vfs_resolve_path("/dev/mouse", NULL);
-    vfs_open(&mouse, 0);
+    vfs_node_t* mouse = vfs_resolve_path("/dev/mouse", NULL);
+    vfs_open(mouse, 0);
 
     /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
@@ -130,13 +131,13 @@ void kernel_proc()
         }
 
         mouse_packet_t pack;
-        if (vfs_read(&mouse, &pack, 0, 1))
+        if (vfs_read(mouse, &pack, 0, 1))
         {
             LOG("Mouse");
         }
 
         uint32_t key;
-        if (vfs_read(&kb, &key, 0, 1))
+        if (vfs_read(kb, &key, 0, 1))
         {
             char buffer[100];
             LOG(itoa(key, buffer, 10));
@@ -160,9 +161,8 @@ void _start(boot_info_t* inf)
     cli();
 
     LOG("Initializing GDT...");
-    gdt_desc_t gdt_desc;
     gdt_desc.size = sizeof(gdt_t) - 1;
-    gdt_desc.offset = (uint64_t)&def_gdt;
+    gdt_desc.offset = (uint64_t)&gdt_def;
     gdt_load(&gdt_desc);
     DONE();
 
@@ -206,10 +206,14 @@ void _start(boot_info_t* inf)
     ahci_init(&pci_devices);
     DONE();
 
-    LOG("Mounting sda0 to \'/\'...");
+    LOG("Mounting /dev/disk0 to /...");
+    vfs_init();
 
     vfs_node_t* dev = ahci_get_dev(0);
-    vfs_mount(dev, "/"); // Root mount point
+    vfs_mount(dev, "/dev/disk0"); // Mount first disk
+
+    vfs_node_t* root = ext2_init(dev);
+    vfs_mount(root, "/"); // Mount root file system
 
     /*vfs_node_t test = vfs_resolve_path("/menu.cfg", NULL);
     vfs_open(&test, 0);
@@ -223,31 +227,44 @@ void _start(boot_info_t* inf)
     {
         console_putchar(buffer[i], 255, 255, 255);
     }*/
+    
+    vfs_node_t* text = vfs_resolve_path("/text/test.txt", NULL);
+    vfs_open(text, 0);
+    char buf[1024];
+    memset(buf, 'L', 1024);
+    vfs_write(text, buf, 0, 1024);
 
-    vfs_node_t icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
-    vfs_open(&icon, 0);
-    size_t size = icon.size;
+    char buf2[1024];
+    vfs_read(text, buf2, 0, 1024);
+    for (int i = 0; i < 1024; i++)
+    {
+        console_putchar(buf2[i], 255, 255, 255);
+    }
+    vfs_close(text);
+    breakpoint();
+    
+    vfs_node_t* icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
+    vfs_open(icon, 0);
+    size_t size = icon->size;
 
     uint8_t* buffer = kmalloc(1000000);
     
-    vfs_read(&icon, buffer, 0, size);
+    vfs_read(icon, buffer, 0, size);
     //vfs_close(&icon);
 
     int w, h;
     uint8_t* data = bmp_load(buffer, &w, &h);
     kfree(buffer);
 
-    video_draw_img(0, 0, w, h, data);
+    //video_draw_img(0, 0, w, h, data);
 
     kfree(data);
-
-    while (1);
 
     DONE();
 
     /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
-    char buffer[100];
+    char buffer[100IPI_SCHEDULE];
     
     vfs_read(&test, buffer, 0, 100);
     vfs_close(&test);
@@ -275,8 +292,6 @@ void _start(boot_info_t* inf)
     video_draw_img(0, 0, w, h, data);
 
     kfree(data);*/
-
-    while (1);
     
     LOG("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);

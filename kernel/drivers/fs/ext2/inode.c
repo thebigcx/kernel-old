@@ -1,12 +1,25 @@
 #include <drivers/fs/ext2/ext2.h>
+#include <util/stdlib.h>
 
 #define EXT2_INO_SIND 12 // Singly indirect
 #define EXT2_INO_DIND 13 // Doubly indirect
 #define EXT2_INO_TIND 14 // Triply indirect
 
-void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx)
+void ext2_write_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode)
 {
-    uint32_t group = idx / vol->super.inode_cnt;
+    uint32_t group = num / vol->super.inodes_per_grp; // Block group
+    uint32_t table = vol->blk_grps[group].inode_tbl_addr; // Inode table
+    uint32_t offset = (num - 1) * vol->superext.inode_sz / vol->blk_sz; // Offset in table of inode
+    
+    uint8_t* buf = kmalloc(vol->blk_sz);
+    vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, table + offset), vol->blk_sz / 512);
+
+    uint32_t ino_offset = (num - 1) - offset * (vol->blk_sz / vol->superext.inode_sz);
+    memcpy(buf + ino_offset * vol->superext.inode_sz, inode, vol->superext.inode_sz);
+
+    vol->dev->write(vol->dev, buf, ext2_blk_to_lba(vol, table + offset), vol->blk_sz / 512);
+
+    kfree(buf);
 }
 
 void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode)
@@ -129,4 +142,10 @@ uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino)
         console_printf("[EXT2] Inode block index too high: %d\n", 255, 0, 0, idx);
         return 0;
     }
+}
+
+void ext2_alloc_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t ino_num)
+{
+    uint32_t blk = ext2_alloc_block(vol);
+    
 }

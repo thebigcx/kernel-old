@@ -42,3 +42,5 @@ inline void hlt()
 {
     asm ("hlt");
 }
+
+void breakpoint();

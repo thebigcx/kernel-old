@@ -35,7 +35,10 @@ typedef struct vfs_node
     size_t (*read)(struct vfs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct vfs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct vfs_node* file);
-    struct vfs_node (*finddir)(struct vfs_node* dir, const char* name);
+    struct vfs_node* (*finddir)(struct vfs_node* dir, const char* name);
+    //list_t* (*listdir)(struct vfs_node* dir);
+    //void (*mkfile)(struct vfs_node* parent, const char* name);
+    //void (*mkdir)(struct vfs_node* parent, const char* name);
 
     void* device;
     uint32_t flags;
@@ -59,7 +62,6 @@ typedef struct vfs_path
 } vfs_path_t;
 
 extern tree_t* vfs_tree;
-extern vfs_node_t* vfs_root;
 
 // mount.c
 int vfs_get_type(vfs_node_t* dev);
@@ -76,4 +78,4 @@ fs_fd_t* vfs_open(vfs_node_t* node, uint32_t flags);
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(vfs_node_t* file);
-vfs_node_t vfs_resolve_path(const char* path, const char* working_dir);
+vfs_node_t* vfs_resolve_path(const char* path, const char* working_dir);

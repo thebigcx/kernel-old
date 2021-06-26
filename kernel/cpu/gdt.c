@@ -2,8 +2,10 @@
 
 #define GRANLONG GDTF_GRAN | GDTF_LONG
 
+gdt_desc_t gdt_desc;
+
 __attribute__((aligned(PAGE_SIZE)))
-gdt_t def_gdt = 
+gdt_t gdt_def = 
 {
     { 0, 0, 0, 0x0,                                                      0x0,      0 }, // Null
     { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_EXEC | GDTA_WRITABLE, GRANLONG, 0 }, // Kernel code seg

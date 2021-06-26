@@ -10,6 +10,7 @@
 #include <mem/heap.h>
 #include <sys/system.h>
 #include <sched/spinlock.h>
+#include <intr/apic.h>
 
 void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
 
@@ -174,7 +175,7 @@ void sched_block(uint32_t state)
     cli();
 
     last_proc->state = state;
-    asm ("int $0xfd"); // Send IPI schedule
+    lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_SCHED);
 
     sti();
 }

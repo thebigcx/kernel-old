@@ -258,6 +258,7 @@ vfs_node_t* ahci_get_dev(int idx)
     dev->read = ahci_read;
     dev->write = ahci_write;
     dev->device = kmalloc(sizeof(ahci_dev_t));
+    dev->flags = FS_BLKDEV;
 
     ((ahci_dev_t*)dev->device)->port = ahci_portlist.ports[idx];
 

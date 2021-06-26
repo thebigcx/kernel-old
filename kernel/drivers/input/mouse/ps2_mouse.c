@@ -119,12 +119,14 @@ void mouse_init()
     idt_set_int(44, mouse_handler);
     ioapic_map_irq(12);
 
-    vfs_node_t node;
-    node.read = mouse_vfs_read;
-    node.write = mouse_vfs_write;
-    node.open = mouse_open;
-    node.close = mouse_close;
-    vfs_mount(&node, "/dev/mouse");
+    vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
+    node->read = mouse_vfs_read;
+    node->write = mouse_vfs_write;
+    node->open = mouse_open;
+    node->close = mouse_close;
+    node->flags = FS_BLKDEV;
+    node->name = strdup("mouse");
+    vfs_mount(node, "/dev/mouse");
 }
 
 bool mouse_get_packet(mouse_packet_t* packet)

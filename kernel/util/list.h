@@ -24,3 +24,6 @@ list_t* list_create();
 void list_destroy(list_t* list);
 list_node_t* list_push_back(list_t* list, void* val);
 void* list_pop_back(list_t* list);
+list_node_t* list_push_front(list_t* list, void* val);
+void* list_pop_front(list_t* list);
+list_node_t* list_get(list_t* list, uint32_t idx);

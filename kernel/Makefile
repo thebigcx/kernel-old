@@ -1,6 +1,6 @@
 SOURCES := $(shell find ./ -type f -name '*.c')
-ASM := $(shell find ./ -type f -name '*.s')
-OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.s, %.o, $(ASM))
+ASM := $(shell find ./ -type f -name '*.S')
+OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.S, %.o, $(ASM))
 TARGET := kernel.elf
 LDFLAGS := -Tkernel.ld -static -Bsymbolic -nostdlib
 OPTIM := -O2
@@ -14,7 +14,7 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
 
-%.o: %.s
+%.o: %.S
 	as $< -o $@
 
 .PHONY:

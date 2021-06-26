@@ -31,12 +31,14 @@ void kb_init()
 
     key_queue.queue_end = -1;
 
-    vfs_node_t node;
-    node.read = kb_read;
-    node.write = kb_write;
-    node.open = kb_open;
-    node.close = kb_close;
-    vfs_mount(&node, "/dev/keyboard");
+    vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
+    node->read = kb_read;
+    node->write = kb_write;
+    node->open = kb_open;
+    node->close = kb_close;
+    node->flags = FS_BLKDEV;
+    node->name = strdup("keyboard");
+    vfs_mount(node, "/dev/keyboard");
 }
 
 bool kb_get_key(uint32_t* key)

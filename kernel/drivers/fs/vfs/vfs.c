@@ -3,7 +3,6 @@
 #include <mem/heap.h>
 
 tree_t* vfs_tree;
-vfs_node_t* vfs_root;
 
 void vfs_init()
 {
@@ -11,14 +10,7 @@ void vfs_init()
     vfs_ent_t* root = kmalloc(sizeof(vfs_ent_t));
     root->name = strdup("root");
     root->file = NULL;
-    tree_insert(vfs_tree, vfs_tree->root, root);
-}
-
-// Special function for traversing mounted
-// filesystems as well as physical fs.
-vfs_node_t open_file(char* name, uint32_t flags)
-{
-    
+    vfs_tree->root->data = root;
 }
 
 fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags)
@@ -41,15 +33,21 @@ size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
     return file->write(file, ptr, off, size);
 }
 
-vfs_node_t vfs_resolve_path(const char* pathstr, const char* working_dir)
+vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
 {
     vfs_path_t* path = vfs_mkpath(pathstr, working_dir);
+    vfs_node_t* node = vfs_get_mountpoint(path);
 
-    vfs_node_t node = *vfs_get_mountpoint(path);
+    if (node->flags == FS_BLKDEV) // Device file
+    {
+        return node;
+    }
 
     list_foreach(path->parts, part)
     {
-        node = node.finddir(&node, part->val);
+        vfs_node_t* next = node->finddir(node, part->val);
+        kfree(node);
+        node = next;
     }
 
     vfs_destroy_path(path);

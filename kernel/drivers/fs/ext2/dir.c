@@ -2,7 +2,7 @@
 #include <util/stdlib.h>
 #include <mem/heap.h>
 
-vfs_node_t ext2_finddir(vfs_node_t* dir, const char* name)
+vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
 {
     ext2_vol_t* e2vol = (ext2_vol_t*)dir->device;
 
@@ -40,8 +40,10 @@ vfs_node_t ext2_finddir(vfs_node_t* dir, const char* name)
     kfree(buf);
 }
 
-list_t* ext2_read_dir(ext2_vol_t* vol, vfs_node_t* parent)
+list_t* ext2_listdir(vfs_node_t* parent)
 {
+    ext2_vol_t* vol = (ext2_vol_t*)parent->device;
+
     ext2_inode_t ino;
     ext2_read_inode(vol, parent ? parent->inode_num : 2, &ino);
 
@@ -58,8 +60,7 @@ list_t* ext2_read_dir(ext2_vol_t* vol, vfs_node_t* parent)
     {
         blk_off += fnd_dir->size;
 
-        vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
-        *node = ext2_dirent_to_node(vol, fnd_dir);
+        vfs_node_t* node = ext2_dirent_to_node(vol, fnd_dir);
         list_push_back(nodes, node);
 
         if (blk_off >= vol->blk_sz)
@@ -78,35 +79,38 @@ list_t* ext2_read_dir(ext2_vol_t* vol, vfs_node_t* parent)
     return nodes;
 }
 
-vfs_node_t ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent)
+vfs_node_t* ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent)
 {
-    vfs_node_t node;
+    vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
 
-    node.read = ext2_read;
-    node.write = ext2_write;
-    node.open = ext2_open;
-    node.close = ext2_close;
-    node.finddir = ext2_finddir;
+    node->read = ext2_read;
+    node->write = ext2_write;
+    node->open = ext2_open;
+    node->close = ext2_close;
+    node->finddir = ext2_finddir;
+    //node->listdir = ext2_listdir;
+    //node->mkfile = ext2_mkfile;
+    //node->mkdir = ext2_mkdir;
 
-    node.device = vol;
+    node->device = vol;
 
-    node.name = kmalloc(dirent->name_len + 1);
-    strncpy(node.name, (void*)dirent + EXT2_DIRENT_NAME_OFF, dirent->name_len);
-    node.name[dirent->name_len] = 0;
+    node->name = kmalloc(dirent->name_len + 1);
+    strncpy(node->name, (void*)dirent + EXT2_DIRENT_NAME_OFF, dirent->name_len);
+    node->name[dirent->name_len] = 0;
 
     ext2_inode_t ino;
     ext2_read_inode(vol, dirent->inode, &ino);
-    node.size = ext2_get_size(&ino);
+    node->size = ext2_get_size(&ino);
 
-    node.inode_num = dirent->inode;
+    node->inode_num = dirent->inode;
 
     if (dirent->file_type == EXT2_REGFILE)
     {
-        node.flags = FS_FILE;
+        node->flags = FS_FILE;
     }
     if (dirent->file_type == EXT2_DIR)
     {
-        node.flags = FS_DIR;
+        node->flags = FS_DIR;
     }
 
     return node;

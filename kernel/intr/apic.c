@@ -74,6 +74,14 @@ void lapic_send_start(uint32_t apicid, uint32_t vec)
     while (lapic_read(LAPIC_ICRLO) & ICR_SEND_PEND);
 }
 
+void lapic_send_ipi(uint8_t apicid, uint32_t dsh, uint32_t type, uint8_t vec)
+{
+    lapic_write(LAPIC_ICRHI, (uint32_t)apicid << ICR_DST_SHFT);
+    lapic_write(LAPIC_ICRLO, dsh | type | vec);
+
+    while (lapic_read(LAPIC_ICRLO) & ICR_SEND_PEND);
+}
+
 uint64_t ioapic_base;
 uint64_t ioapic_vbase; // Virtual base
 volatile uint32_t* regsel;

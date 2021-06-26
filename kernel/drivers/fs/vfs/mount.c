@@ -16,50 +16,97 @@ int vfs_get_type(vfs_node_t* dev)
     }
 }
 
+void vfs_mount_recur(vfs_path_t* path, tree_node_t* node, vfs_node_t* dev, uint32_t depth)
+{
+    if (path->parts->cnt == depth)
+    {
+        vfs_ent_t* ent = (vfs_ent_t*)node->data;
+        ent->file = dev;
+        return;
+    }
+
+    bool found = false;
+    char* name = (char*)list_get(path->parts, depth)->val;
+
+    list_foreach(node->children, child)
+    {
+        tree_node_t* tnode = (tree_node_t*)child->val;
+        vfs_ent_t* ent = (vfs_ent_t*)tnode->data;
+
+        if (strcmp(ent->name, name) == 0)
+        {
+            found = true;
+            node = tnode;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        vfs_ent_t* ent = kmalloc(sizeof(vfs_ent_t));
+        ent->name = strdup(name);
+
+        node = tree_insert(vfs_tree, node, ent);
+    }
+
+    vfs_mount_recur(path, node, dev, ++depth);
+}
+
 void vfs_mount(vfs_node_t* dev, const char* mnt_pt)
 {
     vfs_path_t* path = vfs_mkpath(mnt_pt, NULL);
 
     if (path->parts->cnt == 0) // Root directory
     {
-        vfs_root = kmalloc(sizeof(vfs_node_t));
-        vfs_root->device = kmalloc(sizeof(ext2_vol_t));
-        ext2_init(vfs_root->device, dev);
-        vfs_root->finddir = ext2_finddir;
-        vfs_root->inode_num = 2;
+        ((vfs_ent_t*)vfs_tree->root->data)->file = dev;
+
+        vfs_destroy_path(path);
+        return;
     }
+    
+    vfs_mount_recur(path, vfs_tree->root, dev, 0);
 
     vfs_destroy_path(path);
+}
 
-    /*fs_vol_t* mnt = kmalloc(sizeof(fs_vol_t));
-    //mnt->type = fs_get_type(dev);
-    mnt->type = FS_TYPE_EXT2;
-    //mnt->type = FS_TYPE_FAT32;
-    strcpy(mnt->mnt_pt, mnt_pt);
-
-    if (mnt->type == FS_TYPE_FAT32)
+vfs_node_t* vfs_get_mountpoint_recur(tree_node_t* node, vfs_path_t* path, uint32_t depth)
+{
+    if (path->parts->cnt == depth)
     {
-        mnt->finddir = fat_find_file;
-
-        mnt->derived = kmalloc(sizeof(fat_vol_t));
-        fat_init((fat_vol_t*)mnt->derived, dev);
-    }
-    else if (mnt->type == FS_TYPE_EXT2)
-    {
-        mnt->finddir = ext2_finddir;
-        
-        mnt->derived = kmalloc(sizeof(ext2_vol_t));
-        ext2_init((ext2_vol_t*)mnt->derived, dev);
+        vfs_ent_t* ent = node->data;
+        return ent->file;
     }
 
-    fs_mnts.mnts[fs_mnts.cnt++] = mnt;
-    return mnt;*/
+    bool found = false;
+    char* name = (char*)list_get(path->parts, depth)->val;
+
+    list_foreach(node->children, child)
+    {
+        tree_node_t* tnode = (tree_node_t*)child->val;
+        vfs_ent_t* ent = (vfs_ent_t*)tnode->data;
+
+        if (strcmp(ent->name, name) == 0)
+        {
+            found = true;
+            node = tnode;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        return ((vfs_ent_t*)node->data)->file;
+    }
+
+    return vfs_get_mountpoint_recur(node, path, ++depth);
 }
 
 vfs_node_t* vfs_get_mountpoint(vfs_path_t* path)
 {
-    //if (path->parts->cnt == 0)
+    if (path->parts->cnt == 0)
     {
-        return vfs_root;
+        return (vfs_node_t*)((vfs_ent_t*)vfs_tree->root->data)->file;
     }
+    
+    return vfs_get_mountpoint_recur(vfs_tree->root, path, 0);
 }

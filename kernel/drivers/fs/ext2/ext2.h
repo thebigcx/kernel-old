@@ -222,28 +222,32 @@ typedef struct ext2_node
 
 // inode.c
 void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
-void ext2_write_inode(ext2_vol_t* vol, ext2_inode_t* inode, uint32_t idx);
+void ext2_write_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
 uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
 uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino);
 size_t ext2_get_size(ext2_inode_t* ino);
+void ext2_alloc_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t ino_num);
 
 // file.c
 fs_fd_t* ext2_open(vfs_node_t* file, uint32_t flags);
 size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size);
 size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 void ext2_close(vfs_node_t* file);
+void ext2_mkfile(vfs_node_t* parent, const char* name);
+void ext2_mkdir(vfs_node_t* parent, const char* name);
 
 // dir.c
-vfs_node_t ext2_finddir(vfs_node_t* dir, const char* name);
-list_t* ext2_read_dir(ext2_vol_t* vol, vfs_node_t* parent);
+vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name);
+list_t* ext2_listdir(vfs_node_t* parent);
 
-vfs_node_t ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
+vfs_node_t* ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
 
 // super.c
-void ext2_init(ext2_vol_t* vol, vfs_node_t* dev);
+vfs_node_t* ext2_init(vfs_node_t* dev);
 uint8_t ext2_is_ext2(vfs_node_t* dev);
 uint32_t ext2_inode_bg(ext2_vol_t* vol, uint32_t inode);
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode);
 uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode);
 uint32_t ext2_loc_to_blk(ext2_vol_t* vol, uint64_t loc);
 uint64_t ext2_blk_to_lba(ext2_vol_t* vol, uint64_t blk);
+uint32_t ext2_alloc_block(ext2_vol_t* vol);
