@@ -1,5 +1,5 @@
 #include <util/types.h>
-#include <drivers/video/video.h>
+#include <drivers/gfx/fb/fb.h>
 #include <mem/paging.h>
 #include <mem/mem.h>
 #include <mem/heap.h>
@@ -113,7 +113,7 @@ void kernel_proc()
     float x = 0;
     for (;;)
     {
-        x += 0.2;
+        x += 1;
 
         for (int i = 0; i < 100; i++)
         for (int j = 0; j < 100; j++)
@@ -145,7 +145,7 @@ void _start(boot_info_t* inf)
     vidmode.height = inf->v_res;
     vidmode.depth = 32;
     vidmode.fb = inf->fb_adr;
-    video_init(vidmode);
+    video_setmode(vidmode);
     video_set_fnt(inf->font);
     memset(vidmode.fb, 0, vidmode.width * vidmode.height * (vidmode.depth / 8));
 
@@ -194,7 +194,7 @@ void _start(boot_info_t* inf)
     cli();
     
     LOG("Initializing AHCI controllers...");
-    ahci_init(&pci_devices);
+    ahci_init(pci_devs);
     DONE();
 
     LOG("Mounting /dev/disk0 to /...");
@@ -207,38 +207,7 @@ void _start(boot_info_t* inf)
     vfs_mount(root, "/"); // Mount root file system
 
     console_init();
-    
-    /*vfs_node_t* text = vfs_resolve_path("/text/test.txt", NULL);
-    vfs_open(text, 0);
-    char buf[1024];
-    memset(buf, 'L', 1024);
-    vfs_write(text, buf, 0, 1024);
-
-    char buf2[1024];
-    vfs_read(text, buf2, 0, 1024);
-    for (int i = 0; i < 1024; i++)
-    {
-        console_putchar(buf2[i], 255, 255, 255);
-    }
-    vfs_close(text);
-    breakpoint();
-    
-    vfs_node_t* icon = vfs_resolve_path("/images/bmp24tst.bmp", NULL);
-    vfs_open(icon, 0);
-    size_t size = icon->size;
-
-    uint8_t* buffer = kmalloc(1000000);
-    
-    vfs_read(icon, buffer, 0, size);
-    //vfs_close(&icon);
-
-    int w, h;
-    uint8_t* data = bmp_load(buffer, &w, &h);
-    kfree(buffer);
-
-    //video_draw_img(0, 0, w, h, data);
-
-    kfree(data);*/
+    video_init();
 
     DONE();
 
@@ -267,10 +236,10 @@ void _start(boot_info_t* inf)
     sched_spawn_proc(proc);
     DONE();
 
-    proc_t* elfproc = mk_elf_proc(buf);
-    sched_spawn_proc(elfproc);
-    elfproc->next = proc;
-    proc->next = elfproc;
+    //proc_t* elfproc = mk_elf_proc(buf);
+    //sched_spawn_proc(elfproc);
+    //elfproc->next = proc;
+    //proc->next = elfproc;
     
     LOG("Jumping to multitasking...");
     sched_init();

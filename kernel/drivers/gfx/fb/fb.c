@@ -1,6 +1,9 @@
-#include <drivers/video/video.h>
+#include <drivers/gfx/fb/fb.h>
 #include <util/stdlib.h>
 #include <util/bmp.h>
+#include <drivers/fs/vfs/vfs.h>
+#include <mem/heap.h>
+#include <mem/paging.h>
 
 vid_mode_t vidmode;
 psf1_font* font;
@@ -10,9 +13,33 @@ static uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b)
     return r << 16 | g << 8 | b;
 }
 
-void video_init(vid_mode_t mode)
+int fb_ioctl(vfs_node_t* node, uint64_t request, void* argp)
+{
+
+}
+
+void* fb_mmap(vfs_node_t* file, void* addr, size_t len, int prot, int flags, size_t off)
+{
+    void* ret = page_request();
+    for (uint32_t i = 1; i < len / PAGE_SIZE + 1; i++)
+    {
+        page_request();
+    }
+}
+
+void video_setmode(vid_mode_t mode)
 {
     vidmode = mode;
+}
+
+void video_init()
+{
+    vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
+    node->ioctl = fb_ioctl;
+    node->mmap = fb_mmap;
+    node->flags = FS_BLKDEV;
+    node->name = strdup("fb0");
+    vfs_mount(node, "/dev/fb0");
 }
 
 void video_set_fnt(psf1_font* fnt)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <util/types.h>
+#include <util/list.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <drivers/pci/pci.h>
 
@@ -169,11 +170,8 @@ typedef struct hba_prdt_entry
 typedef struct hba_cmd_tbl
 {
     uint8_t cmd_fis[64];            // Command FIS
-
     uint8_t atapi_cmd[16];          // ATAPI command
-
     uint8_t res[48];                // Reserved
-
     hba_prdt_entry_t prdt_entry[1]; // PRDT entries 0 ~ 65535
 
 } hba_cmd_tbl_t;
@@ -192,16 +190,7 @@ typedef struct ahci_dev
 
 } ahci_dev_t;
 
-#define AHCI_PORTLIST_MAX 32
-
-typedef struct ahci_portlist
-{
-    ahci_port_t* ports[AHCI_PORTLIST_MAX];
-    size_t count;
-
-} ahci_portlist_t;
-
-extern ahci_portlist_t ahci_portlist;
+extern list_t* ahci_ports;
 
 void ahci_probe_ports();
 void ahci_port_rebase(ahci_port_t* port);
@@ -216,4 +205,4 @@ size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len);
 vfs_node_t* ahci_get_dev(int idx);
 
 // Initialize AHCI, devs is a list of all PCI devices
-void ahci_init(pci_devlist_t* devs);
+void ahci_init(list_t* devs);

@@ -27,7 +27,8 @@ typedef struct
     void* glyph_buf;
 } psf1_font;
 
-void video_init(vid_mode_t mode);
+void video_init();
+void video_setmode(vid_mode_t mode);
 void video_set_fnt(psf1_font* fnt);
 const vid_mode_t* video_get_mode();
 

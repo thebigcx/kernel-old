@@ -3,7 +3,7 @@
 #include <sys/io.h>
 #include <util/stdlib.h>
 
-pci_devlist_t pci_devices;
+list_t* pci_devs;
 
 uint32_t pci_cfg_readl(uint8_t bus, uint8_t slot, uint8_t func, uint8_t off)
 {
@@ -159,26 +159,25 @@ bool pci_check_dev(uint8_t bus, uint8_t dev, uint8_t func)
 
 void pci_add_dev(uint8_t bus, uint8_t slot, uint8_t func)
 {
-    pci_dev_t dev;
+    pci_dev_t* dev = kmalloc(sizeof(pci_dev_t));
 
-    dev.vendor_id = pci_get_vendor_id(bus, slot, func);
-    dev.dev_id = pci_get_dev_id(bus, slot, func);
+    dev->vendor_id = pci_get_vendor_id(bus, slot, func);
+    dev->dev_id = pci_get_dev_id(bus, slot, func);
 
-    dev.bus = bus;
-    dev.slot = slot;
-    dev.func = func;
+    dev->bus = bus;
+    dev->slot = slot;
+    dev->func = func;
 
-    dev.class_code = pci_get_class_code(bus, slot, func);
-    dev.subclass = pci_get_subclass(bus, slot, func);
-    dev.progif = pci_get_progif(bus, slot, func);
+    dev->class_code = pci_get_class_code(bus, slot, func);
+    dev->subclass = pci_get_subclass(bus, slot, func);
+    dev->progif = pci_get_progif(bus, slot, func);
 
-    pci_devices.devs[pci_devices.count++] = dev;
+    list_push_back(pci_devs, dev);
 }
 
 void pci_enumerate()
 {
-    memset(pci_devices.devs, 0, sizeof(pci_dev_t) * PCI_DEVLIST_MAX);
-    pci_devices.count = 0;
+    pci_devs = list_create();
 
     uint8_t func = 0;
 
@@ -202,59 +201,22 @@ void pci_enumerate()
             }
         }
     }
-}
 
-const char* pci_class_to_str(uint8_t class_code)
-{
-    switch (class_code)
+    /*list_foreach(pci_devs, item)
     {
-        case 0x0: return "Unclassified";
-        case 0x1: return "Mass Storage Controller";
-        case 0x2: return "Network Controller";
-        case 0x3: return "Display Controller";
-        case 0x4: return "Multimedia Controller";
-        case 0x5: return "Memory Controller";
-        case 0x6: return "Bridge Device";
-        case 0x7: return "Simple Communication Controller";
-        case 0x8: return "Base System Peripheral";
+        pci_dev_t* dev = (pci_dev_t*)item->val;
+        console_printf("[%x, %x, %x]\n", 255, 255, 255, dev->class_code, dev->subclass, dev->progif);
+        console_printf("%x %x\n", 255, 255, 255, dev->vendor_id, dev->dev_id);
+        console_printf("[%d, %d, %d]\n\n", 255, 255, 255, dev->bus, dev->slot, dev->func);
     }
-
-    return "Invalid";
+    
+    while (1);*/
 }
 
-const char* pci_subclass_to_str(uint8_t class_code, uint8_t subclass)
+const char* pci_getinf(pci_dev_t* dev)
 {
-    switch (class_code)
+    switch (dev->class_code)
     {
-        case 0x0:
-            switch (subclass)
-            {
-                case 0x0: return "Non-VGA-Compatible Device";
-                case 0x1: return "VGA-Compatible Device";
-            }
-            break;
 
-        case 0x1:
-            switch (subclass)
-            {
-                case 0x0: return "SCSI Bus Controller";
-                case 0x1: return "IDE Controller";
-                case 0x2: return "Floppy Disk Controller";
-                case 0x3: return "IPI Bus Controller";
-                case 0x4: return "RAID Controller";
-                case 0x5: return "ATA Controller";
-                case 0x6: return "Serial ATA";
-                case 0x7: return "Serial Attached SCSI";
-                case 0x8: return "Non-Volatile Memory Controller";
-                case 0x80: return "Other";
-            }
-            break;
     }
-
-    return "Invalid";
-}
-
-const char* pci_progif_to_str(uint8_t class_code, uint8_t subclass, uint8_t progif)
-{
-    return "Invalid";
 }

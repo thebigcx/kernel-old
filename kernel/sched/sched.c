@@ -95,10 +95,6 @@ proc_t* mk_proc(void* entry)
     proc->sleep_exp = 0;
     proc->file_descs = list_create();
 
-    vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdout = vfs_open(node, 0);
-    list_push_back(proc->file_descs, stdout);
-
     void* stack = kmalloc(1000);
     memset(stack, 0, 1000);
 
@@ -258,7 +254,7 @@ bool check_elf_hdr(elf64_hdr_t* hdr)
     return true;
 }
 
-proc_t* mk_elf_proc(uint8_t* elf_dat)
+void* loadelf(uint8_t* elf_dat)
 {
     elf64_hdr_t hdr;
 
@@ -283,7 +279,33 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
         }
     }
 
-    proc_t* proc = mk_proc((void*)(hdr.entry + exec_base));
-    //proc->addr_space = page_mk_map();
+    return exec_base + hdr.entry;
+}
+
+proc_t* mk_elf_proc(uint8_t* elf_dat)
+{
+    proc_t* proc = kmalloc(sizeof(proc_t));
+
+    proc->next = NULL;
+    proc->pid = 0;
+    proc->sleep_exp = 0;
+    proc->state = PROC_STATE_READY;
+    proc->addr_space = page_mk_map();
+
+    vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
+    fs_fd_t* stdout = vfs_open(node, 0);
+    list_push_back(proc->file_descs, stdout);
+
+    void* stack = kmalloc(1000);
+    memset(stack, 0, 1000);
+
+    memset(&(proc->regs), 0, sizeof(reg_ctx_t));
+    proc->regs.rip = (uint64_t)loadelf(elf_dat);
+    proc->regs.rflags = 0x202;
+    proc->regs.cs = USER_CS;
+    proc->regs.ss = USER_SS;
+    proc->regs.rbp = (uint64_t)stack + 1000;
+    proc->regs.rsp = (uint64_t)stack + 1000;
+
     return proc;
 }

@@ -36,9 +36,11 @@ typedef struct vfs_node
     size_t (*write)(struct vfs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct vfs_node* file);
     struct vfs_node* (*finddir)(struct vfs_node* dir, const char* name);
-    //list_t* (*listdir)(struct vfs_node* dir);
-    //void (*mkfile)(struct vfs_node* parent, const char* name);
-    //void (*mkdir)(struct vfs_node* parent, const char* name);
+    list_t* (*listdir)(struct vfs_node* dir);
+    void (*mkfile)(struct vfs_node* parent, const char* name);
+    void (*mkdir)(struct vfs_node* parent, const char* name);
+    int (*ioctl)(struct vfs_node* file, uint64_t request, void* argp);
+    void* (*mmap)(struct vfs_node* file, void* addr, size_t len, int prot, int flags, size_t off);
 
     void* device;
     uint32_t flags;
@@ -79,3 +81,7 @@ size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(vfs_node_t* file);
 vfs_node_t* vfs_resolve_path(const char* path, const char* working_dir);
+list_t* vfs_listdir(vfs_node_t* dir);
+void vfs_mkfile(vfs_node_t* parent, const char* name);
+void vfs_mkdir(vfs_node_t* parent, const char* name);
+int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp);

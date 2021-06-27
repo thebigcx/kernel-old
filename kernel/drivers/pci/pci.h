@@ -1,8 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-
-#include <acpi/acpi.h>
+#include <util/list.h>
 
 #define PCI_CFG_ADDR 0xcf8
 #define PCI_CFG_DATA 0xcfc
@@ -32,44 +31,35 @@ typedef struct pci_dev
 
 } pci_dev_t;
 
-#define PCI_VENDOR_ID 0x0
-#define PCI_DEVICE_ID 0x2
-#define PCI_COMMAND 0x4
-#define PCI_STATUS 0x6
-#define PCI_REVISION_ID 0x8
-#define PCI_PROGIF 0x9
-#define PCI_SUBCLASS 0xa
-#define PCI_CLASS_CODE 0xb
-#define PCI_CACHE_SIZE 0xc
-#define PCI_LATENCY_TIMER 0xd
-#define PCI_HDR_TYPE 0xe
-#define PCI_BIST 0xf
-#define PCI_BAR0 0x10
-#define PCI_BAR1 0x14
-#define PCI_BAR2 0x18
-#define PCI_BAR3 0x1c
-#define PCI_BAR4 0x20
-#define PCI_BAR5 0x24
-#define PCI_CARDBUS_CIS_PTR 0x28
-#define PCI_SUBSYS_VENDOR_ID 0x2c
-#define PCI_SUBSYS_ID 0x2e
+#define PCI_VENDOR_ID           0x00
+#define PCI_DEVICE_ID           0x02
+#define PCI_COMMAND             0x04
+#define PCI_STATUS              0x06
+#define PCI_REVISION_ID         0x08
+#define PCI_PROGIF              0x09
+#define PCI_SUBCLASS            0x0a
+#define PCI_CLASS_CODE          0x0b
+#define PCI_CACHE_SIZE          0x0c
+#define PCI_LATENCY_TIMER       0x0d
+#define PCI_HDR_TYPE            0x0e
+#define PCI_BIST                0x0f
+#define PCI_BAR0                0x10
+#define PCI_BAR1                0x14
+#define PCI_BAR2                0x18
+#define PCI_BAR3                0x1c
+#define PCI_BAR4                0x20
+#define PCI_BAR5                0x24
+#define PCI_CARDBUS_CIS_PTR     0x28
+#define PCI_SUBSYS_VENDOR_ID    0x2c
+#define PCI_SUBSYS_ID           0x2e
 #define PCI_EXPAN_ROM_BASE_ADDR 0x30
-#define PCI_CAPAB_PTR 0x34
-#define PCI_INTERRUPT_LINE 0x3c
-#define PCI_INTERRUPT_PIN 0x3d
-#define PCI_MIN_GRANT 0x3e
-#define PCI_MAX_LATENCY 0x3f
+#define PCI_CAPAB_PTR           0x34
+#define PCI_INTERRUPT_LINE      0x3c
+#define PCI_INTERRUPT_PIN       0x3d
+#define PCI_MIN_GRANT           0x3e
+#define PCI_MAX_LATENCY         0x3f
 
-#define PCI_DEVLIST_MAX 64
-
-typedef struct pci_devlist
-{
-    pci_dev_t devs[PCI_DEVLIST_MAX];
-    uint32_t count;
-
-} pci_devlist_t;
-
-extern pci_devlist_t pci_devices;
+extern list_t* pci_devs;
 
 void pci_enable_bus_master(pci_dev_t* dev);
 void pci_enable_ints(pci_dev_t* dev);
@@ -100,6 +90,5 @@ bool pci_check_dev(uint8_t bus, uint8_t dev, uint8_t func);
 void pci_add_dev(uint8_t bus, uint8_t slot, uint8_t func);
 void pci_enumerate();
 
-const char* pci_class_to_str(uint8_t class_code);
-const char* pci_subclass_to_str(uint8_t class_code, uint8_t subclass);
-const char* pci_progif_to_str(uint8_t class_code, uint8_t subclass, uint8_t progif);
+// Get info about device
+const char* pci_getinf(pci_dev_t* dev);

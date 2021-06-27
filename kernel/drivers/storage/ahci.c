@@ -7,7 +7,7 @@
 #include <sys/console.h>
 
 hba_memory_t* abar;
-ahci_portlist_t ahci_portlist;
+list_t* ahci_ports;
 
 static int check_type(hba_port_t* port)
 {
@@ -38,8 +38,7 @@ static int check_type(hba_port_t* port)
 
 void ahci_probe_ports()
 {
-    memset(ahci_portlist.ports, 0, sizeof(ahci_port_t*) * AHCI_PORTLIST_MAX);
-    ahci_portlist.count = 0;
+    ahci_ports = list_create();
 
     uint32_t ports_impl = abar->ports_impl;
     for (uint32_t i = 0; i < 32; i++)
@@ -53,8 +52,9 @@ void ahci_probe_ports()
                 ahci_port_t* port = (ahci_port_t*)kmalloc(sizeof(ahci_port_t));
                 port->hba_port = &abar->ports[i];
                 port->type = pt;
-                port->num = ahci_portlist.count;
-                ahci_portlist.ports[ahci_portlist.count++] = port;
+                port->num = ahci_ports->cnt;
+                list_push_back(ahci_ports, port);
+                //ahci_portlist.ports[ahci_portlist.count++] = port;
             }
         }
     }
@@ -71,9 +71,9 @@ void ahci_init_dev(pci_dev_t* pci_base_addr)
 
     ahci_probe_ports();
 
-    for (uint32_t i = 0; i < ahci_portlist.count; i++)
+    list_foreach(ahci_ports, port)
     {
-        ahci_port_rebase(ahci_portlist.ports[i]);
+        ahci_port_rebase((ahci_port_t*)port->val);
     }
 }
 
@@ -248,7 +248,7 @@ size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 
 vfs_node_t* ahci_get_dev(int idx)
 {
-    if (idx >= ahci_portlist.count)
+    if (idx >= ahci_ports->cnt)
     {
         console_write("[AHCI] Invalid AHCI port\n", 255, 0, 0);
     }
@@ -260,18 +260,18 @@ vfs_node_t* ahci_get_dev(int idx)
     dev->device = kmalloc(sizeof(ahci_dev_t));
     dev->flags = FS_BLKDEV;
 
-    ((ahci_dev_t*)dev->device)->port = ahci_portlist.ports[idx];
+    ((ahci_dev_t*)dev->device)->port = (ahci_port_t*)list_get(ahci_ports, idx)->val;
 
     return dev;
 }
 
-void ahci_init(pci_devlist_t* devs)
+void ahci_init(list_t* devs)
 {
-    for (uint32_t i = 0; i < pci_devices.count; i++)
+    list_foreach(devs, item)
     {
-        pci_dev_t* dev = &pci_devices.devs[i];
-        
-        if (dev->class_code == PCI_CLASS_STORAGE && dev->subclass == PCI_SUBCLASS_SATA && dev->progif == PCI_PROGIF_AHCI)
+        pci_dev_t* dev = (pci_dev_t*)item->val;
+
+        if (dev->class_code == PCI_CLASS_STORAGE && dev->subclass == PCI_SC_SATA && dev->progif == PCI_PI_AHCI)
         {
             ahci_init_dev(dev);
         }

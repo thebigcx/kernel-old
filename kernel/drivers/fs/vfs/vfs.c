@@ -50,21 +50,54 @@ size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
 {
     vfs_path_t* path = vfs_mkpath(pathstr, working_dir);
-    vfs_node_t* node = vfs_get_mountpoint(path);
+    vfs_node_t* mount = vfs_get_mountpoint(path);
 
-    if (node->flags == FS_BLKDEV || node->flags == FS_CHARDEV) // Device file
+    if (mount->flags == FS_BLKDEV || mount->flags == FS_CHARDEV) // Device file
     {
-        return node;
+        return mount;
     }
+
+    vfs_node_t* node = mount;
 
     list_foreach(path->parts, part)
     {
         vfs_node_t* next = node->finddir(node, part->val);
-        kfree(node);
+
+        if (node != mount) // Mount point is not kmalloc'd
+            kfree(node);
+
         node = next;
     }
 
     vfs_destroy_path(path);
 
     return node;
+}
+
+list_t* vfs_listdir(vfs_node_t* dir)
+{
+    if (dir->listdir)
+        return dir->listdir(dir);
+
+    return NULL;
+}
+
+void vfs_mkfile(vfs_node_t* parent, const char* name)
+{
+    if (parent->mkfile)
+        parent->mkfile(parent, name);
+}
+
+void vfs_mkdir(vfs_node_t* parent, const char* name)
+{
+    if (parent->mkdir)
+        parent->mkdir(parent, name);
+}
+
+int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp)
+{
+    if (file->ioctl)
+        return file->ioctl(file, request, argp);
+
+    return 0;
 }

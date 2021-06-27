@@ -9,9 +9,9 @@ void ext2_get_root(ext2_vol_t* vol, vfs_node_t* root, ext2_inode_t* ino)
     root->read = ext2_read;
     root->write = ext2_write;
     root->finddir = ext2_finddir;
-    //root->listdir = ext2_listdir;
-    //root->mkfile = ext2_mkfile;
-    //root->mkdir = ext2_mkdir;
+    root->listdir = ext2_listdir;
+    root->mkfile = ext2_mkfile;
+    root->mkdir = ext2_mkdir;
 
     root->flags = FS_DIR;
     root->inode_num = 2;
@@ -31,10 +31,11 @@ vfs_node_t* ext2_init(vfs_node_t* dev)
     vol->blk_sz = 1024u << vol->super.log_block_sz;
 
     vol->blk_grp_cnt = (vol->super.blk_cnt % vol->super.blks_per_grp) ? (vol->super.blk_cnt / vol->super.blks_per_grp + 1) : (vol->super.blk_cnt / vol->super.blks_per_grp);
-    vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t));
+    vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t) + 512);
 
     uint64_t block_glba = ext2_blk_to_lba(vol, ext2_loc_to_blk(vol, EXT2_SB_LOC) + 1);
-    dev->read(dev, vol->blk_grps, block_glba, vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t));
+    uint32_t sectors = vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t) / 512 + 1;
+    dev->read(dev, vol->blk_grps, block_glba, sectors);
     
     ext2_inode_t ino;
     ext2_read_inode(vol, 2, &ino);

@@ -1,6 +1,6 @@
 #include <sys/console.h>
 #include <util/stdlib.h>
-#include <drivers/video/video.h>
+#include <drivers/gfx/fb/fb.h>
 #include <drivers/fs/vfs/vfs.h>
 
 uint32_t curs_x = 0;
