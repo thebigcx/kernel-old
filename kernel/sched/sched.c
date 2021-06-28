@@ -290,7 +290,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     proc->pid = 0;
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_mk_map();
+    proc->addr_space = page_get_kpml4();
 
     vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
     fs_fd_t* stdout = vfs_open(node, 0);

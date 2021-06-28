@@ -104,6 +104,8 @@ void page_release_m(void* addr, uint64_t cnt);
 
 // Create a page map
 pml4_t* page_mk_map();
+// Copy a pml4
+void page_copy_pml4(pml4_t* dst, pml4_t* src);
 
 void* page_request();
 pml4_t* page_get_kpml4();

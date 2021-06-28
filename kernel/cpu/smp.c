@@ -17,7 +17,7 @@ void smp_entry(uint16_t id)
 void smp_init()
 {
     *smp_cr3 = page_get_kpml4();
-    *smp_gdt = &gdt_desc;
+    *smp_gdt = &gdt_ptr;
     *smp_ent = smp_entry;
 
     uint32_t loc_id = lapic_read(LAPIC_ID) >> 24;

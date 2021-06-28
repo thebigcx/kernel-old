@@ -249,11 +249,16 @@ pml4_t* page_mk_map()
     memset(pml4, 0, PAGE_SIZE);
 
     // Identity map all conventional memory
-    uint64_t mem_size = mem_get_sz();
+    /*uint64_t mem_size = mem_get_sz();
     for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
     {
         page_map_memory((void*)i, (void*)i, pml4);
-    }
+    }*/
 
     return pml4;
+}
+
+void page_copy_pml4(pml4_t* dst, pml4_t* src)
+{
+    
 }

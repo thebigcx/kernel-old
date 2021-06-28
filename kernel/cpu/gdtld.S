@@ -1,8 +1,8 @@
 # Load Global Descriptor Table
 
-.global gdt_load
+.global gdt_flush
 
-gdt_load:
+gdt_flush:
     lgdt    (%rdi)
     mov     $0x10, %ax
     mov     %ax, %ds

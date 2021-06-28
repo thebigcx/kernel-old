@@ -152,9 +152,11 @@ void _start(boot_info_t* inf)
     cli();
 
     LOG("Initializing GDT...");
-    gdt_desc.size = sizeof(gdt_t) - 1;
+    /*gdt_desc.size = sizeof(gdt_t) - 1;
     gdt_desc.offset = (uint64_t)&gdt_def;
-    gdt_load(&gdt_desc);
+    gdt_load(&gdt_desc);*/
+    gdt_init();
+    //tss_init(5, 100000);
     DONE();
 
     LOG("Initializing paging and memory...");
@@ -236,10 +238,10 @@ void _start(boot_info_t* inf)
     sched_spawn_proc(proc);
     DONE();
 
-    //proc_t* elfproc = mk_elf_proc(buf);
-    //sched_spawn_proc(elfproc);
-    //elfproc->next = proc;
-    //proc->next = elfproc;
+    proc_t* elfproc = mk_elf_proc(buf);
+    sched_spawn_proc(elfproc);
+    elfproc->next = proc;
+    proc->next = elfproc;
     
     LOG("Jumping to multitasking...");
     sched_init();
