@@ -7,6 +7,7 @@
 #include <sys/console.h>
 
 hba_memory_t* abar;
+hba_memory_t* vabar;
 list_t* ahci_ports;
 
 static int check_type(hba_port_t* port)
@@ -40,34 +41,34 @@ void ahci_probe_ports()
 {
     ahci_ports = list_create();
 
-    uint32_t ports_impl = abar->ports_impl;
+    uint32_t ports_impl = vabar->ports_impl;
     for (uint32_t i = 0; i < 32; i++)
     {
         if (ports_impl & (1 << i))
         {
-            int pt = check_type(&abar->ports[i]);
+            int pt = check_type(&vabar->ports[i]);
 
             if (pt == AHCI_PORT_SATA || pt == AHCI_PORT_SATAPI)
             {
                 ahci_port_t* port = (ahci_port_t*)kmalloc(sizeof(ahci_port_t));
-                port->hba_port = &abar->ports[i];
+                port->hba_port = &vabar->ports[i];
                 port->type = pt;
                 port->num = ahci_ports->cnt;
                 list_push_back(ahci_ports, port);
-                //ahci_portlist.ports[ahci_portlist.count++] = port;
             }
         }
     }
 }
 
-void ahci_init_dev(pci_dev_t* pci_base_addr)
+void ahci_init_dev(pci_dev_t* pci_dev)
 {
-    pci_enable_bus_master(pci_base_addr);
-    pci_enable_ints(pci_base_addr);
-    pci_enable_mem_space(pci_base_addr);
+    pci_enable_bus_master(pci_dev);
+    pci_enable_ints(pci_dev);
+    pci_enable_mem_space(pci_dev);
 
-    abar = (hba_memory_t*)pci_get_base_addr(pci_base_addr, 5);
-    page_kernel_map_memory((void*)abar, (void*)abar);
+    abar = (hba_memory_t*)pci_get_base_addr(pci_dev, 5);
+    vabar = page_request();
+    page_kernel_map_memory(vabar, abar);
 
     ahci_probe_ports();
 

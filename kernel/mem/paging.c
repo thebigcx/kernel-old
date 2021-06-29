@@ -258,7 +258,70 @@ pml4_t* page_mk_map()
     return pml4;
 }
 
-void page_copy_pml4(pml4_t* dst, pml4_t* src)
+pml4_t* page_clone_pml4(pml4_t* src)
 {
-    
+    return src;
+    pml4_t* dst = page_request(); // Physical
+    memset(dst, 0, PAGE_SIZE);
+
+    for (uint32_t i = 0; i < PDPS_PER_PML4; i++)
+    {
+        if (src->entries[i] & PML4_PRESENT)
+        {
+            pdp_t* pdp_src = src->entries[i] & PML4_FRAME;
+
+            pdp_t* pdp = page_request();
+            memset(pdp, 0, PAGE_SIZE);
+            dst->entries[i] = src->entries[i] & 0x7;
+            set_page_frame(&dst->entries[i], pdp);
+
+            for (uint32_t j = 0; j < DIRS_PER_PDP; j++)
+            {
+                if (pdp_src->entries[j] & PDP_PRESENT)
+                {
+                    page_dir_t* dir_src = pdp_src->entries[j] & PDP_FRAME;
+
+                    page_dir_t* dir = page_request();
+                    memset(dir, 0, PAGE_SIZE);
+                    pdp->entries[j] = pdp_src->entries[j] & 0x7;
+                    set_page_frame(&pdp->entries[j], dir);
+
+                    for (uint32_t k = 0; k < TABLES_PER_DIR; k++)
+                    {
+                        if (dir_src->entries[k] & PD_PRESENT)
+                        {
+                            page_table_t* tbl_src = dir_src->entries[k] & PD_FRAME;
+
+                            page_table_t* tbl = page_request();
+                            memset(tbl, 0, PAGE_SIZE);
+                            dir->entries[k] = dir_src->entries[k] & 0x7;
+                            set_page_frame(&dir->entries[k], tbl);
+
+                            // Copy the pages
+                            for (uint32_t l = 0; l < PAGES_PER_TABLE; l++)
+                            {
+                                if (tbl_src->entries[l] & PAGE_PRESENT)
+                                {
+                                    if (tbl_src->entries[l] & PAGE_USER)
+                                    {
+                                        void* page_src = tbl_src->entries[l] & PAGE_FRAME;
+                                        void* page = page_request();
+                                        memcpy(page, page_src, PAGE_SIZE);
+
+                                        tbl->entries[l] = tbl_src->entries[l] & 0x1f;
+                                        
+                                        set_page_frame(&tbl->entries[l], page);
+                                    }
+                                    else // If it is a kernel page, link pages rather than copy them
+                                    {
+                                        tbl->entries[l] = tbl_src->entries[l];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

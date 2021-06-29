@@ -290,7 +290,9 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     proc->pid = 0;
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_get_kpml4();
+    proc->addr_space = page_clone_pml4(page_get_kpml4());
+    //proc->addr_space = page_get_kpml4();
+    proc->file_descs = list_create();
 
     vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
     fs_fd_t* stdout = vfs_open(node, 0);
@@ -302,8 +304,8 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     proc->regs.rip = (uint64_t)loadelf(elf_dat);
     proc->regs.rflags = 0x202;
-    proc->regs.cs = USER_CS;
-    proc->regs.ss = USER_SS;
+    proc->regs.cs = KERNEL_CS;
+    proc->regs.ss = KERNEL_SS;
     proc->regs.rbp = (uint64_t)stack + 1000;
     proc->regs.rsp = (uint64_t)stack + 1000;
 

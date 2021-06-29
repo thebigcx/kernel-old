@@ -47,7 +47,7 @@ void acpi_read_madt()
 
     if (!madt)
     {
-        console_write("[ACPI] Could not find MADT\n", 255, 0, 0);
+        console_write(ANSI_YELLOW "ACPI: " ANSI_RED "Could not find MADT\n" ANSI_WHITE, 255, 0, 0);
         return;
     }
 

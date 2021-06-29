@@ -9,7 +9,7 @@
 
 void panic(const char* msg, reg_ctx_t* regs)
 {
-    //console_clear();
+    console_clear();
 
     char buffer[100];
 

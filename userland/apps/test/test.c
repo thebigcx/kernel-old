@@ -11,6 +11,6 @@ void _start()
     buffer[3] = 'l';
     buffer[4] = 'o';
 
-    //syscall(1, 0, buffer, 100);
+    syscall(1, 0, buffer, 100);
     for (;;);
 }

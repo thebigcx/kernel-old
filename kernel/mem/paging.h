@@ -20,24 +20,24 @@
 // Page structure entry flags
 #define PML4_PRESENT       1
 #define PML4_WRITABLE      (1 << 1)
-#define PML4_FRAME         0xFFFFFFFFFF000
+#define PML4_FRAME         0xfffffffff000
 
 #define PDP_PRESENT        1
 #define PDP_WRITABLE       (1 << 1)
 #define PDP_USER           (1 << 2)
-#define PDP_FRAME          0xFFFFFFFFFF000
+#define PDP_FRAME          0xfffffffff000
 
 #define PD_PRESENT         1
 #define PD_WRITABLE        (1 << 1)
 #define PD_USER            (1 << 2)
-#define PD_FRAME           0xFFFFFFFFFF000
+#define PD_FRAME           0xfffffffff000
 
 #define PAGE_PRESENT       1
 #define PAGE_WRITABLE      (1 << 1)
 #define PAGE_USER          (1 << 2)
 #define PAGE_WRITETHROUGH  (1 << 3)
 #define PAGE_CACHEDISABLED (1 << 4)
-#define PAGE_FRAME         0xFFFFFFFFFF000ULL
+#define PAGE_FRAME         0xfffffffff000
 
 // Page structure entries
 typedef uint64_t page_t;
@@ -105,7 +105,7 @@ void page_release_m(void* addr, uint64_t cnt);
 // Create a page map
 pml4_t* page_mk_map();
 // Copy a pml4
-void page_copy_pml4(pml4_t* dst, pml4_t* src);
+pml4_t* page_clone_pml4(pml4_t* src);
 
 void* page_request();
 pml4_t* page_get_kpml4();

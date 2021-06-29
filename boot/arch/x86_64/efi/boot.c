@@ -152,12 +152,15 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
 {
     InitializeLib(ImageHandle, SystemTable);
     uefi_call_wrapper(SystemTable->ConOut->ClearScreen, 1, SystemTable->ConOut);
+
+    Print(L"Entered UEFI successfully\n");
     
     // Load kernel
-    Print(L"Loading kernel\n");
+    Print(L"Loading kernel...");
     EFI_FILE* kernel = load_file(NULL, L"kernel.elf", ImageHandle, SystemTable);
+    Print(L"Done\n");
 
-    Print(L"Verifying kernel header\n");
+    Print(L"Verifying kernel header...");
     Elf64_Ehdr header;
     {
         UINTN file_inf_size;
@@ -179,13 +182,12 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
     )
     {
         Print(L"Kernel format bad!\n");
-    }
-    else
-    {
-        Print(L"Kernel header successfully verified\n");
+        return 0;
     }
 
-    Print(L"Reading kernel\n");
+    Print(L"Done\n");
+
+    Print(L"Loading kernel at physical address 0x100000...");
     Elf64_Phdr* phdrs;
     {
         uefi_call_wrapper(kernel->SetPosition, 2, kernel, header.e_phoff);
@@ -215,16 +217,19 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
             }
         }
     }
+    Print(L"Done\n");
 
     boot_inf.font = load_font(NULL, L"font.psf", ImageHandle, SystemTable);
 
     EFI_STATUS status;
 
-    Print(L"Intializing graphics\n");
+    Print(L"Intializing generic GOP driver...");
     init_gop(SystemTable);
+    Print(L"Done\n");
 
-    Print(L"Initalizing memory map\n");
+    Print(L"Initalizing memory map...");
     init_mem_map(SystemTable);
+    Print(L"Done\n");
 
     EFI_CONFIGURATION_TABLE* cfg_tbl = SystemTable->ConfigurationTable;
     void* rsdp = NULL;
@@ -247,9 +252,8 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable
 
     // Exit boot services
 
+    Print(L"Jumping to kernel...");
     status = uefi_call_wrapper(SystemTable->BootServices->ExitBootServices, 2, ImageHandle, boot_inf.mem_map_key);
-    if (EFI_ERROR(status))
-        Print(L"Error (%d): ExitBootServices\n", status);
 
     boot_info_t kern_inf = boot_inf;
     ((__attribute__((sysv_abi)) void (*)(boot_info_t*)) header.e_entry)(&kern_inf);

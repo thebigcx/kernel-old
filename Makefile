@@ -7,11 +7,6 @@ ARCHDIR ?=
 ARCHTARGET ?=
 
 all:
-	@echo ""
-	@echo "<========= Compiling libraries ========>"
-	@echo ""
-	@cd lib && make
-	@echo ""
 	@echo "<======== Compiling bootloader ========>"
 	@echo ""
 	@cd boot/arch/$(ARCHDIR) && make
@@ -19,6 +14,11 @@ all:
 	@echo "<========== Compiling kernel ==========>"
 	@echo ""
 	@cd kernel && make
+	@echo ""
+	@echo "<======== Compiling Userland =========>"
+	@echo ""
+	@cd userland && make
+	@echo ""
 
 clean:
 	@echo "Cleaning iso..."

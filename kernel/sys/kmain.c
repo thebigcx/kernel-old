@@ -24,6 +24,7 @@
 #include <util/bmp.h>
 #include <util/stdlib.h>
 #include <util/elf.h>
+#include <drivers/tty/serial.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -75,13 +76,6 @@ static void init_paging(boot_info_t* inf)
     }
 
     asm volatile ("mov %0, %%cr3"::"r"(page_get_kpml4()));
-}
-
-void test_proc()
-{
-    sched_block(PROC_STATE_WAITING);
-    console_printf("TEST", 255, 255, 255);
-    for(;;);
 }
 
 void kernel_proc()
@@ -149,7 +143,11 @@ void _start(boot_info_t* inf)
     video_set_fnt(inf->font);
     memset(vidmode.fb, 0, vidmode.width * vidmode.height * (vidmode.depth / 8));
 
+    DONE();
+
     cli();
+
+    serial_init();
 
     LOG("Initializing GDT...");
     /*gdt_desc.size = sizeof(gdt_t) - 1;

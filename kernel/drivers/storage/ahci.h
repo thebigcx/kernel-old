@@ -194,7 +194,7 @@ extern list_t* ahci_ports;
 
 void ahci_probe_ports();
 void ahci_port_rebase(ahci_port_t* port);
-void ahci_init_dev(pci_dev_t* pci_base_addr);
+void ahci_init_dev(pci_dev_t* pci_dev);
 void ahci_start_cmd(ahci_port_t* port);
 void ahci_stop_cmd(ahci_port_t* port);
 
