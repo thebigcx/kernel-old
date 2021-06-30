@@ -12,7 +12,7 @@
 #include <acpi/acpi.h>
 #include <drivers/pci/pci.h>
 #include <drivers/pci/pci_ids.h>
-#include <drivers/storage/ahci.h>
+#include <drivers/storage/ata/ahci/ahci.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <sched/sched.h>
 #include <intr/apic.h>
@@ -25,6 +25,7 @@
 #include <util/stdlib.h>
 #include <util/elf.h>
 #include <drivers/tty/serial.h>
+#include <drivers/storage/partmgr/gpt.h>
 
 #define LOG(m) console_write(m, 255, 255, 255)
 #define DONE() console_write("Done\n", 0, 255, 0)
@@ -200,6 +201,7 @@ void _start(boot_info_t* inf)
     LOG("Mounting /dev/disk0 to /...");
     vfs_init();
 
+    //vfs_node_t* dev = gpt_getpart(ahci_get_dev(0), "Root");
     vfs_node_t* dev = ahci_get_dev(0);
     vfs_mount(dev, "/dev/disk0"); // Mount first disk
 
@@ -213,12 +215,27 @@ void _start(boot_info_t* inf)
 
     cli();
 
-    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
+    //vfs_mkfile(root, "this");
+    vfs_listdir(root);
+
+    vfs_node_t* test = vfs_resolve_path("/text/test.txt", NULL);
+    vfs_open(test, 0);
+    
+    uint8_t* buf = kmalloc(1024 * 2);
+    memset(buf, 'X', 1024 * 2);
+    vfs_write(test, buf, 0, 1024 * 2);
+
+    for (int i = 0; i < test->size; i++)
+    {
+        console_putchar(buf[i], 255, 255, 255);
+    }
+
+    /*vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
     vfs_open(test, 0);
 
     uint8_t* buf = kmalloc(512 - (test->size % 512) + test->size);
     
-    vfs_read(test, buf, 0, test->size);
+    vfs_read(test, buf, 0, test->size);*/
     /*vfs_close(test);*/
 
     LOG("Initializing keyboard...");
@@ -236,10 +253,10 @@ void _start(boot_info_t* inf)
     sched_spawn_proc(proc);
     DONE();
 
-    proc_t* elfproc = mk_elf_proc(buf);
-    sched_spawn_proc(elfproc);
-    elfproc->next = proc;
-    proc->next = elfproc;
+    //proc_t* elfproc = mk_elf_proc(buf);
+    //sched_spawn_proc(elfproc);
+    //elfproc->next = proc;
+    //proc->next = elfproc;
     
     LOG("Jumping to multitasking...");
     sched_init();

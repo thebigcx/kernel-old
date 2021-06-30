@@ -27,7 +27,14 @@ typedef struct reg_ctx
 
 } reg_ctx_t;
 
-void panic(const char* msg, reg_ctx_t* regs);
+typedef struct isr_frame
+{
+    reg_ctx_t regs;
+    uint32_t errcode;
+
+} isr_frame_t;
+
+void panic(const char* msg, uint64_t num, isr_frame_t* r);
 inline void cli()
 {
     asm ("cli");

@@ -31,10 +31,10 @@ vfs_node_t* ext2_init(vfs_node_t* dev)
     vol->blk_sz = 1024u << vol->super.log_block_sz;
 
     vol->blk_grp_cnt = (vol->super.blk_cnt % vol->super.blks_per_grp) ? (vol->super.blk_cnt / vol->super.blks_per_grp + 1) : (vol->super.blk_cnt / vol->super.blks_per_grp);
-    vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t) + 512);
+    vol->blk_grps = kmalloc(vol->blk_grp_cnt * sizeof(ext2_bgd_t) + 512);
 
     uint64_t block_glba = ext2_blk_to_lba(vol, ext2_loc_to_blk(vol, EXT2_SB_LOC) + 1);
-    uint32_t sectors = vol->blk_grp_cnt * sizeof(ext2_group_desc_tbl_t) / 512 + 1;
+    uint32_t sectors = vol->blk_grp_cnt * sizeof(ext2_bgd_t) / 512 + 1;
     dev->read(dev, vol->blk_grps, block_glba, sectors);
     
     ext2_inode_t ino;
@@ -58,12 +58,12 @@ uint8_t ext2_is_ext2(vfs_node_t* dev)
 
 uint32_t ext2_inode_bg_idx(ext2_vol_t* vol, uint32_t inode)
 {
-    return (inode - 1) % vol->super.inode_cnt;
+    return (inode - 1) % vol->super.inodes_per_grp;
 }
 
 uint32_t ext2_inode_bg(ext2_vol_t* vol, uint32_t inode)
 {
-    return (inode - 1) / vol->super.inode_cnt;
+    return (inode - 1) / vol->super.inodes_per_grp;
 }
 
 uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode)
@@ -106,7 +106,9 @@ uint32_t ext2_alloc_block(ext2_vol_t* vol)
                     vol->dev->write(vol->dev, buf, ext2_blk_to_lba(vol, grp), vol->blk_sz / 512);
 
                     vol->blk_grps[i].free_blocks--;
+                    ext2_rewrite_bgds(vol);
 
+                    kfree(buf);
                     return i * vol->super.blks_per_grp + j * 8 + k;
                 }
             }
@@ -114,4 +116,24 @@ uint32_t ext2_alloc_block(ext2_vol_t* vol)
     }
 
     kfree(buf);
+    return 0;
+}
+
+void ext2_free_block(ext2_vol_t* vol, uint32_t blk)
+{
+
+}
+
+// TODO: support more than one block of group descriptors
+void ext2_rewrite_bgds(ext2_vol_t* vol)
+{
+    uint32_t bgds_loc = 2 * (vol->blk_sz / 512);
+    //for (uint32_t i = 0; i < vol->blk_grp_cnt; i++)
+    {
+        uint8_t* buffer = kmalloc(vol->blk_sz);
+
+        vol->dev->read(vol->dev, buffer, bgds_loc, vol->blk_sz / 512);
+        memcpy(buffer, vol->blk_grps, vol->blk_grp_cnt * sizeof(ext2_bgd_t));
+        vol->dev->write(vol->dev, buffer, bgds_loc, vol->blk_sz / 512);
+    }
 }

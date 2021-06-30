@@ -14,17 +14,18 @@ vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
     uint8_t* buf = kmalloc(e2vol->blk_sz);
     ext2_dir_ent_t* fnd_dir = buf; // Found directory entry
 
-    e2vol->dev->read(e2vol->dev, buf, ext2_blk_to_lba(e2vol, ext2_get_inode_blk(e2vol, blk_idx, &ino)), e2vol->blk_sz / 512);
+    ext2_read_inode_blk(e2vol, blk_idx, &ino, buf);
 
-    while (blk_idx < ino.sector_cnt / (e2vol->blk_sz / 512))
+    while (blk_idx * e2vol->blk_sz < ino.size)
     {
         char* fnd_name = (uint8_t*)fnd_dir + EXT2_DIRENT_NAME_OFF;
         blk_off += fnd_dir->size;
 
         if (strncmp(fnd_name, name, fnd_dir->name_len) == 0)
         {
-            //kfree(buf);
-            return ext2_dirent_to_node(e2vol, fnd_dir);
+            vfs_node_t* node = ext2_dirent_to_node(e2vol, fnd_dir);
+            kfree(buf);
+            return node;
         }
 
         if (blk_off >= e2vol->blk_sz)
@@ -32,15 +33,15 @@ vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
             blk_idx++;
             blk_off = 0;
 
-            e2vol->dev->read(e2vol->dev, buf, ext2_blk_to_lba(e2vol, ext2_get_inode_blk(e2vol, blk_idx, &ino)), e2vol->blk_sz / 512);
+            ext2_read_inode_blk(e2vol, blk_idx, &ino, buf);
         }
 
         fnd_dir = buf + blk_off;
     }
 
-    //console_printf("[EXT2] Could not find file %s\n", 255, 255, 255, name);
+    console_printf("[EXT2] Could not find file %s\n", 255, 255, 255, name);
     kfree(buf);
-    //return NULL;
+    return NULL;
 }
 
 list_t* ext2_listdir(vfs_node_t* parent)
@@ -57,9 +58,9 @@ list_t* ext2_listdir(vfs_node_t* parent)
     uint8_t* buf = kmalloc(vol->blk_sz);
     ext2_dir_ent_t* fnd_dir = buf; // Found directory entry
 
-    vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, ext2_get_inode_blk(vol, blk_idx, &ino)), vol->blk_sz / 512);
+    ext2_read_inode_blk(vol, blk_idx, &ino, buf);
 
-    while (blk_idx < ino.sector_cnt / (vol->blk_sz / 512))
+    while (blk_idx * vol->blk_sz < ino.size)
     {
         blk_off += fnd_dir->size;
 
@@ -71,7 +72,7 @@ list_t* ext2_listdir(vfs_node_t* parent)
             blk_idx++;
             blk_off = 0;
 
-            vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, ext2_get_inode_blk(vol, blk_idx, &ino)), vol->blk_sz / 512);
+            ext2_read_inode_blk(vol, blk_idx, &ino, buf);
         }
 
         fnd_dir = buf + blk_off;
@@ -117,4 +118,71 @@ vfs_node_t* ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent)
     }
 
     return node;
+}
+
+void ext2_add_entry(vfs_node_t* parent, const char* name, uint32_t type)
+{
+    ext2_vol_t* vol = (ext2_vol_t*)parent->device;
+
+    uint32_t newino_num = ext2_alloc_inode(vol);
+    ext2_inode_t newino;
+    ext2_init_inode(&newino, type, 0); // TODO: permissions
+    ext2_write_inode(vol, newino_num, &newino);
+
+    uint32_t size = sizeof(ext2_dir_ent_t) + strlen(name);
+    ext2_dir_ent_t* dirent = kmalloc(size);
+    dirent->file_type = type;
+    dirent->inode = newino_num;
+    dirent->name_len = strlen(name);
+    dirent->size = size;
+    memcpy((void*)dirent + sizeof(ext2_dir_ent_t), name, dirent->name_len);
+
+    uint32_t pinonum = parent ? parent->inode_num : 2; // Root directory if NULL
+    ext2_inode_t pino;
+    ext2_read_inode(vol, pinonum, &pino);
+    size_t inosize = ext2_get_size(&pino);
+
+    uint32_t blk_off = 0;
+    uint32_t blk_idx = 0;
+    uint32_t direntoff = 0;
+    void* buf = kmalloc(vol->blk_sz);
+    ext2_dir_ent_t* ent = buf;
+
+    ext2_read_inode_blk(vol, blk_idx, &pino, buf);
+
+    while (blk_idx * vol->blk_sz < pino.size)
+    {
+        blk_off += ent->size;
+
+        if (blk_off >= vol->blk_sz)
+        {
+            blk_idx++;
+            blk_off = 0;
+            
+            ext2_read_inode_blk(vol, blk_idx, &pino, buf);
+        }
+
+        // Last entry - link_cnt excludes . and ..
+        if (direntoff == pino.link_cnt + 1)
+        {
+            //ent = buf + blk_off;
+            // Set the size to the actual size (not the rest of the block)
+            ent->size = ent->name_len + sizeof(ext2_dir_ent_t);
+
+            blk_off += ent->size;
+            ent = buf + blk_off;
+            break;
+        }
+
+        ent = buf + blk_off;
+        direntoff++;
+    }
+
+    memcpy(ent, dirent, dirent->size);
+    ext2_write_inode_blk(vol, blk_idx, &pino, buf);
+
+    pino.link_cnt++;
+    ext2_write_inode(vol, pinonum, &pino);
+
+    kfree(dirent);
 }

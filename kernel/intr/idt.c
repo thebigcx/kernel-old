@@ -161,30 +161,30 @@ void irq_handler(uint64_t num, reg_ctx_t* r)
         int_handlers[num](r);
 }
 
-void isr_handler(uint64_t num, reg_ctx_t* r)
+void isr_handler(uint64_t num, isr_frame_t* r)
 {
-    if (num == 0) panic("Divide by zero error", r);
+    if (num == 0) panic("Divide by zero error", num, r);
     else if (num == 1) console_printf("Debug\n", 255, 255, 255);
-    else if (num == 2) panic("Non-maskable interrupt", r);
+    else if (num == 2) panic("Non-maskable interrupt", num, r);
     else if (num == 3) console_printf("Breakpoint\n", 255, 255, 255);
-    else if (num == 4) panic("Overflow error", r);
-    else if (num == 5) panic("Bound range exceeded", r);
-    else if (num == 6) panic("Invalid opcode", r);
-    else if (num == 7) panic("Device not available", r);
-    else if (num == 8) panic("Double fault", r);
-    else if (num == 9) panic("Coprocessor segment overrun", r);
-    else if (num == 10) panic("Invalid TSS", r);
-    else if (num == 11) panic("Segment not present", r);
-    else if (num == 12) panic("Stack-segment fault", r);
-    else if (num == 13) panic("General protection fault", r);
-    else if (num == 14) panic("Page fault", r);
-    else if (num == 16) panic("x87 Floating-point exception", r);
-    else if (num == 17) panic("Alignment check", r);
-    else if (num == 18) panic("Machine check", r);
-    else if (num == 19) panic("SIMD Floating-point exception", r);
-    else if (num == 20) panic("Virtualization exception", r);
-    else if (num == 30) panic("Security exception", r);
-    else panic("An error with unknown error code has occurred.", r);
+    else if (num == 4) panic("Overflow error", num, r);
+    else if (num == 5) panic("Bound range exceeded", num, r);
+    else if (num == 6) panic("Invalid opcode", num, r);
+    else if (num == 7) panic("Device not available", num, r);
+    else if (num == 8) panic("Double fault", num, r);
+    else if (num == 9) panic("Coprocessor segment overrun", num, r);
+    else if (num == 10) panic("Invalid TSS", num, r);
+    else if (num == 11) panic("Segment not present", num, r);
+    else if (num == 12) panic("Stack-segment fault", num, r);
+    else if (num == 13) panic("General protection fault", num, r);
+    else if (num == 14) panic("Page fault", num, r);
+    else if (num == 16) panic("x87 Floating-point exception", num, r);
+    else if (num == 17) panic("Alignment check", num, r);
+    else if (num == 18) panic("Machine check", num, r);
+    else if (num == 19) panic("SIMD Floating-point exception", num, r);
+    else if (num == 20) panic("Virtualization exception", num, r);
+    else if (num == 30) panic("Security exception", num, r);
+    else panic("An error with unknown error code has occurred.", num, r);
 }
 
 void ipi_handler(uint64_t num, reg_ctx_t* r)

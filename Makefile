@@ -28,8 +28,8 @@ clean:
 	@rm -f bin/os.img
 	@rm -f bin/sata.img
 	@rm -rf bin/iso
-	@echo "Cleaning libraries..."
-	@cd lib && make clean
+	@echo "Cleaning userland..."
+	@cd userland && make clean
 	@echo "Cleaning kernel..."
 	@cd kernel && make clean
 	@echo "Cleaning boot loader..."

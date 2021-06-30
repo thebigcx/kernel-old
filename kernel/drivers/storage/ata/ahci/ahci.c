@@ -1,6 +1,6 @@
-#include <drivers/storage/ahci.h>
+#include <drivers/storage/ata/ahci/ahci.h>
 #include <drivers/pci/pci_ids.h>
-#include <drivers/storage/ata.h>
+#include <drivers/storage/ata/ata.h>
 #include <mem/paging.h>
 #include <util/stdlib.h>
 #include <mem/heap.h>

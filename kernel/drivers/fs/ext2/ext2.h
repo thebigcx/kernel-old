@@ -146,7 +146,7 @@ typedef struct ext2_sb
 
 } __attribute__((packed)) ext2_sb_t;
 
-typedef struct ext2_group_desc_tbl
+typedef struct ext2_bgd
 {
     uint32_t block_bitmap_addr;     // Block address of block usage bitmap
     uint32_t inode_bitmap_addr;     // Block address of inode usage bitmap
@@ -157,7 +157,7 @@ typedef struct ext2_group_desc_tbl
     uint16_t padding;
     uint8_t res[12];
 
-} __attribute__((packed)) ext2_group_desc_tbl_t;
+} __attribute__((packed)) ext2_bgd_t;
 
 typedef struct ext2_inode
 {
@@ -202,7 +202,7 @@ typedef struct ext2_vol
 {
     vfs_node_t* dev;
     uint32_t blk_sz;
-    ext2_group_desc_tbl_t* blk_grps;
+    ext2_bgd_t* blk_grps;
     uint32_t blk_grp_cnt;
 
     struct
@@ -223,10 +223,21 @@ typedef struct ext2_node
 // inode.c
 void ext2_read_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
 void ext2_write_inode(ext2_vol_t* vol, uint32_t num, ext2_inode_t* inode);
-uint32_t* ext2_get_inode_blks(ext2_vol_t* vol, uint32_t idx, uint32_t cnt, ext2_inode_t* ino);
+
 uint32_t ext2_get_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino);
+void ext2_set_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino, uint32_t inonum, uint32_t blk);
+void ext2_read_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino, void* buffer);
+void ext2_write_inode_blk(ext2_vol_t* vol, uint32_t idx, ext2_inode_t* ino, const void* buffer);
+
 size_t ext2_get_size(ext2_inode_t* ino);
-void ext2_alloc_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t ino_num);
+
+void ext2_alloc_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t inonum);
+void ext2_free_inode_blk(ext2_vol_t* vol, ext2_inode_t* ino, uint32_t inonum, uint32_t blk);
+
+uint32_t ext2_alloc_inode(ext2_vol_t* vol);
+void ext2_free_inode(ext2_vol_t* vol, uint32_t ino);
+
+void ext2_init_inode(ext2_inode_t* ino, uint32_t type, uint32_t perms);
 
 // file.c
 void ext2_open(vfs_node_t* file, uint32_t flags);
@@ -239,6 +250,7 @@ void ext2_mkdir(vfs_node_t* parent, const char* name);
 // dir.c
 vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name);
 list_t* ext2_listdir(vfs_node_t* parent);
+void ext2_add_entry(vfs_node_t* parent, const char* name, uint32_t type);
 
 vfs_node_t* ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent);
 
@@ -251,3 +263,5 @@ uint64_t ext2_inode_lba(ext2_vol_t* vol, uint32_t inode);
 uint32_t ext2_loc_to_blk(ext2_vol_t* vol, uint64_t loc);
 uint64_t ext2_blk_to_lba(ext2_vol_t* vol, uint64_t blk);
 uint32_t ext2_alloc_block(ext2_vol_t* vol);
+void ext2_free_block(ext2_vol_t* vol, uint32_t blk);
+void ext2_rewrite_bgds(ext2_vol_t* vol);
