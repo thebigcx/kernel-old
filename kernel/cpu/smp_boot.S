@@ -4,6 +4,9 @@
 .set SMP_TRAMPOLINE_GDT, 0x1008
 .set SMP_TRAMPOLINE_ENTRY, 0x1010
 
+.global _ap_bootstrap_start
+_ap_bootstrap_start:
+
 ap_trampoline:
     cli
     cld
@@ -26,3 +29,6 @@ smpentry64:
     movl    %ebx, %edi
     movl    $SMP_TRAMPOLINE_ENTRY, %eax
     call    (%eax)
+
+.global _ap_bootstrap_end
+_ap_bootstrap_end:

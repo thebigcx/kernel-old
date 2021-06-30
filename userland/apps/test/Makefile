@@ -1,14 +1,11 @@
-SOURCES := $(shell find ./ -type f -name '*.c')
-ASM := $(shell find ./ -type f -name '*.s')
-OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.s, %.o, $(ASM))
+include ../apps.mk
+
 TARGET := test
-LDFLAGS := -Ttest.ld -static -Bsymbolic -nostdlib
-CFLAGS := -ffreestanding -fshort-wchar -mno-red-zone -Wall -Wextra -nostdinc -fpic
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	ld $(LDFLAGS) -o $(TARGET) $(OBJS)
+	ld -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<

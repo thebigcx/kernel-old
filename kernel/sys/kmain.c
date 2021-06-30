@@ -216,7 +216,7 @@ void _start(boot_info_t* inf)
     cli();
 
     //vfs_mkfile(root, "this");
-    vfs_listdir(root);
+    /*vfs_listdir(root);
 
     vfs_node_t* test = vfs_resolve_path("/text/test.txt", NULL);
     vfs_open(test, 0);
@@ -228,14 +228,14 @@ void _start(boot_info_t* inf)
     for (int i = 0; i < test->size; i++)
     {
         console_putchar(buf[i], 255, 255, 255);
-    }
+    }*/
 
-    /*vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
+    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
     vfs_open(test, 0);
 
-    uint8_t* buf = kmalloc(512 - (test->size % 512) + test->size);
+    uint8_t* elfdat = kmalloc(512 - (test->size % 512) + test->size);
     
-    vfs_read(test, buf, 0, test->size);*/
+    vfs_read(test, elfdat, 0, test->size);
     /*vfs_close(test);*/
 
     LOG("Initializing keyboard...");
@@ -253,10 +253,10 @@ void _start(boot_info_t* inf)
     sched_spawn_proc(proc);
     DONE();
 
-    //proc_t* elfproc = mk_elf_proc(buf);
-    //sched_spawn_proc(elfproc);
-    //elfproc->next = proc;
-    //proc->next = elfproc;
+    proc_t* elfproc = mk_elf_proc(elfdat);
+    sched_spawn_proc(elfproc);
+    elfproc->next = proc;
+    proc->next = elfproc;
     
     LOG("Jumping to multitasking...");
     sched_init();

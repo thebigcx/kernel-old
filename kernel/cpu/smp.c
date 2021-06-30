@@ -9,6 +9,9 @@ volatile uint64_t* smp_cr3 = 0x1000;
 volatile uint64_t* smp_gdt = 0x1008;
 volatile uint64_t* smp_ent = 0x1010;
 
+extern void* _ap_bootstrap_start;
+extern void* _ap_bootstrap_end;
+
 void smp_entry(uint16_t id)
 {
     console_printf("Hello from another core!\n", 255, 255, 255);
@@ -19,6 +22,8 @@ void smp_init()
     *smp_cr3 = page_get_kpml4();
     *smp_gdt = &gdt_ptr;
     *smp_ent = smp_entry;
+
+    memcpy(0x2000, &_ap_bootstrap_start, &_ap_bootstrap_end - &_ap_bootstrap_start);
 
     uint32_t loc_id = lapic_read(LAPIC_ID) >> 24;
 

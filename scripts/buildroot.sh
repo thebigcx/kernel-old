@@ -1,0 +1,1 @@
+cp userland/apps/test/test base/bin

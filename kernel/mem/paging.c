@@ -71,8 +71,8 @@ void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_si
 
     // Page-aligned
     temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE - ((uint64_t)temp_mem % PAGE_SIZE)));
-    kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
-    memset(kpml4, 0, PAGE_SIZE);
+    //kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE);
+    kpml4 = page_mk_map();
 
     page_reserve_m(0, memory_size / PAGE_SIZE + 1);
 
@@ -245,22 +245,15 @@ pml4_t* page_get_kpml4()
 
 pml4_t* page_mk_map()
 {
-    pml4_t* pml4 = temp_kmalloc(PAGE_SIZE);
+    pml4_t* pml4 = page_request(PAGE_SIZE);
     memset(pml4, 0, PAGE_SIZE);
-
-    // Identity map all conventional memory
-    /*uint64_t mem_size = mem_get_sz();
-    for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
-    {
-        page_map_memory((void*)i, (void*)i, pml4);
-    }*/
 
     return pml4;
 }
 
 pml4_t* page_clone_pml4(pml4_t* src)
 {
-    return src;
+    //return src;
     pml4_t* dst = page_request(); // Physical
     memset(dst, 0, PAGE_SIZE);
 

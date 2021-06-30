@@ -294,8 +294,13 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     //proc->addr_space = page_get_kpml4();
     proc->file_descs = list_create();
 
-    vfs_node_t* node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdout = vfs_open(node, 0);
+    // TODO: These are temporary - later will be hooked up to PTYs
+    vfs_node_t* stdin_node = vfs_resolve_path("/dev/stdout", NULL);
+    fs_fd_t* stdin = vfs_open(stdin_node, 0);
+    list_push_back(proc->file_descs, stdin);
+
+    vfs_node_t* stdout_node = vfs_resolve_path("/dev/stdout", NULL);
+    fs_fd_t* stdout = vfs_open(stdout_node, 0);
     list_push_back(proc->file_descs, stdout);
 
     void* stack = kmalloc(1000);
