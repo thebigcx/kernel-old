@@ -47,11 +47,18 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
 
 void heap_init()
 {
-    void* addr = page_request();
+    /*void* addr = pmm_request();
     page_kernel_map_memory(addr, addr);
+    char buf[100];
+    serial_writestr(itoa(addr, buf, 16));
     for (int i = 1; i < 1000; i++)
     {
-        page_kernel_map_memory(addr + i * PAGE_SIZE, page_request());
+        page_kernel_map_memory(addr + i * PAGE_SIZE, pmm_request());
+    }*/
+    void* addr = KERNEL_VIRTUAL_ADDR + 4 * 10000000;
+    for (int i = 0; i < 1000; i++)
+    {
+        page_kernel_map_memory(addr + i * PAGE_SIZE, pmm_request());
     }
     
     size_t heap_len = 1000 * PAGE_SIZE;

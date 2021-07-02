@@ -44,5 +44,5 @@ typedef struct idt_record
 
 typedef void (*int_fn_t)(reg_ctx_t* r);
 
-void idt_load();
+void idt_init();
 void idt_set_int(uint32_t id, int_fn_t fn);

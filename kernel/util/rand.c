@@ -16,5 +16,5 @@ static int32_t rand_gen()
 
 uint64_t rand_range(uint64_t min, uint64_t max)
 {
-    return (rand_gen() / (double)RAND_MAX) * max + min;
+    return (rand_gen() / RAND_MAX) * max + min;
 }

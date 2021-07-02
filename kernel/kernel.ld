@@ -1,4 +1,4 @@
-OUTPUT_FORMAT(elf64-x86-64)
+/*OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_start)
 
 KERNEL_VIRT_BASE = 0xffffffff80000000;
@@ -6,7 +6,7 @@ KERNEL_VIRT_BASE = 0xffffffff80000000;
 SECTIONS
 {
     . = 0x100000;
-    _KernelStart = .;
+    _start = .;
 
     .text :
     {
@@ -30,5 +30,36 @@ SECTIONS
         *(.bss)
         . = ALIGN(0x1000);
     }
-    _KernelEnd = .;
+    _kernel_end = .;
+}*/
+
+ENTRY(_start)
+SECTIONS
+{
+    . = 0xffffffff80200000;
+
+    _kernel_start = .;
+
+    .stivale2hdr : {
+        KEEP(*(.stivale2hdr))
+    }
+
+    .text : {
+        *(.text*)
+    }
+
+    .rodata : {
+        *(.rodata*)
+    }
+
+    .data : {
+        *(.data*)
+    }
+
+    .bss : {
+        *(COMMON)
+        *(.bss*)
+    }
+
+    _kernel_end = .;
 }

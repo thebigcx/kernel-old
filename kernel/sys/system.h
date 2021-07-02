@@ -35,19 +35,11 @@ typedef struct isr_frame
 } isr_frame_t;
 
 void panic(const char* msg, uint64_t num, isr_frame_t* r);
-inline void cli()
-{
-    asm ("cli");
-}
 
-inline void sti()
-{
-    asm ("sti");
-}
+// Shorthands for assembly
 
-inline void hlt()
-{
-    asm ("hlt");
-}
+#define cli() asm ("cli")
+#define sti() asm ("sti")
+#define hlt() asm ("hlt")
 
 void breakpoint();

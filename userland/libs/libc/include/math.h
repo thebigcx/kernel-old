@@ -1,7 +1,7 @@
 #pragma once
 
 // Raise 'x' to the power of 'y'
-double pow(double x, double y);
+/*double pow(double x, double y);
 
 // Round 'x' up
 double ceil(double x);
@@ -11,6 +11,8 @@ double floor(double x);
 
 // Inverse pow() function
 double log(double x);
+
+int abs(int n);
 
 // Absolute value of x
 double fabs(double x);
@@ -22,4 +24,4 @@ double sqrt(double x);
 double fmod(double x, double y);
 
 // Returns d truncated
-double trunc(double d);
+double trunc(double d);*/

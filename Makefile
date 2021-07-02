@@ -7,10 +7,10 @@ ARCHDIR ?=
 ARCHTARGET ?=
 
 all:
-	@echo "<======== Compiling bootloader ========>"
-	@echo ""
-	@cd boot/arch/$(ARCHDIR) && make
-	@echo ""
+#	@echo "<======== Compiling bootloader ========>"
+#	@echo ""
+#	@cd boot/arch/$(ARCHDIR) && make
+#	@echo ""
 	@echo "<========== Compiling kernel ==========>"
 	@echo ""
 	@cd kernel && make

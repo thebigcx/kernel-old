@@ -1,6 +1,6 @@
 #include <math.h>
 
-double pow(double x, double y)
+/*double pow(double x, double y)
 {
     for (int i = 0; i < y - 1; i++)
         x *= x;
@@ -40,4 +40,4 @@ double ceil(double x)
 {
     if (x < 0) return (int)x; // (int) truncates towards 0
     return (int)x + 1;
-}
+}*/

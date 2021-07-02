@@ -41,3 +41,7 @@ char serial_read();
 
 bool serial_transmit_empty();
 void serial_write(char c);
+
+// Only really used for terminal output
+void serial_writestr(char* str);
+void serial_printf(char* format, ...);

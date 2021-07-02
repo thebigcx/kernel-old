@@ -33,7 +33,7 @@ void lapic_set_base(uint64_t val)
 void lapic_init()
 {
     lapic_base = lapic_read_base() & LAPIC_BASE;
-    lapic_vbase = page_request();
+    lapic_vbase = pmm_request();
 
     page_kernel_map_memory((void*)lapic_vbase, (void*)lapic_base);
 
@@ -92,7 +92,7 @@ uint32_t apic_id;
 
 void ioapic_init()
 {
-    ioapic_vbase = page_request();
+    ioapic_vbase = pmm_request();
     page_kernel_map_memory(ioapic_vbase, ioapic_base);
 
     regsel = (uint32_t*)(ioapic_vbase + IOAPIC_REGSEL);

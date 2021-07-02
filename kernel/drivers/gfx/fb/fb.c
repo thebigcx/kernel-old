@@ -20,10 +20,10 @@ int fb_ioctl(vfs_node_t* node, uint64_t request, void* argp)
 
 void* fb_mmap(vfs_node_t* file, void* addr, size_t len, int prot, int flags, size_t off)
 {
-    void* ret = page_request();
+    void* ret = pmm_request();
     for (uint32_t i = 1; i < len / PAGE_SIZE + 1; i++)
     {
-        page_request();
+        pmm_request();
     }
 }
 

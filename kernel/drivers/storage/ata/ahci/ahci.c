@@ -67,7 +67,7 @@ void ahci_init_dev(pci_dev_t* pci_dev)
     pci_enable_mem_space(pci_dev);
 
     abar = (hba_memory_t*)pci_get_base_addr(pci_dev, 5);
-    vabar = page_request();
+    vabar = pmm_request();
     page_kernel_map_memory(vabar, abar);
 
     ahci_probe_ports();

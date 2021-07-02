@@ -14,7 +14,7 @@ typedef struct acpi_rsdp
     uint8_t ext_checksum;
     uint8_t res[3];
 
-} __attribute__((packed)) acpi_rsdp_t;
+} __attribute__((packed)) acpi_xsdp_t;
 
 typedef struct acpi_sdt_hdr
 {
@@ -195,6 +195,7 @@ extern iso_lst_t acpi_isos;
 extern uint32_t acpi_cpus[64]; // Max 64 cores
 extern uint32_t acpi_cpu_cnt;
 
-void acpi_init(acpi_rsdp_t* rsdp);
+void acpi_setrsdp(acpi_xsdp_t* rsdp);
+void acpi_init();
 void* acpi_find_tbl(const char* tbl);
 void acpi_read_madt();

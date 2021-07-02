@@ -4,20 +4,37 @@
 #include <intr/apic.h>
 #include <mem/paging.h>
 
+acpi_xsdp_t* desc;
 acpi_rsdt_t* rsdt;
 acpi_xsdt_t* xsdt;
-acpi_rsdp_t* desc;
 
 iso_lst_t acpi_isos;
 
 uint32_t acpi_cpus[64];
 uint32_t acpi_cpu_cnt = 0;
 
-void acpi_init(acpi_rsdp_t* rsdp)
+void acpi_setrsdp(acpi_xsdp_t* rsdp)
 {
-    desc = rsdp;
-    xsdt = rsdp->xsdt_addr;
-    rsdt = rsdp->rsdt_addr;
+    char buf[100];
+    
+    desc = page_map_mmio(rsdp, PAGE_SIZE);
+    serial_writestr(itoa(desc, buf, 16));
+}
+
+void acpi_init()
+{
+    //desc = pmm_request();
+    //page_kernel_map_memory(desc, rsdp);
+
+    if (desc->rev == 0)
+    {
+        rsdt = page_map_mmio(desc->rsdt_addr, PAGE_SIZE);
+    }
+    else
+    {
+        xsdt = page_map_mmio(desc->xsdt_addr, PAGE_SIZE);
+        rsdt = page_map_mmio(desc->xsdt_addr, PAGE_SIZE);
+    }
 
     acpi_isos.cnt = 0;
 
@@ -27,13 +44,19 @@ void acpi_init(acpi_rsdp_t* rsdp)
 void* acpi_find_tbl(const char* tbl)
 {
     uint32_t entries = (xsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / sizeof(uint64_t);
+    char buf[100];
+    serial_writestr(itoa(xsdt->hdr.len, buf, 10));
 
     for (uint32_t i = 0; i < entries; i++)
     {
-        acpi_sdt_hdr_t* hdr = (acpi_sdt_hdr_t*)xsdt->sdts[i];
+        //acpi_sdt_hdr_t* hdr = (acpi_sdt_hdr_t*)rsdt->sdts[i];
+        //char buf[100];
+        //serial_writestr(itoa(rsdt->sdts[i], buf, 16));
 
-        page_kernel_map_memory(hdr, hdr);
+        //page_kernel_map_memory(hdr, hdr);
         
+        acpi_sdt_hdr_t* hdr = page_map_mmio(rsdt->sdts[i], PAGE_SIZE);
+
         if (!strncmp((char*)hdr->sig, tbl, 4))
             return hdr;
     }

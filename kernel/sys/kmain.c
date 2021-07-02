@@ -1,7 +1,6 @@
 #include <util/types.h>
 #include <drivers/gfx/fb/fb.h>
 #include <mem/paging.h>
-#include <mem/mem.h>
 #include <mem/heap.h>
 #include <intr/idt.h>
 #include <cpu/gdt.h>
@@ -31,8 +30,8 @@
 #define DONE() console_write("Done\n", 0, 255, 0)
 
 // Defined in linker
-extern uint64_t _KernelStart;
-extern uint64_t _KernelEnd;
+extern uint64_t _kernel_start;
+extern uint64_t _kernel_end;
 
 typedef struct
 {
@@ -52,16 +51,16 @@ typedef struct
     acpi_rsdp_t* rsdp;
 } boot_info_t;
 
-static void init_paging(boot_info_t* inf)
+/*static void init_paging(boot_info_t* inf)
 {
     paging_init(inf->mem_map, inf->mem_map_size, inf->mem_map_desc_size);
 
     // Reserve memory for kernel
-    uint64_t kernel_sz = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
-    void* kernel_start = (void*)&_KernelStart;
+    uint64_t kernel_sz = (uint64_t)&_kernel_end - (uint64_t)&_kernel_start;
+    void* kernel_start = (void*)&_kernel_start;
     uint64_t kernel_pg_cnt = kernel_sz / PAGE_SIZE + 1;
 
-    page_alloc_m(kernel_start, kernel_pg_cnt);
+    pmm_alloc_m(kernel_start, kernel_pg_cnt);
 
     uint64_t mem_size = mem_get_sz();
     for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
@@ -70,14 +69,14 @@ static void init_paging(boot_info_t* inf)
     }
 
     uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
-    page_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
+    pmm_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
     for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
     {
         page_kernel_map_memory((void*)i, (void*)i);
     }
 
     asm volatile ("mov %0, %%cr3"::"r"(page_get_kpml4()));
-}
+}*/
 
 void kernel_proc()
 {
@@ -105,7 +104,7 @@ void kernel_proc()
         console_putchar(buffer[i], 255, 255, 255);
     }*/
 
-    float x = 0;
+    int x = 0;
     for (;;)
     {
         x += 1;
@@ -131,9 +130,9 @@ void kernel_proc()
     }
 }
 
-void _start(boot_info_t* inf)
+void kmain()
 {
-    mem_boot_data(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
+    /*mem_boot_data(inf->mem_map, inf->mem_map_size / inf->mem_map_desc_size, inf->mem_map_desc_size);
 
     vid_mode_t vidmode;
     vidmode.width = inf->pix_per_line;
@@ -153,7 +152,7 @@ void _start(boot_info_t* inf)
     LOG("Initializing GDT...");
     /*gdt_desc.size = sizeof(gdt_t) - 1;
     gdt_desc.offset = (uint64_t)&gdt_def;
-    gdt_load(&gdt_desc);*/
+    gdt_load(&gdt_desc);
     gdt_init();
     //tss_init(5, 100000);
     DONE();
@@ -166,7 +165,7 @@ void _start(boot_info_t* inf)
     DONE();
 
     LOG("Loading IDT...");
-    idt_load();
+    idt_init();
     pic_init();
     DONE();
 
@@ -186,7 +185,7 @@ void _start(boot_info_t* inf)
 
     LOG("Initializing SMP...");
     smp_init();
-    DONE();
+    DONE();*/
 
     LOG("Enumerating PCI devices...");
     pci_enumerate();
@@ -198,9 +197,11 @@ void _start(boot_info_t* inf)
     ahci_init(pci_devs);
     DONE();
 
-    LOG("Mounting /dev/disk0 to /...");
+    LOG("Initializing VFS...");
     vfs_init();
+    DONE();
 
+    LOG("Mounting /dev/disk0 to /...");
     //vfs_node_t* dev = gpt_getpart(ahci_get_dev(0), "Root");
     vfs_node_t* dev = ahci_get_dev(0);
     vfs_mount(dev, "/dev/disk0"); // Mount first disk
@@ -230,12 +231,12 @@ void _start(boot_info_t* inf)
         console_putchar(buf[i], 255, 255, 255);
     }*/
 
-    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
+    /*vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
     vfs_open(test, 0);
 
     uint8_t* elfdat = kmalloc(512 - (test->size % 512) + test->size);
     
-    vfs_read(test, elfdat, 0, test->size);
+    vfs_read(test, elfdat, 0, test->size);*/
     /*vfs_close(test);*/
 
     LOG("Initializing keyboard...");
@@ -253,10 +254,10 @@ void _start(boot_info_t* inf)
     sched_spawn_proc(proc);
     DONE();
 
-    proc_t* elfproc = mk_elf_proc(elfdat);
+    /*proc_t* elfproc = mk_elf_proc(elfdat);
     sched_spawn_proc(elfproc);
     elfproc->next = proc;
-    proc->next = elfproc;
+    proc->next = elfproc;*/
     
     LOG("Jumping to multitasking...");
     sched_init();

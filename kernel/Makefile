@@ -2,20 +2,42 @@ SOURCES := $(shell find ./ -type f -name '*.c')
 ASM := $(shell find ./ -type f -name '*.S')
 OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.S, %.o, $(ASM))
 TARGET := kernel.elf
-LDFLAGS := -Tkernel.ld -static -Bsymbolic -nostdlib
-OPTIM := -O2
-CFLAGS := -ffreestanding -fshort-wchar -fno-stack-protector -mno-red-zone -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter $(OPTIM) -nostdinc -I.
+
+LDFLAGS := \
+	-fno-pic -fpie \
+	-Wl,-static,-pie,--no-dynamic-linker,-ztext \
+	-static-pie    \
+	-nostdlib      \
+	-Tkernel.ld    \
+	-z max-page-size=0x1000
+
+CFLAGS := 		 \
+	-I.                  \
+	-std=gnu11           \
+	-ffreestanding       \
+	-fno-stack-protector \
+	-fno-pic -fpie       \
+	-mno-80387           \
+	-mno-mmx             \
+	-mno-3dnow           \
+	-mno-sse             \
+	-mno-sse2            \
+	-mno-red-zone	     \
+	-nostdinc			 \
+	-Wall				 \
+	-Wextra				 \
+	-fshort-wchar
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	ld $(LDFLAGS) -o $(TARGET) $(OBJS)
+	gcc $(LDFLAGS) -o $(TARGET) $(OBJS)
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
 
 %.o: %.S
-	as $< -o $@
+	gcc -c $< -o $@
 
 .PHONY:
 clean:

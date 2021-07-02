@@ -2,7 +2,7 @@
 
 #include <util/types.h>
 
-#include <mem/mem.h>
+#define KERNEL_VIRTUAL_ADDR 0xffffffff80000000
 
 // Page size and entry counts
 #define PAGE_SIZE          4096
@@ -76,7 +76,7 @@ typedef struct page_map
 
 } __attribute__((packed)) page_map_t;
 
-void paging_init(efi_memory_descriptor* mem, uint64_t map_size, uint64_t desc_size);
+void paging_init();
 void* get_physaddr(void* virt_adr, pml4_t* pml4);
 void* get_kernel_physaddr(void* virt_adr);
 
@@ -84,28 +84,12 @@ void* get_kernel_physaddr(void* virt_adr);
 void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4);
 // Map memory for kernel
 void page_kernel_map_memory(void* virt_adr, void* phys_adr);
-// Allocate a page at physical address
-void page_alloc(void* addr);
-// Free a page at physical address
-void page_free(void* addr);
-// Reserve a page at physical address
-void page_reserve(void* addr);
-// Release a reserved page at physical address
-void page_release(void* addr);
 
-// Allocate multiple pages
-void page_alloc_m(void* addr, uint64_t cnt);
-// Free multiple pages
-void page_free_m(void* addr, uint64_t cnt);
-// Reserve multiple pages
-void page_reserve_m(void* addr, uint64_t cnt);
-// Release multiple reserved pages
-void page_release_m(void* addr, uint64_t cnt);
+void* page_map_mmio(void* physaddr, size_t size);
 
 // Create a page map
 pml4_t* page_mk_map();
 // Copy a pml4
 pml4_t* page_clone_pml4(pml4_t* src);
 
-void* page_request();
 pml4_t* page_get_kpml4();

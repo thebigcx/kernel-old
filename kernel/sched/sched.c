@@ -291,7 +291,6 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_clone_pml4(page_get_kpml4());
-    //proc->addr_space = page_get_kpml4();
     proc->file_descs = list_create();
 
     // TODO: These are temporary - later will be hooked up to PTYs

@@ -1,5 +1,6 @@
 #include <drivers/tty/serial.h>
 #include <sys/io.h>
+#include <util/stdlib.h>
 
 void serial_init()
 {
@@ -40,4 +41,21 @@ void serial_write(char c)
 {
     while (serial_transmit_empty() == 0); // Spin
     return outb(PORT_COM1, c);
+}
+
+void serial_writestr(char* str)
+{
+    while (*str != 0)
+    {
+        serial_write(*str++);
+    }
+}
+
+void serial_printf(char* format, ...)
+{
+    va_list list;
+    va_start(list, format);
+    char str[100];
+    vsnprintf(str, format, list);
+    serial_write(str);
 }
