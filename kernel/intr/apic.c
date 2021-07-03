@@ -11,7 +11,7 @@ volatile uint64_t lapic_vbase;
 // Spurious interrupt handler
 void spur_int()
 {
-    console_write("Spurious interrupt", 255, 255, 0);
+    serial_writestr("Spurious interrupt");
 }
 
 uint64_t lapic_read_base()

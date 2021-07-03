@@ -35,27 +35,9 @@ void* temp_kmalloc(size_t sz)
     return ret;
 }
 
+// Set up higher half mappings
 void paging_init()
 {
-    // Page-aligned
-    //temp_mem = (uint8_t*)((uint64_t)temp_mem + (PAGE_SIZE_4K - ((uint64_t)temp_mem % PAGE_SIZE_4K)));
-    //kpml4 = (pml4_t*)temp_kmalloc(PAGE_SIZE_4K);
-    //void* cr3;
-    //asm ("mov %%cr3, %0" : "=r"(cr3));
-    //kpml4 = *((pml4_t*)cr3);
-    /*kpml4 = pmm_request();
-    memset(kpml4, 0, PAGE_SIZE_4K);
-
-    uint64_t vaddr = KERNEL_VIRTUAL_ADDR;
-    for (uint64_t i = &_kernel_start; i < &_kernel_end; i += PAGE_SIZE_4K)
-    {
-        void* addr = pmm_request();
-        page_kernel_map_memory(vaddr, addr);
-        vaddr += PAGE_SIZE_4K;
-    }
-
-    asm volatile ("mov %0, %%cr3"::"r"(kpml4));*/
-
     memset(&kpml4, 0, sizeof(pml4_t));
     memset(&kpdp, 0, sizeof(pdp_t));
 
@@ -129,7 +111,8 @@ void* get_kernel_physaddr(void* virt_adr)
     return get_physaddr(virt_adr, &kpml4);
 }
 
-void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4)
+// TODO: use the cnt parameter and refactor
+void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4, uint32_t cnt)
 {
     uint32_t pml4_index = PML4_IDX(virt_adr);
     uint32_t pdp_index = PDP_IDX(virt_adr);
@@ -179,9 +162,19 @@ void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4)
     set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);
 }
 
-void page_kernel_map_memory(void* virt_adr, void* phys_adr)
+void page_kernel_map_memory(void* virt_adr, void* phys_adr, uint32_t cnt)
 {
-    page_map_memory(virt_adr, phys_adr, &kpml4);
+    while (cnt--)
+    {
+        uint32_t pdidx = PD_IDX(virt_adr);
+        uint32_t ptidx = PT_IDX(virt_adr);
+
+        set_page_frame(&kheap_tables[pdidx][ptidx], phys_adr);
+        kheap_tables[pdidx][ptidx] |= PAGE_PRESENT | PAGE_WRITABLE;
+        invlpg(virt_adr);
+        virt_adr += PAGE_SIZE_4K;
+        phys_adr += PAGE_SIZE_4K;
+    }
 }
 
 pml4_t* page_get_kpml4()

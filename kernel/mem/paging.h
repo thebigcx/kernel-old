@@ -91,9 +91,9 @@ void* get_physaddr(void* virt_adr, pml4_t* pml4);
 void* get_kernel_physaddr(void* virt_adr);
 
 // Map virtual address to physical address
-void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4);
+void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4, uint32_t cnt);
 // Map memory for kernel
-void page_kernel_map_memory(void* virt_adr, void* phys_adr);
+void page_kernel_map_memory(void* virt_adr, void* phys_adr, uint32_t cnt);
 
 void* page_map_mmio(void* physaddr);
 

@@ -38,11 +38,11 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 
 void console_write(const char* str, uint8_t r, uint8_t g, uint8_t b)
 {
-    while (*str != 0)
+    /*while (*str != 0)
     {
         console_putchar(*str, r, g, b);
         str++;
-    }
+    }*/
 }
 
 void console_clear()
@@ -65,10 +65,7 @@ void console_printf(const char* format, uint8_t r, uint8_t g, uint8_t b, ...)
 
 size_t conwrite(vfs_node_t* node, const void* ptr, size_t off, size_t size)
 {
-    for (uint32_t i = off; i < size + off; i++)
-    {
-        console_putchar(((char*)ptr)[i], 255, 255, 255);
-    }
+    serial_writestr(ptr);
 
     return size;
 }

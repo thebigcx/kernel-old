@@ -10,3 +10,5 @@
 *.iso
 limine
 iso
+dist
+mnt

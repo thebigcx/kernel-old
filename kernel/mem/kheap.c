@@ -48,24 +48,12 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
 
 void kheap_init()
 {
-    /*void* addr = pmm_request();
-    page_kernel_map_memory(addr, addr);
-    char buf[100];
-    serial_writestr(itoa(addr, buf, 16));
-    for (int i = 1; i < 1000; i++)
-    {
-        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, pmm_request());
-    }*/
-    /*void* addr = KERNEL_VIRTUAL_ADDR + 4 * 10000000;
-    for (int i = 0; i < 1000; i++)
-    {
-        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, pmm_request());
-    }*/
+    // Pre-allocate 1000 pages and map them to low physical addresses
     void* addr = page_kernel_alloc4k(1000);
     for (uint32_t i = 0; i < 1000; i++)
     {
         void* phys = pmm_request();
-        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, phys);
+        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, phys, 1);
     }
     
     size_t heap_len = 1000 * PAGE_SIZE_4K;

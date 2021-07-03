@@ -13,7 +13,7 @@ void _start()
     buffer[5] = '!';
     //strcpy(buffer, "Hello from userspace!");
 
-    for (;;)
-    //write(1, buffer, 100);
+    //for (;;)
+    write(1, buffer, 100);
     for (;;);
 }

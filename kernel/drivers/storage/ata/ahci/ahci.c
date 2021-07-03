@@ -58,7 +58,7 @@ void ahci_probe_ports()
                 port->num = ahci_ports->cnt;
                 port->phys_buf = pmm_request();
                 port->buf = page_kernel_alloc4k(1);
-                page_kernel_map_memory(port->buf, port->phys_buf);
+                page_kernel_map_memory(port->buf, port->phys_buf, 1);
                 list_push_back(ahci_ports, port);
             }
         }
@@ -159,7 +159,7 @@ static int32_t find_cmd_slot(hba_port_t* port)
         slots >>= 1;
     }
 
-    console_write("[AHCI] Could not find free command list entry\n", 255, 0, 0);
+    serial_writestr("[AHCI] Could not find free command list entry\n");
     return -1;
 }
 
@@ -168,36 +168,18 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     hba_port_t* port = ahciport->hba_port;
 
     port->int_stat = 0xffffffff;
-    //port->int_enable = 0xffffffff;
     
     int slot = find_cmd_slot(port);
     if (slot == -1)
         return false;
 
-    //hba_cmd_header_t* cmd_hdr = (hba_cmd_header_t*)(uint64_t)port->com_base_addr;
     hba_cmd_header_t* cmdhdr = &ahciport->comlist[slot];
     cmdhdr->cmd_fis_len = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     cmdhdr->write = write;
     cmdhdr->prdt_len = (uint16_t)((cnt - 1) >> 4) + 1;
-    //cmdhdr->atapi = 0;
-    //cmdhdr->prefetch = 0;
-    //cmdhdr->clear_busy = 0;
-    //cmdhdr->port_mul = 0;
-    //cmdhdr->prdb_cnt = 0;
 
     hba_cmd_tbl_t* cmdtbl = ahciport->comtables[slot];
     memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t));
-
-    /*uint16_t i = 0;
-    for (; i < cmdhdr->prdt_len - 1; i++)
-    {
-        cmdtbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
-        cmdtbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
-        cmdtbl->prdt_entry[i].byte_cnt = 8 * 1024 - 1;
-        cmdtbl->prdt_entry[i].int_on_cmpl = 1;
-
-        buffer = (void*)((uint64_t)buffer + 8 * 1024);
-    }*/
 
     cmdtbl->prdt_entry[0].data_base_addr = (uint32_t)(uint64_t)buffer;
     cmdtbl->prdt_entry[0].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
@@ -235,12 +217,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
         return false;
     }
 
-    //port->int_stat = port->int_enable = 0xffffffff;
-    
-    //ahci_start_cmd(ahciport);
-
     port->cmd_issue = 1 << slot;
-    //asm volatile ("1: jmp 1b");
 
     // Wait for completion
     while (port->cmd_issue & (1 << slot))
@@ -251,8 +228,6 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
             return false;
         }
     }
-
-    //ahci_stop_cmd(ahciport);
 
     // Check again
     if (port->int_stat & HBA_PXIS_TFES)
@@ -300,7 +275,7 @@ vfs_node_t* ahci_get_dev(int idx)
 {
     if (idx >= ahci_ports->cnt)
     {
-        console_write("[AHCI] Invalid AHCI port\n", 255, 0, 0);
+        serial_printf("[AHCI] Invalid AHCI port number: %d\n", idx);
         return NULL;
     }
 

@@ -1,1 +1,0 @@
-make clean ARCH=x86_64_efi ARCHDIR=x86_64/efi ARCHTARGET=BOOTX64.EFI

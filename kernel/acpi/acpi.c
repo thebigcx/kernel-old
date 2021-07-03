@@ -17,16 +17,10 @@ uint32_t acpi_cpu_cnt = 0;
 void acpi_setrsdp(acpi_xsdp_t* rsdp_)
 {
     rsdp = rsdp_;
-    //char buf[100];
-    
-    //desc = page_map_mmio(rsdp);
-    //serial_writestr(itoa(desc, buf, 16));
 }
 
 void acpi_init()
 {
-    //desc = pmm_request() + KERNEL_VIRTUAL_ADDR;
-    //page_kernel_map_memory(desc, rsdp);
     desc = rsdp;
 
     if (desc->rev == 0)
@@ -75,7 +69,7 @@ void acpi_read_madt()
 
     if (!madt)
     {
-        serial_writestr(ANSI_YELLOW "ACPI: " ANSI_RED "Could not find MADT\n" ANSI_WHITE);
+        serial_writestr("[ACPI] Could not find MADT\n" ANSI_WHITE);
         return;
     }
 
@@ -131,7 +125,7 @@ void acpi_read_madt()
             break;
 
             default:
-                console_printf("[ACPI] Invalid MADT entry %d\n", 255, 0, 0, ent->type);
+                serial_printf("[ACPI] Invalid MADT entry %d\n", 255, 0, 0, ent->type);
                 break;
         }
 

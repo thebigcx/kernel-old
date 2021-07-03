@@ -2,12 +2,9 @@
 #include <mem/paging.h>
 
 #define BUFFER_SIZE 2097952
-//#define BUFFER_SIZE PHYS_MEM_SIZE / PAGE_SIZE_4K / 8 + 1
 
 uint64_t bitmapsize;
 uint8_t mapbuffer[BUFFER_SIZE];
-//uint8_t mapbuffer[10000000];
-//uint8_t* mapbuffer = 0;
 
 void pmm_init(uint64_t memsz)
 {
@@ -15,7 +12,6 @@ void pmm_init(uint64_t memsz)
     memset(mapbuffer, 0, bitmapsize);
 
     pmm_reserve_m(0, BUFFER_SIZE / 8);
-    //pmm_alloc_m(map.buffer, map.size / PAGE_SIZE_4K + 1);
 }
 
 void pmm_alloc(void* addr)
