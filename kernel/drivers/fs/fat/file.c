@@ -1,6 +1,6 @@
 #include <drivers/fs/fat/fat.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <sys/console.h>
 
 void fat_write_cluster(fat_vol_t* vol, void* buf, uint32_t size, uint32_t cluster)

@@ -4,7 +4,7 @@
 #include <mem/paging.h>
 #include <sys/system.h>
 #include <intr/apic.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 extern void isr0();
 extern void isr1();
@@ -60,6 +60,7 @@ extern void irq15();
 extern void ipi0xfd();
 
 int_fn_t int_handlers[256];
+idt_record_t idtptr;
 
 static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t type, uint8_t dpl)
 {
@@ -138,11 +139,10 @@ void idt_init()
 
     set_handler(&idt[0xfd], ipi0xfd, 0x08, IDT_TYPE_INT, IDT_KERNEL);
 
-    idt_record_t idtr;
-    idtr.limit = 256 * sizeof(idt_entry_t) - 1;
-    idtr.base = (uint64_t)idt;
+    idtptr.limit = 256 * sizeof(idt_entry_t) - 1;
+    idtptr.base = (uint64_t)idt;
 
-    asm ("lidt %0" :: "m"(idtr));
+    asm ("lidt %0" :: "m"(idtptr));
 
     idt_set_int(IPI_HALT, ipi_halt);
 }
@@ -162,28 +162,28 @@ void irq_handler(uint64_t num, reg_ctx_t* r)
 
 void isr_handler(uint64_t num, isr_frame_t* r)
 {
-    if (num == 0) panic("Divide by zero error", num, r);
-    else if (num == 1) console_printf("Debug\n", 255, 255, 255);
-    else if (num == 2) panic("Non-maskable interrupt", num, r);
-    else if (num == 3) console_printf("Breakpoint\n", 255, 255, 255);
-    else if (num == 4) panic("Overflow error", num, r);
-    else if (num == 5) panic("Bound range exceeded", num, r);
-    else if (num == 6) panic("Invalid opcode", num, r);
-    else if (num == 7) panic("Device not available", num, r);
-    else if (num == 8) panic("Double fault", num, r);
-    else if (num == 9) panic("Coprocessor segment overrun", num, r);
-    else if (num == 10) panic("Invalid TSS", num, r);
-    else if (num == 11) panic("Segment not present", num, r);
-    else if (num == 12) panic("Stack-segment fault", num, r);
-    else if (num == 13) panic("General protection fault", num, r);
-    else if (num == 14) panic("Page fault", num, r);
-    else if (num == 16) panic("x87 Floating-point exception", num, r);
-    else if (num == 17) panic("Alignment check", num, r);
-    else if (num == 18) panic("Machine check", num, r);
-    else if (num == 19) panic("SIMD Floating-point exception", num, r);
-    else if (num == 20) panic("Virtualization exception", num, r);
-    else if (num == 30) panic("Security exception", num, r);
-    else panic("An error with unknown error code has occurred.", num, r);
+    if (num == 0) generic_isr("Divide by zero error", r);
+    else if (num == 1) serial_writestr("Debug\n");
+    else if (num == 2) generic_isr("Non-maskable interrupt", r);
+    else if (num == 3) serial_writestr("Breakpoint\n");
+    else if (num == 4) generic_isr("Overflow error", r);
+    else if (num == 5) generic_isr("Bound range exceeded", r);
+    else if (num == 6) generic_isr("Invalid opcode", r);
+    else if (num == 7) generic_isr("Device not available", r);
+    else if (num == 8) generic_isr("Double fault", r);
+    else if (num == 9) generic_isr("Coprocessor segment overrun", r);
+    else if (num == 10) generic_isr("Invalid TSS", r);
+    else if (num == 11) generic_isr("Segment not present", r);
+    else if (num == 12) generic_isr("Stack-segment fault", r);
+    else if (num == 13) general_protection_fault_handler(r);
+    else if (num == 14) pagefault_handler(r);
+    else if (num == 16) generic_isr("x87 Floating-point exception", r);
+    else if (num == 17) generic_isr("Alignment check", r);
+    else if (num == 18) generic_isr("Machine check", r);
+    else if (num == 19) generic_isr("SIMD Floating-point exception", r);
+    else if (num == 20) generic_isr("Virtualization exception", r);
+    else if (num == 30) generic_isr("Security exception", r);
+    else generic_isr("An error with unknown error code has occurred.", r);
 }
 
 void ipi_handler(uint64_t num, reg_ctx_t* r)

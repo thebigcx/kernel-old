@@ -2,7 +2,7 @@
 #include <util/stdlib.h>
 #include <util/bmp.h>
 #include <drivers/fs/vfs/vfs.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <mem/paging.h>
 
 vid_mode_t vidmode;
@@ -21,7 +21,7 @@ int fb_ioctl(vfs_node_t* node, uint64_t request, void* argp)
 void* fb_mmap(vfs_node_t* file, void* addr, size_t len, int prot, int flags, size_t off)
 {
     void* ret = pmm_request();
-    for (uint32_t i = 1; i < len / PAGE_SIZE + 1; i++)
+    for (uint32_t i = 1; i < len / PAGE_SIZE_4K + 1; i++)
     {
         pmm_request();
     }

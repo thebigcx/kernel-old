@@ -6,10 +6,13 @@
 #include <mem/pmm.h>
 #include <mem/paging.h>
 #include <acpi/acpi.h>
+#include <drivers/tty/serial.h>
 
 void init_core()
 {
     serial_init();
+
+    gdt_init();
 
     serial_writestr("Initializing IDT...");
     idt_init();
@@ -17,9 +20,9 @@ void init_core()
     serial_writestr("Ok\n");
 
     serial_writestr("Initializing memory...");
-    gdt_init();
     pmm_init(512 * 1000000); // TODO: detect memory
     paging_init();
+
     serial_writestr("Ok\n");
 
     cli();
@@ -28,7 +31,7 @@ void init_core()
 void init_extra()
 {
     serial_writestr("Initializing kernel heap...");
-    heap_init();
+    kheap_init();
     serial_writestr("Ok\n");
 
     pit_init(1000);
@@ -37,27 +40,35 @@ void init_extra()
     acpi_init();
     serial_writestr("Ok\n");
 
-    /*serial_writestr("Initializing the BSP local and IO APIC...");
+    serial_writestr("Initializing the BSP local and IO APIC...");
     apic_init();
     serial_writestr("Ok\n");
 
-    serial_writestr("Initializing SMP and attempting to initialize other CPUs...");
-    smp_init();
-    serial_writestr("Ok\n");*/
+    //serial_writestr("Initializing SMP and attempting to initialize other CPUs...");
+    //smp_init();
+    //serial_writestr("Ok\n");
 }
 
 void init_stivale2(st2_struct_t* st2)
 {
+    uint64_t tags_phys = st2->tags;
+
     init_core();
 
-    for (st2_tag_t* tag = (void*)st2->tags; tag != NULL; tag = tag->next)
+    for (st2_tag_t* tag = tags_phys; tag != NULL; tag = tag->next)
     {
         serial_writestr("Found tag\n");
+        char buf[100];
+        serial_writestr("Tag: ");
+        serial_writestr(ultoa(tag, buf, 16));
+        serial_writestr("\nDone");
+        //while (1);
 
         switch (tag->id)
         {
             case STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID:
             {
+                serial_writestr("Found framebuffer tag\n");
                 st2_fbinfo_t* fb = (st2_fbinfo_t*)tag;
                 // Create and set generic driver
 
@@ -78,6 +89,7 @@ void init_stivale2(st2_struct_t* st2)
 
             case STIVALE2_STRUCT_TAG_RSDP_ID:
             {
+                serial_writestr("Found ACPI RSDP tag\n");
                 st2_tagrsdp_t* rsdptag = (st2_tagrsdp_t*)tag;
                 // Set ACPI RSDP address
                 acpi_setrsdp(rsdptag->rsdp);
@@ -86,6 +98,7 @@ void init_stivale2(st2_struct_t* st2)
 
             case STIVALE2_STRUCT_TAG_MEMMAP_ID:
             {
+                serial_writestr("Found memory map tag\n");
                 st2_tagmmap_t* mmaptag = (st2_tagmmap_t*)tag;
                 uint64_t memsz = 0;
                 // Parse memory map
@@ -103,7 +116,7 @@ void init_stivale2(st2_struct_t* st2)
                             //serial_writestr("Region %d - %d is free.\n");
                             //serial_write('c');
                             serial_writestr("Reclaiming region\n");
-                            pmm_release_m(ent->base, ent->length / PAGE_SIZE);
+                            pmm_release_m(ent->base, ent->length / PAGE_SIZE_4K);
                             break;
                         
                         default:
@@ -118,12 +131,16 @@ void init_stivale2(st2_struct_t* st2)
 
                 break;
             }
+
+            default:
+            {
+                serial_writestr("Unrecognised tag\n");
+                break;
+            }
         }
     }
-
-    pmm_reserve_m(0, 0x100);
-
+    
+    sti();
     init_extra();
-
     kmain();
 }

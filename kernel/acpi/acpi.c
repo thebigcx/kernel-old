@@ -7,33 +7,36 @@
 acpi_xsdp_t* desc;
 acpi_rsdt_t* rsdt;
 acpi_xsdt_t* xsdt;
+acpi_xsdp_t* rsdp;
 
 iso_lst_t acpi_isos;
 
 uint32_t acpi_cpus[64];
 uint32_t acpi_cpu_cnt = 0;
 
-void acpi_setrsdp(acpi_xsdp_t* rsdp)
+void acpi_setrsdp(acpi_xsdp_t* rsdp_)
 {
-    char buf[100];
+    rsdp = rsdp_;
+    //char buf[100];
     
-    desc = page_map_mmio(rsdp, PAGE_SIZE);
-    serial_writestr(itoa(desc, buf, 16));
+    //desc = page_map_mmio(rsdp);
+    //serial_writestr(itoa(desc, buf, 16));
 }
 
 void acpi_init()
 {
-    //desc = pmm_request();
+    //desc = pmm_request() + KERNEL_VIRTUAL_ADDR;
     //page_kernel_map_memory(desc, rsdp);
+    desc = rsdp;
 
     if (desc->rev == 0)
     {
-        rsdt = page_map_mmio(desc->rsdt_addr, PAGE_SIZE);
+        rsdt = page_map_mmio(desc->rsdt_addr);
     }
     else
     {
-        xsdt = page_map_mmio(desc->xsdt_addr, PAGE_SIZE);
-        rsdt = page_map_mmio(desc->xsdt_addr, PAGE_SIZE);
+        xsdt = page_map_mmio(desc->xsdt_addr);
+        rsdt = page_map_mmio(desc->xsdt_addr);
     }
 
     acpi_isos.cnt = 0;
@@ -43,19 +46,21 @@ void acpi_init()
 
 void* acpi_find_tbl(const char* tbl)
 {
-    uint32_t entries = (xsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / sizeof(uint64_t);
+    uint32_t entries = 0;
+
+    if (desc->rev == 0)
+    {
+        entries = (rsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / sizeof(uint32_t);
+    }
+    else
+    {
+        entries = (xsdt->hdr.len - sizeof(acpi_sdt_hdr_t)) / sizeof(uint64_t);
+    }
     char buf[100];
-    serial_writestr(itoa(xsdt->hdr.len, buf, 10));
 
     for (uint32_t i = 0; i < entries; i++)
     {
-        //acpi_sdt_hdr_t* hdr = (acpi_sdt_hdr_t*)rsdt->sdts[i];
-        //char buf[100];
-        //serial_writestr(itoa(rsdt->sdts[i], buf, 16));
-
-        //page_kernel_map_memory(hdr, hdr);
-        
-        acpi_sdt_hdr_t* hdr = page_map_mmio(rsdt->sdts[i], PAGE_SIZE);
+        acpi_sdt_hdr_t* hdr = page_map_mmio(rsdt->sdts[i]);
 
         if (!strncmp((char*)hdr->sig, tbl, 4))
             return hdr;
@@ -70,7 +75,7 @@ void acpi_read_madt()
 
     if (!madt)
     {
-        console_write(ANSI_YELLOW "ACPI: " ANSI_RED "Could not find MADT\n" ANSI_WHITE, 255, 0, 0);
+        serial_writestr(ANSI_YELLOW "ACPI: " ANSI_RED "Could not find MADT\n" ANSI_WHITE);
         return;
     }
 

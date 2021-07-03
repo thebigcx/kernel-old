@@ -34,7 +34,7 @@ static st2_header_t stivale_hdr =
 {
     .entry_point = 0,
     .stack = (uint64_t)stack + sizeof(stack),
-    .flags = (1 << 1), // Pointers in the higher half
+    .flags = 0, // We don't need Limine to supply higher-half pointers, as we map the kernel ourselves
     .tags = (uint64_t)&fbtag
 };
 

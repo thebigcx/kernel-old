@@ -1,6 +1,7 @@
 .extern isr_handler
 .extern irq_handler
 .extern ipi_handler
+.extern idtptr
 
 .macro pushaq
     push    %rax

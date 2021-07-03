@@ -1,6 +1,6 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 tree_t* vfs_tree;
 

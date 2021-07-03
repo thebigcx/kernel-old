@@ -5,7 +5,7 @@
 
 gdt_desc_t gdt_desc;
 
-__attribute__((aligned(PAGE_SIZE)))
+__attribute__((aligned(PAGE_SIZE_4K)))
 gdt_t gdt_def = 
 {
     { 0, 0, 0, 0x0,                                                      0x0,      0 }, // Null
@@ -16,7 +16,7 @@ gdt_t gdt_def =
     { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_WRITABLE,             GRANLONG, 0 }  // User data seg
 };*/
 //gdt_t gdt_def;
-__attribute__((aligned(PAGE_SIZE))) gdt_entry_t gdt_ents[GDT_NUM_DESCS];
+__attribute__((aligned(PAGE_SIZE_4K))) gdt_entry_t gdt_ents[GDT_NUM_DESCS];
 gdt_ptr_t gdt_ptr;
 
 void gdt_init()

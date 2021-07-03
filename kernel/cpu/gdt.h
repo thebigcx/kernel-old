@@ -75,11 +75,11 @@ typedef struct gdt_entry
     gdt_entry_t user_code;
     gdt_entry_t user_data;
 } __attribute__((packed)) 
-  __attribute__((aligned(PAGE_SIZE))) gdt_t;*/
+  __attribute__((aligned(PAGE_SIZE_4K))) gdt_t;*/
 
 #define GDT_NUM_DESCS 6
 
-__attribute__((aligned(PAGE_SIZE))) extern gdt_entry_t gdt_ents[GDT_NUM_DESCS];
+__attribute__((aligned(PAGE_SIZE_4K))) extern gdt_entry_t gdt_ents[GDT_NUM_DESCS];
 extern gdt_ptr_t gdt_ptr;
 
 void gdt_init();

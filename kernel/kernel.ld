@@ -1,7 +1,7 @@
 /*OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_start)
 
-KERNEL_VIRT_BASE = 0xffffffff80000000;
+
 
 SECTIONS
 {
@@ -36,29 +36,37 @@ SECTIONS
 ENTRY(_start)
 SECTIONS
 {
-    . = 0xffffffff80200000;
+    KERNEL_VIRTUAL_ADDR = 0xffffffff80000000;
+
+    . = KERNEL_VIRTUAL_ADDR;
+    . += 0x200000;
 
     _kernel_start = .;
 
-    .stivale2hdr : {
+    .stivale2hdr : AT(ADDR(.stivale2hdr) - KERNEL_VIRTUAL_ADDR)
+    {
         KEEP(*(.stivale2hdr))
     }
 
-    .text : {
-        *(.text*)
+    .text : AT(ADDR(.text) - KERNEL_VIRTUAL_ADDR)
+    {
+        *(.text)
     }
 
-    .rodata : {
-        *(.rodata*)
+    .rodata : AT(ADDR(.rodata) - KERNEL_VIRTUAL_ADDR)
+    {
+        *(.rodata)
     }
 
-    .data : {
-        *(.data*)
+    .data : AT(ADDR(.data) - KERNEL_VIRTUAL_ADDR)
+    {
+        *(.data)
     }
 
-    .bss : {
+    .bss : AT(ADDR(.bss) - KERNEL_VIRTUAL_ADDR)
+    {
         *(COMMON)
-        *(.bss*)
+        *(.bss)
     }
 
     _kernel_end = .;

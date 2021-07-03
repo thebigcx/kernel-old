@@ -1,6 +1,6 @@
 #include <drivers/fs/fat/fat.h>
 #include <mem/paging.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 bool fat_is_fat(vfs_node_t* dev)
 {

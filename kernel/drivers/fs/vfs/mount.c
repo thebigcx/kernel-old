@@ -1,7 +1,7 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <drivers/fs/fat/fat.h>
 #include <drivers/fs/ext2/ext2.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <util/stdlib.h>
 
 int vfs_get_type(vfs_node_t* dev)

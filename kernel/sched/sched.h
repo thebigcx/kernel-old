@@ -21,6 +21,7 @@ typedef struct proc
 {
     uint64_t pid;
     void* addr_space;
+    uint64_t addr_space_phys;
     uint8_t state;
     uint64_t sleep_exp;
     struct proc* next;

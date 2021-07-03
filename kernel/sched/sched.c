@@ -7,7 +7,7 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <util/types.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <sys/system.h>
 #include <sched/spinlock.h>
 #include <intr/apic.h>
@@ -39,7 +39,7 @@ void sched_init()
     idle_proc = mk_proc(idle);
 
     scheduler_ready = 1;
-
+    
     sti();
     for (;;);
 }
@@ -60,7 +60,7 @@ void schedule(reg_ctx_t* r)
         last_proc = tsk;
         tsk->state = PROC_STATE_RUNNING;
 
-        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space);
+        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space_phys);
     }
     //else if (last_proc->state == PROC_STATE_RUNNING)
     {
@@ -90,6 +90,7 @@ proc_t* mk_proc(void* entry)
     proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_get_kpml4();
+    proc->addr_space_phys = proc->addr_space - KERNEL_VIRTUAL_ADDR;
     proc->pid = 0;
     proc->next = NULL;
     proc->sleep_exp = 0;
@@ -291,6 +292,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_clone_pml4(page_get_kpml4());
+    proc->addr_space_phys = proc->addr_space - KERNEL_VIRTUAL_ADDR;
     proc->file_descs = list_create();
 
     // TODO: These are temporary - later will be hooked up to PTYs

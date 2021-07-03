@@ -33,7 +33,7 @@ typedef struct acpi_sdt_hdr
 typedef struct acpi_rsdt
 {
     acpi_sdt_hdr_t hdr;
-    uint32_t* sdts;
+    uint32_t sdts[100];
 
 } __attribute__((packed)) acpi_rsdt_t;
 

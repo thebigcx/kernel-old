@@ -72,6 +72,36 @@ typedef struct fis_reg_h2d
 
 } fis_reg_h2d_t;
 
+typedef struct fis_reg_d2h
+{
+    uint8_t fis_type;
+
+    uint8_t pmport   : 4;
+    uint8_t res0     : 2; // Reserved
+    uint8_t intr     : 1;
+    uint8_t res1     : 1;
+
+    uint8_t stat;
+    uint8_t err;
+
+    uint8_t lba0;
+    uint8_t lba1;
+    uint8_t lba2;
+    uint8_t device;
+
+    uint8_t lba3;
+    uint8_t lba4;
+    uint8_t lba5;
+    uint8_t res2;
+
+    uint8_t countl; // Count low byte
+    uint8_t counth; // Count high byte
+    uint8_t res3[2];
+
+    uint8_t res4[4]; // Reserved
+
+} fis_reg_d2h_t;
+
 typedef struct fis_data
 {
     uint8_t fis_type;
@@ -84,6 +114,81 @@ typedef struct fis_data
     uint32_t data[1];
 
 } fis_data_t;
+
+typedef struct fis_pio_setup
+{
+    uint8_t fis_type;
+
+    uint8_t pmport   : 4;
+    uint8_t res0     : 1; // Reserved
+    uint8_t datadir  : 1; // Data direction
+    uint8_t intr     : 1;
+    uint8_t res1     : 1;
+
+    uint8_t stat;
+    uint8_t err;
+
+    uint8_t lba0;
+    uint8_t lba1;
+    uint8_t lba2;
+    uint8_t device;
+
+    uint8_t lba3;
+    uint8_t lba4;
+    uint8_t lba5;
+    uint8_t res2;
+
+    uint8_t countl; // Count low byte
+    uint8_t counth; // Count high byte
+    uint8_t res3;
+    uint8_t estat;
+
+    uint16_t transcnt;  // Transfer count    
+    uint8_t res4[2]; // Reserved
+
+} fis_pio_setup_t;
+
+typedef struct fis_dma_setup
+{
+    uint8_t fis_type;
+
+    uint8_t pmport   : 4;
+    uint8_t res0     : 1; // Reserved
+    uint8_t datadir  : 1; // Data direction
+    uint8_t intr     : 1;
+    uint8_t autoact  : 1;
+
+    uint8_t res1[2];
+
+    uint64_t dmabufid; // DMA buffer ID
+
+    uint32_t res2;
+
+    uint32_t dmabufoff; // Byte offset into the buffer
+
+    uint32_t transcnt;  // Transfer count    
+
+    uint32_t res3[2]; // Reserved
+
+} fis_dma_setup_t;
+
+typedef struct hba_fis
+{
+    fis_dma_setup_t dsfis; // DMA setup FIS
+    uint8_t         pad0[4];
+
+    fis_pio_setup_t psfis; // PIO setup FIS
+    uint8_t         pad1[12];
+
+    fis_reg_d2h_t   rfis; // Register FIS
+    uint8_t         pad[4];
+
+    uint8_t         sdbfis[8]; // Set Device Bit FIS
+
+    uint8_t         ufis[64];
+    uint8_t         res[0x100 - 0xa0];
+
+} hba_fis_t;
 
 typedef volatile struct hba_port
 {
@@ -181,6 +286,12 @@ typedef struct ahci_port
     hba_port_t* hba_port;
     uint32_t type;
     uint8_t num;
+
+    hba_cmd_header_t* comlist;
+    hba_cmd_tbl_t* comtables[32];
+    hba_fis_t* fis;
+    void* buf;
+    uint64_t phys_buf;
 
 } ahci_port_t;
 

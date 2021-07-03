@@ -1,6 +1,6 @@
 #include <drivers/fs/ext2/ext2.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 #define EXT2_INO_SIND 12 // Singly indirect
 #define EXT2_INO_DIND 13 // Doubly indirect

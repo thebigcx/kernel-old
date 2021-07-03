@@ -11,11 +11,10 @@ LDFLAGS := \
 	-Tkernel.ld    \
 	-z max-page-size=0x1000
 
-CFLAGS := 		 \
+CFLAGS := 		 		 \
 	-I.                  \
 	-std=gnu11           \
 	-ffreestanding       \
-	-fno-stack-protector \
 	-fno-pic -fpie       \
 	-mno-80387           \
 	-mno-mmx             \
@@ -26,7 +25,8 @@ CFLAGS := 		 \
 	-nostdinc			 \
 	-Wall				 \
 	-Wextra				 \
-	-fshort-wchar
+	-fshort-wchar		 \
+	-g
 
 all: $(TARGET)
 

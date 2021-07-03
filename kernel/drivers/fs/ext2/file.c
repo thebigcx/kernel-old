@@ -1,6 +1,6 @@
 #include <drivers/fs/ext2/ext2.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 void ext2_open(vfs_node_t* file, uint32_t flags)
 {

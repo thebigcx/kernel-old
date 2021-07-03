@@ -2,6 +2,8 @@
 
 #include <util/types.h>
 
+#define PHYS_MEM_SIZE (64 * 1073741824) // 64 GB
+
 void pmm_init(uint64_t memsz);
 
 // Allocate a page at physical address

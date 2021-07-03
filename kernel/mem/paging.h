@@ -2,10 +2,13 @@
 
 #include <util/types.h>
 
-#define KERNEL_VIRTUAL_ADDR 0xffffffff80000000
+#define KERNEL_VIRTUAL_ADDR 0xffffffff80000000ull
+#define IO_VIRTUAL_ADDR     (KERNEL_VIRTUAL_ADDR - 0x100000000ull)
 
 // Page size and entry counts
-#define PAGE_SIZE          4096
+#define PAGE_SIZE_4K          4096
+#define PAGE_SIZE_2M       0x200000
+#define PAGE_SIZE_1G       0x40000000ull
 #define PAGES_PER_TABLE    512
 #define TABLES_PER_DIR     512
 #define DIRS_PER_PDP       512
@@ -20,24 +23,31 @@
 // Page structure entry flags
 #define PML4_PRESENT       1
 #define PML4_WRITABLE      (1 << 1)
-#define PML4_FRAME         0xfffffffff000
+#define PML4_FRAME         0xffffffffff000
 
 #define PDP_PRESENT        1
 #define PDP_WRITABLE       (1 << 1)
 #define PDP_USER           (1 << 2)
-#define PDP_FRAME          0xfffffffff000
+#define PDP_1G             (1 << 7)
+#define PDP_FRAME          0xffffffffff000
 
 #define PD_PRESENT         1
 #define PD_WRITABLE        (1 << 1)
 #define PD_USER            (1 << 2)
-#define PD_FRAME           0xfffffffff000
+#define PD_CACHEDISABLED  (1 << 4)
+#define PD_2M             (1 << 7) // 2 MiB pages
+#define PD_PAT            (1 << 12)
+#define PD_FRAME           0xffffffffff000
 
 #define PAGE_PRESENT       1
 #define PAGE_WRITABLE      (1 << 1)
 #define PAGE_USER          (1 << 2)
 #define PAGE_WRITETHROUGH  (1 << 3)
 #define PAGE_CACHEDISABLED (1 << 4)
-#define PAGE_FRAME         0xfffffffff000
+#define PAGE_PAT           (1 << 7)
+#define PAGE_FRAME         0xffffffffff000ull
+
+#define PDP_SIZE           0x8000000000
 
 // Page structure entries
 typedef uint64_t page_t;
@@ -52,22 +62,22 @@ typedef uint64_t pml4_entry_t;
 typedef struct pml4
 {
     pml4_entry_t entries[PDPS_PER_PML4];
-} __attribute__((aligned(PAGE_SIZE))) pml4_t;
+} __attribute__((aligned(PAGE_SIZE_4K))) pml4_t;
 
 typedef struct pdp
 {
     pdp_entry_t entries[DIRS_PER_PDP];
-} __attribute__((aligned(PAGE_SIZE))) pdp_t;
+} __attribute__((aligned(PAGE_SIZE_4K))) pdp_t;
 
 typedef struct page_dir
 {
     pd_entry_t entries[TABLES_PER_DIR];
-} __attribute__((aligned(PAGE_SIZE))) page_dir_t;
+} __attribute__((aligned(PAGE_SIZE_4K))) page_dir_t;
 
 typedef struct page_table
 {
     page_t entries[PAGES_PER_TABLE];
-} __attribute__((aligned(PAGE_SIZE))) page_table_t;
+} __attribute__((aligned(PAGE_SIZE_4K))) page_table_t;
 
 typedef struct page_map
 {
@@ -85,7 +95,11 @@ void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4);
 // Map memory for kernel
 void page_kernel_map_memory(void* virt_adr, void* phys_adr);
 
-void* page_map_mmio(void* physaddr, size_t size);
+void* page_map_mmio(void* physaddr);
+
+// Allocate virtual memory, physical memory is managed in pmm.c
+void* page_kernel_alloc4k(uint32_t cnt);
+void  page_kernel_free4k(void* addr, uint32_t cnt);
 
 // Create a page map
 pml4_t* page_mk_map();

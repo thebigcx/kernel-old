@@ -1,7 +1,7 @@
 #include <util/types.h>
 #include <drivers/gfx/fb/fb.h>
 #include <mem/paging.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <intr/idt.h>
 #include <cpu/gdt.h>
 #include <drivers/input/mouse/ps2_mouse.h>
@@ -33,7 +33,7 @@
 extern uint64_t _kernel_start;
 extern uint64_t _kernel_end;
 
-typedef struct
+/*typedef struct
 {
     uint64_t mem_map_size;
     uint64_t mem_map_key;
@@ -49,7 +49,7 @@ typedef struct
     psf1_font* font;
 
     acpi_rsdp_t* rsdp;
-} boot_info_t;
+} boot_info_t;*/
 
 /*static void init_paging(boot_info_t* inf)
 {
@@ -58,19 +58,19 @@ typedef struct
     // Reserve memory for kernel
     uint64_t kernel_sz = (uint64_t)&_kernel_end - (uint64_t)&_kernel_start;
     void* kernel_start = (void*)&_kernel_start;
-    uint64_t kernel_pg_cnt = kernel_sz / PAGE_SIZE + 1;
+    uint64_t kernel_pg_cnt = kernel_sz / PAGE_SIZE_4K + 1;
 
     pmm_alloc_m(kernel_start, kernel_pg_cnt);
 
     uint64_t mem_size = mem_get_sz();
-    for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE)
+    for (uint64_t i = 0; i < mem_size; i += PAGE_SIZE_4K)
     {
         page_kernel_map_memory((void*)i, (void*)i);
     }
 
-    uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE;
-    pmm_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE + 1);
-    for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE)
+    uint64_t fb_size = inf->fb_buf_sz + PAGE_SIZE_4K;
+    pmm_alloc_m((void*)inf->fb_adr, fb_size / PAGE_SIZE_4K + 1);
+    for (uint64_t i = inf->fb_adr; i < inf->fb_adr + fb_size; i += PAGE_SIZE_4K)
     {
         page_kernel_map_memory((void*)i, (void*)i);
     }
@@ -80,7 +80,8 @@ typedef struct
 
 void kernel_proc()
 {
-    DONE(); // "Jumping to multitasking..."
+    //DONE(); // "Jumping to multitasking..."
+    serial_writestr("Ok\n");
     //sched_block(PROC_STATE_PAUSED);
     //sleep(1);
 
@@ -112,20 +113,22 @@ void kernel_proc()
         for (int i = 0; i < 100; i++)
         for (int j = 0; j < 100; j++)
         {
-            video_putpix(i + x, j, 255, 0, 0);
+            //video_putpix(i + x, j, 255, 0, 0);
         }
 
         mouse_packet_t pack;
         if (vfs_read(mouse, &pack, 0, 1))
         {
-            LOG("Mouse");
+            //LOG("Mouse");
+            serial_writestr("Mouse");
         }
 
         uint32_t key;
         if (vfs_read(kb, &key, 0, 1))
         {
             char buffer[100];
-            LOG(itoa(key, buffer, 10));
+            //LOG(itoa(key, buffer, 10));
+            serial_writestr(itoa(key, buffer, 10));
         }
     }
 }
@@ -161,7 +164,7 @@ void kmain()
     init_paging(inf);
     DONE();
     LOG("Initializing heap...");
-    heap_init();
+    kheap_init();
     DONE();
 
     LOG("Loading IDT...");
@@ -187,32 +190,32 @@ void kmain()
     smp_init();
     DONE();*/
 
-    LOG("Enumerating PCI devices...");
+    serial_writestr("Enumerating PCI devices...");
     pci_enumerate();
-    DONE();
+    serial_writestr("Ok\n");
 
     cli();
     
-    LOG("Initializing AHCI controllers...");
+    serial_writestr("Initializing AHCI controllers...");
     ahci_init(pci_devs);
-    DONE();
+    serial_writestr("Ok\n");
 
-    LOG("Initializing VFS...");
+    serial_writestr("Initializing VFS...");
     vfs_init();
-    DONE();
+    serial_writestr("Ok\n");
 
-    LOG("Mounting /dev/disk0 to /...");
+    serial_writestr("Mounting /dev/disk0 to /...");
     //vfs_node_t* dev = gpt_getpart(ahci_get_dev(0), "Root");
     vfs_node_t* dev = ahci_get_dev(0);
     vfs_mount(dev, "/dev/disk0"); // Mount first disk
 
-    vfs_node_t* root = ext2_init(dev);
-    vfs_mount(root, "/"); // Mount root file system
+    //vfs_node_t* root = ext2_init(dev);
+    //vfs_mount(root, "/"); // Mount root file system
 
     console_init();
     video_init();
 
-    DONE();
+    serial_writestr("Ok\n");
 
     cli();
 
@@ -239,27 +242,27 @@ void kmain()
     vfs_read(test, elfdat, 0, test->size);*/
     /*vfs_close(test);*/
 
-    LOG("Initializing keyboard...");
+    serial_writestr("Initializing keyboard...");
     kb_init();
-    DONE();
-    LOG("Initializing mouse...");
+    serial_writestr("Ok\n");
+    serial_writestr("Initializing mouse...");
     mouse_init();
-    DONE();
-    LOG("Initializing random number generator...");
+    serial_writestr("Ok\n");
+    serial_writestr("Initializing random number generator...");
     rand_seed(305640980);
-    DONE();
+    serial_writestr("Ok\n");
     
-    LOG("Creating kernel process...");
+    serial_writestr("Creating kernel process...");
     proc_t* proc = mk_proc(kernel_proc);
     sched_spawn_proc(proc);
-    DONE();
+    serial_writestr("Ok\n");
 
     /*proc_t* elfproc = mk_elf_proc(elfdat);
     sched_spawn_proc(elfproc);
     elfproc->next = proc;
     proc->next = elfproc;*/
-    
-    LOG("Jumping to multitasking...");
+
+    serial_writestr("Jumping to multitasking...");
     sched_init();
 
     for (;;);

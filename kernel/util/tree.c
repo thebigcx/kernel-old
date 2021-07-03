@@ -1,5 +1,5 @@
 #include <util/tree.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 tree_t* tree_create()
 {

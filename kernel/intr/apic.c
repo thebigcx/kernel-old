@@ -33,9 +33,7 @@ void lapic_set_base(uint64_t val)
 void lapic_init()
 {
     lapic_base = lapic_read_base() & LAPIC_BASE;
-    lapic_vbase = pmm_request();
-
-    page_kernel_map_memory((void*)lapic_vbase, (void*)lapic_base);
+    lapic_vbase = page_map_mmio(lapic_base);
 
     idt_set_int(0xff, spur_int);
 
@@ -92,8 +90,7 @@ uint32_t apic_id;
 
 void ioapic_init()
 {
-    ioapic_vbase = pmm_request();
-    page_kernel_map_memory(ioapic_vbase, ioapic_base);
+    ioapic_vbase = page_map_mmio(ioapic_base);
 
     regsel = (uint32_t*)(ioapic_vbase + IOAPIC_REGSEL);
     io_win = (uint32_t*)(ioapic_vbase + IOAPIC_WIN);
@@ -155,7 +152,7 @@ void apic_init()
 
     if (!(cpu.edx_feats & CPUID_FEAT_EDX_APIC))
     {
-        console_write("CPU does not support APIC\n", 255, 0, 0);
+        serial_writestr("CPU does not support APIC\n");
         return;
     }
 

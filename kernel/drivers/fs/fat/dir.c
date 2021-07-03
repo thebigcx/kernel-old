@@ -1,6 +1,6 @@
 #include <drivers/fs/fat/fat.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 void fat_read_dir(vfs_node_t* node, vfs_node_t* files, uint32_t* cnt)
 {

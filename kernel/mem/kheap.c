@@ -1,4 +1,4 @@
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <mem/paging.h>
 #include <util/types.h>
 #include <util/stdlib.h>
@@ -33,7 +33,8 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
     if (split_block_len < 16) return NULL;
 
     heap_block_t* new = (heap_block_t*)((size_t)block + len + sizeof(heap_block_t));
-    block->next->prev = new;
+    if (block->next)
+        block->next->prev = new;
     new->next = block->next;
     block->next = new;
     new->prev = block;
@@ -45,7 +46,7 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
     return new;
 }
 
-void heap_init()
+void kheap_init()
 {
     /*void* addr = pmm_request();
     page_kernel_map_memory(addr, addr);
@@ -53,15 +54,21 @@ void heap_init()
     serial_writestr(itoa(addr, buf, 16));
     for (int i = 1; i < 1000; i++)
     {
-        page_kernel_map_memory(addr + i * PAGE_SIZE, pmm_request());
+        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, pmm_request());
     }*/
-    void* addr = KERNEL_VIRTUAL_ADDR + 4 * 10000000;
+    /*void* addr = KERNEL_VIRTUAL_ADDR + 4 * 10000000;
     for (int i = 0; i < 1000; i++)
     {
-        page_kernel_map_memory(addr + i * PAGE_SIZE, pmm_request());
+        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, pmm_request());
+    }*/
+    void* addr = page_kernel_alloc4k(1000);
+    for (uint32_t i = 0; i < 1000; i++)
+    {
+        void* phys = pmm_request();
+        page_kernel_map_memory(addr + i * PAGE_SIZE_4K, phys);
     }
     
-    size_t heap_len = 1000 * PAGE_SIZE;
+    size_t heap_len = 1000 * PAGE_SIZE_4K;
 
     heap_start = addr;
     heap_end = (void*)((size_t)heap_start + heap_len);
@@ -75,6 +82,8 @@ void heap_init()
     last_block = start_block;
 }
 
+char heapbuf[100];
+
 void* kmalloc(size_t n)
 {
     // Must be a multiple of 16 bytes
@@ -86,7 +95,7 @@ void* kmalloc(size_t n)
     {
         if (curr->free)
         {
-            if (curr->len > n)
+            if (curr->len > n + sizeof(heap_block_t))
             {
                 heap_split_block(curr, n);
                 curr->free = false;
@@ -106,7 +115,7 @@ void* kmalloc(size_t n)
     }
     
     // Expand heap and re-run kmalloc()
-    heap_expand(n);
+    kheap_expand(n);
     return kmalloc(n);
 }
 
@@ -131,7 +140,7 @@ void* krealloc(void* ptr, size_t size)
     return new;
 }
 
-void heap_expand(size_t n)
+void kheap_expand(size_t n)
 {
     heap_block_t* new = (uint64_t)last_block + last_block->len + sizeof(heap_block_t);
 

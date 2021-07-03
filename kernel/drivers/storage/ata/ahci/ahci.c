@@ -3,8 +3,9 @@
 #include <drivers/storage/ata/ata.h>
 #include <mem/paging.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 #include <sys/console.h>
+#include <mem/pmm.h>
 
 hba_memory_t* abar;
 hba_memory_t* vabar;
@@ -50,10 +51,14 @@ void ahci_probe_ports()
 
             if (pt == AHCI_PORT_SATA || pt == AHCI_PORT_SATAPI)
             {
+                serial_writestr("Found AHCI port\n");
                 ahci_port_t* port = (ahci_port_t*)kmalloc(sizeof(ahci_port_t));
                 port->hba_port = &vabar->ports[i];
                 port->type = pt;
                 port->num = ahci_ports->cnt;
+                port->phys_buf = pmm_request();
+                port->buf = page_kernel_alloc4k(1);
+                page_kernel_map_memory(port->buf, port->phys_buf);
                 list_push_back(ahci_ports, port);
             }
         }
@@ -67,8 +72,7 @@ void ahci_init_dev(pci_dev_t* pci_dev)
     pci_enable_mem_space(pci_dev);
 
     abar = (hba_memory_t*)pci_get_base_addr(pci_dev, 5);
-    vabar = pmm_request();
-    page_kernel_map_memory(vabar, abar);
+    vabar = page_map_mmio(abar);
 
     ahci_probe_ports();
 
@@ -84,26 +88,33 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
 
     ahci_stop_cmd(ahci_port);
 
-    void* new_base = kmalloc(PAGE_SIZE);
+    void* new_base = pmm_request();
     port->com_base_addr = (uint32_t)((uint64_t)new_base & 0xffffffff);
     port->com_base_addr_u = (uint32_t)((uint64_t)new_base >> 32); // Upper 32 bits
-    memset((void*)(uint64_t)port->com_base_addr, 0, PAGE_SIZE);
+    ahci_port->comlist = page_map_mmio(new_base);
+    memset((void*)(uint64_t)ahci_port->comlist, 0, PAGE_SIZE_4K);
 
-    void* fis_base = kmalloc(256);
+    void* fis_base = pmm_request();
     port->fis_base = (uint32_t)((uint64_t)fis_base & 0xffffffff);
-    port->fis_base_u = (uint32_t)((uint64_t)fis_base >> 32); // Upper 32 bits
-    memset((void*)(uint64_t)port->fis_base, 0, 256);
+    port->fis_base_u = (uint32_t)((uint64_t)fis_base >> 32); // Upper 32 bit
+    ahci_port->fis = page_map_mmio(fis_base);
+    memset((void*)(uint64_t)ahci_port->fis, 0, PAGE_SIZE_4K);
 
-    hba_cmd_header_t* cmd_hdr = (hba_cmd_header_t*)((uint64_t)port->com_base_addr + ((uint64_t)port->com_base_addr_u << 32));
-    for (uint32_t i = 0; i < 32; i++)
+    ahci_port->fis->dsfis.fis_type = FIS_TYPE_DMA_SETUP;
+    ahci_port->fis->psfis.fis_type = FIS_TYPE_PIO_SETUP;
+    ahci_port->fis->rfis.fis_type = FIS_TYPE_REG_D2H;
+    ahci_port->fis->sdbfis[0] = FIS_TYPE_DEV_BITS;
+
+    for (uint32_t i = 0; i < 8; i++)
     {
-        cmd_hdr[i].prdt_len = 8;
+        ahci_port->comlist[i].prdt_len = 1;
         
-        void* cmd_tbl = kmalloc(256);
-        uint64_t addr = (uint64_t)cmd_tbl + (i << 8);
-        cmd_hdr[i].cmd_tbl_base_addr = (uint32_t)(uint64_t)addr;
-        cmd_hdr[i].cmd_tbl_base_addr_u = (uint32_t)((uint64_t)addr >> 32);
-        memset(cmd_tbl, 0, 256);
+        void* cmdtbl_phys = pmm_request();
+        ahci_port->comlist[i].cmd_tbl_base_addr = (uint32_t)(uint64_t)cmdtbl_phys;
+        ahci_port->comlist[i].cmd_tbl_base_addr_u = (uint32_t)((uint64_t)cmdtbl_phys >> 32);
+
+        ahci_port->comtables[i] = page_map_mmio(cmdtbl_phys);
+        memset(ahci_port->comtables[i], 0, PAGE_SIZE_4K);
     }
 
     ahci_start_cmd(ahci_port);
@@ -152,54 +163,61 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
 {
     hba_port_t* port = ahciport->hba_port;
 
-    port->int_stat = (uint32_t) -1;
+    port->int_stat = 0;
+    port->int_enable = 0xffffffff;
     
     int slot = find_cmd_slot(port);
     if (slot == -1)
         return false;
 
-    hba_cmd_header_t* cmd_hdr = (hba_cmd_header_t*)(uint64_t)port->com_base_addr;
-    cmd_hdr += slot;
-    cmd_hdr->cmd_fis_len = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
-    cmd_hdr->write = write;
-    cmd_hdr->prdt_len = (uint16_t)((cnt - 1) >> 4) + 1;
+    //hba_cmd_header_t* cmd_hdr = (hba_cmd_header_t*)(uint64_t)port->com_base_addr;
+    hba_cmd_header_t* cmdhdr = &ahciport->comlist[slot];
+    cmdhdr->cmd_fis_len = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+    cmdhdr->write = write;
+    cmdhdr->prdt_len = (uint16_t)((cnt - 1) >> 4) + 1;
+    cmdhdr->atapi = 0;
+    cmdhdr->prefetch = 0;
+    cmdhdr->clear_busy = 0;
+    cmdhdr->port_mul = 0;
+    cmdhdr->prdb_cnt = 0;
 
-    hba_cmd_tbl_t* cmd_tbl = (hba_cmd_tbl_t*)(uint64_t)(cmd_hdr->cmd_tbl_base_addr);
-    memset(cmd_tbl, 0, sizeof(hba_cmd_tbl_t) + (cmd_hdr->prdt_len - 1) * sizeof(hba_prdt_entry_t));
+    hba_cmd_tbl_t* cmdtbl = ahciport->comtables[slot];
+    memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t));
 
-    uint16_t i = 0;
-    for (; i < cmd_hdr->prdt_len - 1; i++)
+    /*uint16_t i = 0;
+    for (; i < cmdhdr->prdt_len - 1; i++)
     {
-        cmd_tbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
-        cmd_tbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
-        cmd_tbl->prdt_entry[i].byte_cnt = 8 * 1024 - 1;
-        cmd_tbl->prdt_entry[i].int_on_cmpl = 1;
+        cmdtbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
+        cmdtbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
+        cmdtbl->prdt_entry[i].byte_cnt = 8 * 1024 - 1;
+        cmdtbl->prdt_entry[i].int_on_cmpl = 1;
 
         buffer = (void*)((uint64_t)buffer + 8 * 1024);
-    }
+    }*/
 
-    cmd_tbl->prdt_entry[i].data_base_addr = (uint32_t)(uint64_t)buffer;
-    cmd_tbl->prdt_entry[i].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
-    cmd_tbl->prdt_entry[i].byte_cnt = (cnt << 9) - 1;
-    cmd_tbl->prdt_entry[i].int_on_cmpl = 1;
+    cmdtbl->prdt_entry[0].data_base_addr = (uint32_t)(uint64_t)buffer;
+    cmdtbl->prdt_entry[0].data_base_addr_u = (uint32_t)((uint64_t)buffer >> 32);
+    cmdtbl->prdt_entry[0].byte_cnt = cnt * 512 - 1;
+    cmdtbl->prdt_entry[0].int_on_cmpl = 1;
 
-    fis_reg_h2d_t* cmd_fis = (fis_reg_h2d_t*)(&cmd_tbl->cmd_fis);
+    fis_reg_h2d_t* cmdfis = (fis_reg_h2d_t*)(&cmdtbl->cmd_fis);
+    memset(cmdfis, 0, sizeof(fis_reg_h2d_t));
 
-    cmd_fis->fis_type = FIS_TYPE_REG_H2D;
-    cmd_fis->com_ctrl = 1; // Command
-    cmd_fis->command = write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX;
+    cmdfis->fis_type = FIS_TYPE_REG_H2D;
+    cmdfis->com_ctrl = 1; // Command
+    cmdfis->command = write ? ATA_CMD_WRITE_DMA_EX : ATA_CMD_READ_DMA_EX;
 
-    cmd_fis->lba0 = (uint8_t)sector;
-    cmd_fis->lba1 = (uint8_t)(sector >> 8);
-    cmd_fis->lba2 = (uint8_t)(sector >> 16);
-    cmd_fis->lba3 = (uint8_t)(sector >> 24);
-    cmd_fis->lba4 = (uint8_t)(sector >> 32);
-    cmd_fis->lba5 = (uint8_t)(sector >> 40);
+    cmdfis->lba0 = (uint8_t)sector;
+    cmdfis->lba1 = (uint8_t)(sector >> 8);
+    cmdfis->lba2 = (uint8_t)(sector >> 16);
+    cmdfis->lba3 = (uint8_t)(sector >> 24);
+    cmdfis->lba4 = (uint8_t)(sector >> 32);
+    cmdfis->lba5 = (uint8_t)(sector >> 40);
 
-    cmd_fis->device = 1 << 6; // LBA mode
+    cmdfis->device = 1 << 6; // LBA mode
 
-    cmd_fis->countl = cnt & 0xff;
-    cmd_fis->counth = (cnt >> 8) & 0xff;
+    cmdfis->countl = cnt & 0xff;
+    cmdfis->counth = (cnt >> 8) & 0xff;
 
     uint64_t spin = 0;
 
@@ -209,28 +227,33 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     }
     if (spin == 1000000)
     {
-        console_write("[AHCI] Port has hung\n", 255, 0, 0);
+        serial_writestr("[AHCI] Port has hung\n");
         return false;
     }
 
+    //port->int_stat = port->int_enable = 0xffffffff;
+    
+    //ahci_start_cmd(ahciport);
+
     port->cmd_issue = 1 << slot;
+    //asm volatile ("1: jmp 1b");
 
     // Wait for completion
-    while (1)
+    while (port->cmd_issue & (1 << slot))
     {
-        if ((port->cmd_issue & (1 << slot)) == 0)
-            break;
         if (port->int_stat & HBA_PXIS_TFES) // Task file error
         {
-            console_write("[AHCI] Read disk error\n", 255, 0, 0);
+            serial_writestr("[AHCI] Read disk error\n");
             return false;
         }
     }
 
+    ahci_stop_cmd(ahciport);
+
     // Check again
     if (port->int_stat & HBA_PXIS_TFES)
     {
-        console_write("[AHCI] Read disk error\n", 255, 0, 0);
+        serial_writestr("[AHCI] Read disk error\n");
         return false;
     }
 
@@ -239,12 +262,30 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
 
 size_t ahci_read(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
-    return ahci_access(((ahci_dev_t*)node->device)->port, off, len, ptr, 0);
+    ahci_port_t* port = ((ahci_dev_t*)node->device)->port;
+
+    while (len--)
+    {
+        ahci_access(port, off, len, port->phys_buf, 0);
+        memcpy(ptr, port->buf, 512);
+        ptr += 512;
+    }
+
+    return len;
 }
 
 size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
-    return ahci_access(((ahci_dev_t*)node->device)->port, off, len, ptr, 1);
+    ahci_port_t* port = ((ahci_dev_t*)node->device)->port;
+
+    while (len--)
+    {
+        memcpy(port->buf, ptr, 512);
+        ahci_access(port, off, len, port->phys_buf, 1);
+        ptr += 512;
+    }
+
+    return len;
 }
 
 vfs_node_t* ahci_get_dev(int idx)
@@ -252,6 +293,7 @@ vfs_node_t* ahci_get_dev(int idx)
     if (idx >= ahci_ports->cnt)
     {
         console_write("[AHCI] Invalid AHCI port\n", 255, 0, 0);
+        return NULL;
     }
 
     vfs_node_t* dev = kmalloc(sizeof(vfs_node_t));

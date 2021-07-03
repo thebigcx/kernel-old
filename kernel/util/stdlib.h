@@ -22,3 +22,4 @@ char* strncpy(char* dst, const char* src, size_t n);
 char* strsep(char** str, const char* delim);
 char* strdup(const char* str);
 char* itoa(int value, char* str, int base);
+char* ultoa(unsigned long value, char* str, int base);

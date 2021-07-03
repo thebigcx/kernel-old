@@ -41,5 +41,6 @@ void panic(const char* msg, uint64_t num, isr_frame_t* r);
 #define cli() asm ("cli")
 #define sti() asm ("sti")
 #define hlt() asm ("hlt")
+#define invlpg(addr) asm ("invlpg (%0)" :: "r"(addr))
 
 void breakpoint();

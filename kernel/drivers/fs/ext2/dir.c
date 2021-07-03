@@ -1,6 +1,6 @@
 #include <drivers/fs/ext2/ext2.h>
 #include <util/stdlib.h>
-#include <mem/heap.h>
+#include <mem/kheap.h>
 
 vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
 {
