@@ -209,8 +209,8 @@ void kmain()
     vfs_node_t* dev = ahci_get_dev(0);
     vfs_mount(dev, "/dev/disk0"); // Mount first disk
 
-    //vfs_node_t* root = ext2_init(dev);
-    //vfs_mount(root, "/"); // Mount root file system
+    vfs_node_t* root = ext2_init(dev);
+    vfs_mount(root, "/"); // Mount root file system
 
     console_init();
     video_init();
@@ -218,6 +218,17 @@ void kmain()
     serial_writestr("Ok\n");
 
     cli();
+
+    vfs_node_t* test = vfs_resolve_path("/text/test.txt", NULL);
+    vfs_open(test, 0);
+    
+    char* test_buffer = kmalloc(1024);
+    vfs_read(test, test_buffer, 0, 100);
+
+    for (int i = 0; i < 100; i++)
+    {
+        serial_printf("%c", test_buffer[i]);
+    }
 
     //vfs_mkfile(root, "this");
     /*vfs_listdir(root);
@@ -232,9 +243,9 @@ void kmain()
     for (int i = 0; i < test->size; i++)
     {
         console_putchar(buf[i], 255, 255, 255);
-    }*/
+    }
 
-    /*vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
+    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
     vfs_open(test, 0);
 
     uint8_t* elfdat = kmalloc(512 - (test->size % 512) + test->size);

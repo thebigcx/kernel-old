@@ -40,7 +40,7 @@ vfs_node_t* ext2_init(vfs_node_t* dev)
     ext2_inode_t ino;
     ext2_read_inode(vol, 2, &ino);
     ext2_get_root(vol, node, &ino);
-
+    
     return node;
 }
 

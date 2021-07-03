@@ -88,17 +88,21 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
 
     ahci_stop_cmd(ahci_port);
 
-    void* new_base = pmm_request();
-    port->com_base_addr = (uint32_t)((uint64_t)new_base & 0xffffffff);
-    port->com_base_addr_u = (uint32_t)((uint64_t)new_base >> 32); // Upper 32 bits
-    ahci_port->comlist = page_map_mmio(new_base);
-    memset((void*)(uint64_t)ahci_port->comlist, 0, PAGE_SIZE_4K);
+    uint64_t phys;
 
-    void* fis_base = pmm_request();
-    port->fis_base = (uint32_t)((uint64_t)fis_base & 0xffffffff);
-    port->fis_base_u = (uint32_t)((uint64_t)fis_base >> 32); // Upper 32 bit
-    ahci_port->fis = page_map_mmio(fis_base);
-    memset((void*)(uint64_t)ahci_port->fis, 0, PAGE_SIZE_4K);
+    phys = pmm_request();
+
+    port->com_base_addr = (uint32_t)((uint64_t)phys & 0xffffffff);
+    port->com_base_addr_u = (uint32_t)((uint64_t)phys >> 32); // Upper 32 bits
+    ahci_port->comlist = page_map_mmio(phys);
+
+    memset(ahci_port->comlist, 0, PAGE_SIZE_4K);
+
+    phys = pmm_request();
+    port->fis_base = (uint32_t)((uint64_t)phys & 0xffffffff);
+    port->fis_base_u = (uint32_t)((uint64_t)phys >> 32); // Upper 32 bit
+    ahci_port->fis = page_map_mmio(phys);
+    memset(ahci_port->fis, 0, PAGE_SIZE_4K);
 
     ahci_port->fis->dsfis.fis_type = FIS_TYPE_DMA_SETUP;
     ahci_port->fis->psfis.fis_type = FIS_TYPE_PIO_SETUP;
@@ -109,11 +113,11 @@ void ahci_port_rebase(ahci_port_t* ahci_port)
     {
         ahci_port->comlist[i].prdt_len = 1;
         
-        void* cmdtbl_phys = pmm_request();
-        ahci_port->comlist[i].cmd_tbl_base_addr = (uint32_t)(uint64_t)cmdtbl_phys;
-        ahci_port->comlist[i].cmd_tbl_base_addr_u = (uint32_t)((uint64_t)cmdtbl_phys >> 32);
+        phys = pmm_request();
+        ahci_port->comlist[i].cmd_tbl_base_addr = (uint32_t)(uint64_t)phys;
+        ahci_port->comlist[i].cmd_tbl_base_addr_u = (uint32_t)((uint64_t)phys >> 32);
 
-        ahci_port->comtables[i] = page_map_mmio(cmdtbl_phys);
+        ahci_port->comtables[i] = page_map_mmio(phys);
         memset(ahci_port->comtables[i], 0, PAGE_SIZE_4K);
     }
 
@@ -163,8 +167,8 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
 {
     hba_port_t* port = ahciport->hba_port;
 
-    port->int_stat = 0;
-    port->int_enable = 0xffffffff;
+    port->int_stat = 0xffffffff;
+    //port->int_enable = 0xffffffff;
     
     int slot = find_cmd_slot(port);
     if (slot == -1)
@@ -175,11 +179,11 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
     cmdhdr->cmd_fis_len = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
     cmdhdr->write = write;
     cmdhdr->prdt_len = (uint16_t)((cnt - 1) >> 4) + 1;
-    cmdhdr->atapi = 0;
-    cmdhdr->prefetch = 0;
-    cmdhdr->clear_busy = 0;
-    cmdhdr->port_mul = 0;
-    cmdhdr->prdb_cnt = 0;
+    //cmdhdr->atapi = 0;
+    //cmdhdr->prefetch = 0;
+    //cmdhdr->clear_busy = 0;
+    //cmdhdr->port_mul = 0;
+    //cmdhdr->prdb_cnt = 0;
 
     hba_cmd_tbl_t* cmdtbl = ahciport->comtables[slot];
     memset(cmdtbl, 0, sizeof(hba_cmd_tbl_t));
@@ -248,7 +252,7 @@ bool ahci_access(ahci_port_t* ahciport, uint64_t sector, uint32_t cnt, void* buf
         }
     }
 
-    ahci_stop_cmd(ahciport);
+    //ahci_stop_cmd(ahciport);
 
     // Check again
     if (port->int_stat & HBA_PXIS_TFES)
@@ -264,11 +268,13 @@ size_t ahci_read(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
     ahci_port_t* port = ((ahci_dev_t*)node->device)->port;
 
-    while (len--)
+    while (len)
     {
         ahci_access(port, off, len, port->phys_buf, 0);
         memcpy(ptr, port->buf, 512);
         ptr += 512;
+        len--;
+        off++;
     }
 
     return len;
@@ -278,11 +284,13 @@ size_t ahci_write(vfs_node_t* node, void* ptr, uint64_t off, uint32_t len)
 {
     ahci_port_t* port = ((ahci_dev_t*)node->device)->port;
 
-    while (len--)
+    while (len)
     {
         memcpy(port->buf, ptr, 512);
         ahci_access(port, off, len, port->phys_buf, 1);
         ptr += 512;
+        len--;
+        off++;
     }
 
     return len;

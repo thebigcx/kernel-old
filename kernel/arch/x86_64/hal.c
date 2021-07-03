@@ -73,6 +73,7 @@ void init_stivale2(st2_struct_t* st2)
                 // Create and set generic driver
 
                 void* virtaddr = fb->addr; // TODO: virtual memory
+                void* virtaddr = page_kernel_alloc4k((fb->width * fb->height * (fb->depth / 8)) / PAGE_SIZE_4K);
 
                 vid_mode_t vidmode =
                 {
@@ -125,9 +126,10 @@ void init_stivale2(st2_struct_t* st2)
                 }
 
                 char buf[20];
-                serial_writestr("Detected memory: ");
-                serial_writestr(itoa(memsz, buf, 10));
-                serial_write('\n');
+                //serial_writestr("Detected memory: ");
+                //serial_writestr(itoa(memsz, buf, 10));
+                ///serial_write('\n');
+                serial_printf("Detected memory: %d\n", memsz);
 
                 break;
             }

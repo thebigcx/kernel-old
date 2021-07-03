@@ -58,5 +58,5 @@ void serial_printf(char* format, ...)
     char str[100];
     vsnprintf(str, format, list);
     va_end(list);
-    serial_write(str);
+    serial_writestr(str);
 }
