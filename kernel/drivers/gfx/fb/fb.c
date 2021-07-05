@@ -4,6 +4,7 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <mem/kheap.h>
 #include <mem/paging.h>
+#include <sched/sched.h>
 
 vid_mode_t vidmode;
 psf1_font* font;
@@ -18,15 +19,13 @@ int fb_ioctl(vfs_node_t* node, uint64_t request, void* argp)
 
 }
 
-void* fb_mmap(vfs_node_t* file, void* addr, size_t len, int prot, int flags, size_t off)
+void* fb_mmap(vfs_node_t* file, proc_t* proc, void* addr, size_t len, int prot, int flags, size_t off)
 {
-    /*void* ret = pmm_request();
-    for (uint32_t i = 1; i < len / PAGE_SIZE_4K + 1; i++)
-    {
-        pmm_request();
-    }*/
+    // TODO: find available region
+    uint64_t pgcnt = vidmode.width * vidmode.height * (vidmode.depth / 8) / PAGE_SIZE_4K + 1;
+    page_map_memory(0x30000, vidmode.fbphys, pgcnt, proc->addr_space);
 
-    
+    return 0x30000;
 }
 
 void video_setmode(vid_mode_t mode)
@@ -40,8 +39,8 @@ void video_init()
     node->ioctl = fb_ioctl;
     node->mmap = fb_mmap;
     node->flags = FS_BLKDEV;
-    node->name = strdup("fb0");
-    vfs_mount(node, "/dev/fb0");
+    node->name = strdup("fb");
+    vfs_mount(node, "/dev/fb");
 }
 
 void video_set_fnt(psf1_font* fnt)

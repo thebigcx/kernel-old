@@ -44,6 +44,7 @@ void sched_spawn_proc(proc_t* proc);
 void sched_kill_proc();
 void sched_block(uint32_t state);
 void sched_unblock(proc_t* proc);
+void sched_fork(proc_t* proc);
 
 proc_t* sched_get_currproc();
 

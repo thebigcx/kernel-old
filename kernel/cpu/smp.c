@@ -72,7 +72,7 @@ void smp_init()
         uint32_t id = acpi_cpus[i];
         if (id != locid)
         {
-            smp_initcpu(id);
+            //smp_initcpu(id);
         }
     }
 

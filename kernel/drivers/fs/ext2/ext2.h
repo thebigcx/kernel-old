@@ -240,10 +240,8 @@ void ext2_free_inode(ext2_vol_t* vol, uint32_t ino);
 void ext2_init_inode(ext2_inode_t* ino, uint32_t type, uint32_t perms);
 
 // file.c
-void ext2_open(vfs_node_t* file, uint32_t flags);
 size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size);
 size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
-void ext2_close(vfs_node_t* file);
 void ext2_mkfile(vfs_node_t* parent, const char* name);
 void ext2_mkdir(vfs_node_t* parent, const char* name);
 

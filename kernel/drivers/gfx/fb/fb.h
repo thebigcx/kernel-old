@@ -10,6 +10,7 @@ typedef struct vid_mode
     uint16_t depth; // Bits per pixel
 
     void* fb;
+    uint64_t fbphys;
 
 } vid_mode_t;
 

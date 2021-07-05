@@ -101,16 +101,13 @@ proc_t* mk_proc(void* entry)
         page_kernel_map_memory(stack + i * PAGE_SIZE_4K, pmm_request(), 1);
     }
 
-    //void* stack = kmalloc(1000);
-    //memset(stack, 0, 1000);
-
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     proc->regs.rip = (uint64_t)entry;
     proc->regs.rflags = 0x202;
     proc->regs.cs = KERNEL_CS;
     proc->regs.ss = KERNEL_SS;
-    proc->regs.rbp = (uint64_t)stack + 1000;
-    proc->regs.rsp = (uint64_t)stack + 1000;
+    proc->regs.rbp = (uint64_t)stack + 0x16000;
+    proc->regs.rsp = (uint64_t)stack + 0x16000;
 
     return proc;
 }
@@ -210,6 +207,12 @@ void sched_unblock(proc_t* proc)
     sti();
 }
 
+void sched_fork(proc_t* proc)
+{
+    proc_t* new = kmalloc(sizeof(proc_t));
+    new->addr_space = page_clone_map(proc->addr_space);
+}
+
 proc_t* sched_get_currproc()
 {
     return last_proc;
@@ -260,7 +263,7 @@ bool check_elf_hdr(elf64_hdr_t* hdr)
     return true;
 }
 
-void* loadelf(uint8_t* elf_dat)
+void* loadelf(uint8_t* elf_dat, proc_t* proc)
 {
     elf64_hdr_t hdr;
 
@@ -269,8 +272,6 @@ void* loadelf(uint8_t* elf_dat)
     if (!check_elf_hdr(&hdr))
         return NULL;
 
-    uint64_t exec_base = 0;
-
     for (uint16_t i = 0; i < hdr.ph_num; i++)
     {
         elf64_phdr_t phdr;
@@ -278,17 +279,32 @@ void* loadelf(uint8_t* elf_dat)
 
         if (phdr.type == PT_LOAD)
         {
-            exec_base = (uint64_t)kmalloc(phdr.file_sz);
+            uint64_t begin = phdr.vaddr;
+            uint64_t size = phdr.file_sz;
+
+            for (uint32_t i = 0; i < size; i += PAGE_SIZE_4K)
+            {
+                void* phys = pmm_request();
+                memcpy(phys, elf_dat + phdr.offset + i * PAGE_SIZE_4K, PAGE_SIZE_4K);
+                page_map_memory(phdr.vaddr + i * PAGE_SIZE_4K, phys, 1, proc->addr_space);
+            }
+
+            //page_alloc_region(begin, size / PAGE_SIZE_4K + 1, proc->addr_space);
+
+            
+
+            //exec_base = (uint64_t)kmalloc(phdr.file_sz);
 
             //memcpy((void*)(exec_base + phdr.vaddr), elf_dat + phdr.offset, phdr.file_sz);
-            memcpy((void*)(exec_base), elf_dat + phdr.offset, phdr.file_sz);
+            //memcpy((void*)(exec_base), elf_dat + phdr.offset, phdr.file_sz);
+
         }
     }
 
-    return exec_base + hdr.entry;
+    proc->regs.rip = hdr.entry;
 }
 
-proc_t* mk_elf_proc(uint8_t* elf_dat)
+proc_t* mk_elf_proc(uint8_t* elfdat)
 {
     proc_t* proc = kmalloc(sizeof(proc_t));
 
@@ -301,22 +317,22 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
 
     // TODO: These are temporary - later will be hooked up to PTYs
     vfs_node_t* stdin_node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdin = vfs_open(stdin_node, 0);
+    fs_fd_t* stdin = vfs_open(stdin_node, 0, 0);
     list_push_back(proc->file_descs, stdin);
 
     vfs_node_t* stdout_node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdout = vfs_open(stdout_node, 0);
+    fs_fd_t* stdout = vfs_open(stdout_node, 0, 0);
     list_push_back(proc->file_descs, stdout);
 
-    page_alloc_region(0, 0x4000, proc->addr_space);
+    page_alloc_region(0x20000, 0x4000, proc->addr_space);
 
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
-    proc->regs.rip = (uint64_t)loadelf(elf_dat);
+    loadelf(elfdat, proc);
     proc->regs.rflags = 0x202;
     proc->regs.cs = KERNEL_CS;
     proc->regs.ss = KERNEL_SS;
-    proc->regs.rbp = (uint64_t)0x4000;
-    proc->regs.rsp = (uint64_t)0x4000;
+    proc->regs.rbp = (uint64_t)0x24000;
+    proc->regs.rsp = (uint64_t)0x24000;
 
     return proc;
 }

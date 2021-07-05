@@ -39,7 +39,6 @@ vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
         fnd_dir = buf + blk_off;
     }
 
-    console_printf("[EXT2] Could not find file %s\n", 255, 255, 255, name);
     kfree(buf);
     return NULL;
 }
@@ -89,8 +88,6 @@ vfs_node_t* ext2_dirent_to_node(ext2_vol_t* vol, ext2_dir_ent_t* dirent)
 
     node->read = ext2_read;
     node->write = ext2_write;
-    node->open = ext2_open;
-    node->close = ext2_close;
     node->finddir = ext2_finddir;
     node->listdir = ext2_listdir;
     node->mkfile = ext2_mkfile;

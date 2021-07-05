@@ -2,11 +2,6 @@
 #include <util/stdlib.h>
 #include <mem/kheap.h>
 
-void ext2_open(vfs_node_t* file, uint32_t flags)
-{
-    
-}
-
 size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size)
 {
     ext2_vol_t* vol = (ext2_vol_t*)node->device;
@@ -78,11 +73,6 @@ size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
     kfree(buf);
 
     return size;
-}
-
-void ext2_close(vfs_node_t* file)
-{
-
 }
 
 size_t ext2_get_size(ext2_inode_t* ino)

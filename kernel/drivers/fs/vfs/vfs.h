@@ -3,6 +3,7 @@
 #include <util/types.h>
 #include <util/list.h>
 #include <util/tree.h>
+#include <sched/sched.h>
 
 #define FS_TYPE_FAT32   0
 #define FS_TYPE_EXT2    1
@@ -26,12 +27,13 @@ typedef struct fs_fd
     struct vfs_node* node;
     size_t pos;
     uint32_t flags;
+    uint32_t mode;
 
 } fs_fd_t;
 
 typedef struct vfs_node
 {
-    void (*open)(struct vfs_node* file, uint32_t flags);
+    fs_fd_t* (*open)(struct vfs_node* file, uint32_t flags, uint32_t mode);
     size_t (*read)(struct vfs_node* file, void* ptr, size_t off, size_t size);
     size_t (*write)(struct vfs_node* file, const void* ptr, size_t off, size_t size);
     void (*close)(struct vfs_node* file);
@@ -40,7 +42,7 @@ typedef struct vfs_node
     void (*mkfile)(struct vfs_node* parent, const char* name);
     void (*mkdir)(struct vfs_node* parent, const char* name);
     int (*ioctl)(struct vfs_node* file, uint64_t request, void* argp);
-    void* (*mmap)(struct vfs_node* file, void* addr, size_t len, int prot, int flags, size_t off);
+    void* (*mmap)(struct vfs_node* file, proc_t* proc, void* addr, size_t len, int prot, int flags, size_t off);
 
     void* device;
     uint32_t flags;
@@ -63,6 +65,14 @@ typedef struct vfs_path
 
 } vfs_path_t;
 
+typedef struct vfs_stat
+{
+    uint64_t ino;
+    uint32_t mode;
+    uint64_t size;
+
+} vfs_stat_t;
+
 extern tree_t* vfs_tree;
 
 // mount.c
@@ -76,7 +86,7 @@ void vfs_destroy_path(vfs_path_t* path);
 
 // vfs.c
 void vfs_init();
-fs_fd_t* vfs_open(vfs_node_t* node, uint32_t flags);
+fs_fd_t* vfs_open(vfs_node_t* node, uint32_t flags, uint32_t mode);
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 void vfs_close(vfs_node_t* file);
@@ -85,3 +95,4 @@ list_t* vfs_listdir(vfs_node_t* dir);
 void vfs_mkfile(vfs_node_t* parent, const char* name);
 void vfs_mkdir(vfs_node_t* parent, const char* name);
 int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp);
+void vfs_stat(const char* path, vfs_stat_t* stat);

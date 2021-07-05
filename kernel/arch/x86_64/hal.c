@@ -45,7 +45,7 @@ void init_extra()
     serial_writestr("Ok\n");
 
     serial_writestr("Initializing SMP and attempting to initialize other CPUs...\n");
-    //smp_init();
+    smp_init();
     serial_writestr("Ok\n");
 }
 
@@ -75,7 +75,8 @@ void init_stivale2(st2_struct_t* st2)
                     .width = fb->width,
                     .height = fb->height,
                     .depth = fb->depth,
-                    .fb = virtaddr
+                    .fb = virtaddr,
+                    .fbphys = fb->addr
                 };
 
                 video_setmode(vidmode);

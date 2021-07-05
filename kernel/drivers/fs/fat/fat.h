@@ -138,8 +138,6 @@ typedef struct fat_lfn_entry
 bool fat_is_fat(vfs_node_t* dev);
 void fat_init(fat_vol_t* vol, vfs_node_t* dev);
 
-fs_fd_t* fat_open(vfs_node_t* file, uint32_t flags);
-void fat_close(vfs_node_t* file);
 size_t fat_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
 size_t fat_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
 vfs_node_t fat_finddir(vfs_node_t* dir, const char* name);

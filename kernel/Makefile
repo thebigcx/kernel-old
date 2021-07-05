@@ -15,6 +15,7 @@ CFLAGS := 		 		 \
 	-I.                  \
 	-std=gnu11           \
 	-ffreestanding       \
+	-fno-stack-protector \
 	-fno-pic -fpie       \
 	-mno-80387           \
 	-mno-mmx             \

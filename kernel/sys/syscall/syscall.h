@@ -8,6 +8,7 @@
 #define SYS_CLOSE 3
 #define SYS_MMAP  4
 #define SYS_IOCTL 5
+#define SYS_STAT  6
 
 typedef uint64_t(*syscall_t)(reg_ctx_t*);
 

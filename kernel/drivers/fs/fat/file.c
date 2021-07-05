@@ -26,20 +26,6 @@ size_t fat_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 
 }
 
-fs_fd_t* fat_open(vfs_node_t* file, uint32_t flags)
-{
-    fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
-    fd->node = file;
-    fd->pos = 0;
-    fd->flags = flags;
-    return fd;
-}
-
-void fat_close(vfs_node_t* file)
-{
-    
-}
-
 vfs_node_t fat_finddir(vfs_node_t* dir, const char* name)
 {
     fat_vol_t* vol = (fat_vol_t*)dir->device;
@@ -110,8 +96,6 @@ vfs_node_t fat_finddir(vfs_node_t* dir, const char* name)
                 file.device = vol;
                 file.read = fat_read;
                 file.write = fat_write;
-                file.open = fat_open;
-                file.close = fat_close;
                 file.finddir = fat_finddir;
 
                 kfree(lfn_entries);

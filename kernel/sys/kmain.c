@@ -36,10 +36,10 @@ void kernel_proc()
     // TESTS
     
     vfs_node_t* kb = vfs_resolve_path("/dev/keyboard", NULL);
-    vfs_open(kb, 0);
+    vfs_open(kb, 0, 0);
 
     vfs_node_t* mouse = vfs_resolve_path("/dev/mouse", NULL);
-    vfs_open(mouse, 0);
+    vfs_open(mouse, 0, 0);
 
     /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
     
@@ -106,7 +106,7 @@ void kmain()
     serial_writestr("Ok\n");
 
     vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
-    vfs_open(test, 0);
+    vfs_open(test, 0, 0);
 
     uint8_t* elfdat = kmalloc(1024 - (test->size % 1024) + test->size);
     

@@ -6,13 +6,20 @@
 
 #define SYSCALL_CNT 256
 
+static fs_fd_t* procgetfd(int fdnum)
+{
+    proc_t* proc = sched_get_currproc();
+    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, fdnum)->val;
+    return fd;
+}
+
 uint64_t sys_open(reg_ctx_t* regs)
 {
     char* path = regs->rdi;
 
     proc_t* proc = sched_get_currproc();
     vfs_node_t* node = vfs_resolve_path(path, proc->working_dir);
-    fs_fd_t* fd = vfs_open(node, regs->rsi);
+    fs_fd_t* fd = vfs_open(node, regs->rsi, regs->rdx);
 
     list_push_back(proc->file_descs, fd);
 
@@ -22,8 +29,7 @@ uint64_t sys_open(reg_ctx_t* regs)
 // TODO: file descriptor position/offset
 uint64_t sys_read(reg_ctx_t* regs)
 {
-    proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    fs_fd_t* fd = procgetfd(regs->rdi);
     uint8_t* buf = regs->rsi;
     size_t size = regs->rdx;
 
@@ -32,8 +38,7 @@ uint64_t sys_read(reg_ctx_t* regs)
 
 uint64_t sys_write(reg_ctx_t* regs)
 {
-    proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    fs_fd_t* fd = procgetfd(regs->rdi);
     uint8_t* buf = regs->rsi;
     size_t size = regs->rdx;
 
@@ -55,21 +60,25 @@ uint64_t sys_mmap(reg_ctx_t* regs)
     size_t off = regs->r9;
 
     proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, fdno)->val;
+    fs_fd_t* fd = procgetfd(fdno);
     vfs_node_t* node = fd->node;
 
     if (node->mmap)
-        return node->mmap(node, addr, len, prot, flags, off);
+        return node->mmap(node, proc, addr, len, prot, flags, off);
 }
 
 uint64_t sys_ioctl(reg_ctx_t* regs)
 {
-    proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    fs_fd_t* fd = procgetfd(regs->rdi);
     uint64_t cmd = regs->rsi;
     void* argp = regs->rdx;
 
     return vfs_ioctl(fd->node, cmd, argp);
+}
+
+uint64_t sys_stat(reg_ctx_t* regs)
+{
+    return vfs_stat(regs->rdi);
 }
 
 syscall_t syscalls[SYSCALL_CNT] =
@@ -79,7 +88,8 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_open,
     sys_close,
     sys_mmap,
-    sys_ioctl
+    sys_ioctl,
+    sys_stat
 };
 
 void syscall_handler(reg_ctx_t* regs)

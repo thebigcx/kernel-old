@@ -116,7 +116,7 @@ void page_mk_table(uint64_t pdpidx, uint64_t pdidx, page_map_t* map);
 // Create a page map
 page_map_t* page_mk_map();
 // Copy a pml4
-page_map_t* page_clone_pml4(page_map_t* src);
+page_map_t* page_clone_map(page_map_t* src);
 
 pml4_t* page_get_kpml4();
 

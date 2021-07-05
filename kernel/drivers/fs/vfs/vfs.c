@@ -13,15 +13,16 @@ void vfs_init()
     vfs_tree->root->data = root;
 }
 
-fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags)
+fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags, uint32_t mode)
 {
     if (file->open)
-        file->open(file, flags);
+        return file->open(file, flags, mode);
 
     fs_fd_t* fd = kmalloc(sizeof(fs_fd_t));
     fd->node = file;
     fd->pos = 0;
     fd->flags = flags;
+    fd->mode = mode;
     return fd;
 }
 
@@ -62,6 +63,8 @@ vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
     list_foreach(path->parts, part)
     {
         vfs_node_t* next = node->finddir(node, part->val);
+        if (next == NULL) // File does not exist
+            return NULL;
 
         if (node != mount) // Mount point is not kmalloc'd
             kfree(node);
@@ -100,4 +103,9 @@ int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp)
         return file->ioctl(file, request, argp);
 
     return 0;
+}
+
+void vfs_stat(const char* path, vfs_stat_t* stat)
+{
+    
 }

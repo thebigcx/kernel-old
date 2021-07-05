@@ -112,56 +112,8 @@ void* get_kernel_physaddr(void* virt)
     return get_physaddr(virt, &kpml4);
 }
 
-// TODO: use the cnt parameter and refactor
 void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map)
 {
-    /*uint32_t pml4_index = PML4_IDX(virt_adr);
-    uint32_t pdp_index = PDP_IDX(virt_adr);
-    uint32_t pd_index = PD_IDX(virt_adr);
-    uint32_t pt_index = PT_IDX(virt_adr);
-
-    pdp_t* pdp;
-    if (!pml4->entries[pml4_index] & PML4_PRESENT)
-    {
-        pdp = (pdp_t*)pmm_request();
-        memset(pdp, 0, PAGE_SIZE_4K);
-        pml4->entries[pml4_index] |= PML4_PRESENT | PML4_WRITABLE;
-        set_page_frame(&pml4->entries[pml4_index], (uint64_t)pdp);
-    }
-    else
-    {
-        pdp = (pdp_t*)((uint64_t)pml4->entries[pml4_index] & PML4_FRAME);
-    }
-
-    page_dir_t* dir;
-    if (!pdp->entries[pdp_index] & PDP_PRESENT)
-    {
-        dir = (page_dir_t*)pmm_request();
-        memset(dir, 0, PAGE_SIZE_4K);
-        pdp->entries[pdp_index] |= PDP_PRESENT | PDP_WRITABLE;
-        set_page_frame(&pdp->entries[pdp_index], (uint64_t)dir);
-    }
-    else
-    {
-        dir = (page_dir_t*)((uint64_t)pdp->entries[pdp_index] & PDP_FRAME);
-    }
-
-    page_table_t* table;
-    if (!dir->entries[pd_index] & PD_PRESENT)
-    {
-        table = (page_table_t*)pmm_request();
-        memset(table, 0, PAGE_SIZE_4K);
-        dir->entries[pd_index] |= PD_PRESENT | PD_WRITABLE;
-        set_page_frame(&dir->entries[pd_index], (uint64_t)table);
-    }
-    else
-    {
-        table = (page_table_t*)((uint64_t)dir->entries[pd_index] & PD_FRAME);
-    }
-
-    table->entries[pt_index] |= PAGE_PRESENT | PAGE_WRITABLE;
-    set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);*/
-
     while (cnt--)
     {
         uint64_t pml4idx = PML4_IDX(virt);
@@ -224,8 +176,8 @@ page_map_t* page_mk_map()
     page_kernel_map_memory(pdp, pdp_phys, 1);
     memset(pdp, 0, PAGE_SIZE_4K);
 
-    //set_page_frame(&pml4->entries[0], pdp_phys);
-    //pml4->entries[0] |= PML4_PRESENT | PML4_WRITABLE | PML4_USER;
+    set_page_frame(&pml4->entries[0], pdp_phys);
+    pml4->entries[0] |= PML4_PRESENT | PML4_WRITABLE | PML4_USER;
 
     pd_entry_t** page_dirs = page_kernel_alloc4k(1);
     page_kernel_map_memory(page_dirs, pmm_request(), 1);
@@ -259,7 +211,7 @@ page_map_t* page_mk_map()
     return map;
 }
 
-page_map_t* page_clone_pml4(page_map_t* src)
+page_map_t* page_clone_map(page_map_t* src)
 {
     //return src;
     /*pml4_t* dst = pmm_request(); // Physical

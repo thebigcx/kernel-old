@@ -4,8 +4,6 @@ void ext2_get_root(ext2_vol_t* vol, vfs_node_t* root, ext2_inode_t* ino)
 {
     root->device = vol;
 
-    root->open = ext2_open;
-    root->close = ext2_close;
     root->read = ext2_read;
     root->write = ext2_write;
     root->finddir = ext2_finddir;
