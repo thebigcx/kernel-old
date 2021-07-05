@@ -3,6 +3,7 @@
 #include <util/types.h>
 #include <sys/system.h>
 #include <util/list.h>
+#include <mem/paging.h>
 
 #define PROC_STATE_RUNNING      0
 #define PROC_STATE_READY        1
@@ -20,12 +21,12 @@
 typedef struct proc
 {
     uint64_t pid;
-    void* addr_space;
-    uint64_t addr_space_phys;
+    page_map_t* addr_space;
     uint8_t state;
     uint64_t sleep_exp;
     struct proc* next;
     list_t* file_descs;
+    char* working_dir;
 
     reg_ctx_t regs;
 

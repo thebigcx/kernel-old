@@ -16,8 +16,8 @@ gdt_t gdt_def =
     { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_WRITABLE,             GRANLONG, 0 }  // User data seg
 };*/
 //gdt_t gdt_def;
-__attribute__((aligned(PAGE_SIZE_4K))) gdt_entry_t gdt_ents[GDT_NUM_DESCS];
-gdt_ptr_t gdt_ptr;
+__attribute__((aligned(PAGE_SIZE_4K))) gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
+gdt_ptr_t bsp_gdtptr;
 
 void gdt_init()
 {
@@ -29,20 +29,20 @@ void gdt_init()
     gdt_set_entry(3, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 1, 1);
     gdt_set_entry(3, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 0, 1);
 
-    gdt_ptr.lim = sizeof(gdt_ents) - 1;
-    gdt_ptr.base = (uint64_t)gdt_ents;
+    bsp_gdtptr.lim = sizeof(bsp_gdtents) - 1;
+    bsp_gdtptr.base = (uint64_t)bsp_gdtents;
 
-    gdt_flush(&gdt_ptr);
+    gdt_flush(&bsp_gdtptr);
 }
 
 void gdt_set_null(uint32_t idx)
 {
-    memset(&gdt_ents[idx], 0, sizeof(gdt_entry_t));
+    memset(&bsp_gdtents[idx], 0, sizeof(gdt_entry_t));
 }
 
 void gdt_set_entry(uint32_t idx, uint32_t base, uint32_t lim, uint8_t rw, uint8_t dc, uint8_t dpl, uint8_t code, uint8_t codedata)
 {
-    gdt_entry_t* ent = &gdt_ents[idx];
+    gdt_entry_t* ent = &bsp_gdtents[idx];
     ent->limlo = lim & 0xffff;
     ent->limhi = (lim >> 16) & 0x0f;
     ent->baselo = base & 0xffffff;

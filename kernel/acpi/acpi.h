@@ -165,6 +165,7 @@ typedef struct ioapic
 
 typedef struct lapic
 {
+    acpi_madt_ent_t ent;
     uint8_t id;
     uint8_t apic_id;
     uint32_t flags;

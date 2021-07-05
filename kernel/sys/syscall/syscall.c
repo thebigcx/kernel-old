@@ -4,16 +4,30 @@
 #include <sched/sched.h>
 #include <drivers/fs/vfs/vfs.h>
 
-#define SYSCALL_CNT 100
+#define SYSCALL_CNT 256
 
 uint64_t sys_open(reg_ctx_t* regs)
 {
-    console_write("Syscall open!", 255, 255, 255);
+    char* path = regs->rdi;
+
+    proc_t* proc = sched_get_currproc();
+    vfs_node_t* node = vfs_resolve_path(path, proc->working_dir);
+    fs_fd_t* fd = vfs_open(node, regs->rsi);
+
+    list_push_back(proc->file_descs, fd);
+
+    return proc->file_descs->cnt - 1;
 }
 
+// TODO: file descriptor position/offset
 uint64_t sys_read(reg_ctx_t* regs)
 {
-    console_write("Syscall read!", 255, 255, 255);
+    proc_t* proc = sched_get_currproc();
+    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    uint8_t* buf = regs->rsi;
+    size_t size = regs->rdx;
+
+    return vfs_read(fd->node, buf, 0, size);
 }
 
 uint64_t sys_write(reg_ctx_t* regs)
@@ -23,9 +37,7 @@ uint64_t sys_write(reg_ctx_t* regs)
     uint8_t* buf = regs->rsi;
     size_t size = regs->rdx;
 
-    vfs_write(fd->node, buf, 0, size);
-
-    return size;
+    return vfs_write(fd->node, buf, 0, size);
 }
 
 uint64_t sys_close(reg_ctx_t* regs)
@@ -50,13 +62,24 @@ uint64_t sys_mmap(reg_ctx_t* regs)
         return node->mmap(node, addr, len, prot, flags, off);
 }
 
+uint64_t sys_ioctl(reg_ctx_t* regs)
+{
+    proc_t* proc = sched_get_currproc();
+    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    uint64_t cmd = regs->rsi;
+    void* argp = regs->rdx;
+
+    return vfs_ioctl(fd->node, cmd, argp);
+}
+
 syscall_t syscalls[SYSCALL_CNT] =
 {
     sys_read,
     sys_write,
     sys_open,
     sys_close,
-    sys_mmap
+    sys_mmap,
+    sys_ioctl
 };
 
 void syscall_handler(reg_ctx_t* regs)

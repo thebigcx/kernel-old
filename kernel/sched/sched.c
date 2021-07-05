@@ -60,7 +60,7 @@ void schedule(reg_ctx_t* r)
         last_proc = tsk;
         tsk->state = PROC_STATE_RUNNING;
 
-        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space_phys);
+        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space->pml4_phys);
     }
     //else if (last_proc->state == PROC_STATE_RUNNING)
     {
@@ -89,15 +89,20 @@ proc_t* mk_proc(void* entry)
 {
     proc_t* proc = kmalloc(sizeof(proc_t));
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_get_kpml4();
-    proc->addr_space_phys = proc->addr_space - KERNEL_VIRTUAL_ADDR;
+    proc->addr_space = page_mk_map();
     proc->pid = 0;
     proc->next = NULL;
     proc->sleep_exp = 0;
     proc->file_descs = list_create();
 
-    void* stack = kmalloc(1000);
-    memset(stack, 0, 1000);
+    void* stack = page_kernel_alloc4k(16);
+    for (uint32_t i = 0; i < 16; i++)
+    {
+        page_kernel_map_memory(stack + i * PAGE_SIZE_4K, pmm_request(), 1);
+    }
+
+    //void* stack = kmalloc(1000);
+    //memset(stack, 0, 1000);
 
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     proc->regs.rip = (uint64_t)entry;
@@ -291,8 +296,7 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     proc->pid = 0;
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
-    proc->addr_space = page_clone_pml4(page_get_kpml4());
-    proc->addr_space_phys = proc->addr_space - KERNEL_VIRTUAL_ADDR;
+    proc->addr_space = page_mk_map(); // Creates a virtual address space with kernel mapped
     proc->file_descs = list_create();
 
     // TODO: These are temporary - later will be hooked up to PTYs
@@ -304,16 +308,15 @@ proc_t* mk_elf_proc(uint8_t* elf_dat)
     fs_fd_t* stdout = vfs_open(stdout_node, 0);
     list_push_back(proc->file_descs, stdout);
 
-    void* stack = kmalloc(1000);
-    memset(stack, 0, 1000);
+    page_alloc_region(0, 0x4000, proc->addr_space);
 
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     proc->regs.rip = (uint64_t)loadelf(elf_dat);
     proc->regs.rflags = 0x202;
     proc->regs.cs = KERNEL_CS;
     proc->regs.ss = KERNEL_SS;
-    proc->regs.rbp = (uint64_t)stack + 1000;
-    proc->regs.rsp = (uint64_t)stack + 1000;
+    proc->regs.rbp = (uint64_t)0x4000;
+    proc->regs.rsp = (uint64_t)0x4000;
 
     return proc;
 }

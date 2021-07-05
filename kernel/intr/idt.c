@@ -160,8 +160,16 @@ void irq_handler(uint64_t num, reg_ctx_t* r)
         int_handlers[num](r);
 }
 
+// Amount of nested exceptions
+int nestisr = 0;
+
 void isr_handler(uint64_t num, isr_frame_t* r)
 {
+    if (nestisr++ > 5)
+    {
+        panic("Maximum nested exceptions reached");
+    }
+
     if (num == 0) generic_isr("Divide by zero error", r);
     else if (num == 1) serial_writestr("Debug\n");
     else if (num == 2) generic_isr("Non-maskable interrupt", r);

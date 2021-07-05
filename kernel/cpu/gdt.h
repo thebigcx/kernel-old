@@ -79,8 +79,8 @@ typedef struct gdt_entry
 
 #define GDT_NUM_DESCS 6
 
-__attribute__((aligned(PAGE_SIZE_4K))) extern gdt_entry_t gdt_ents[GDT_NUM_DESCS];
-extern gdt_ptr_t gdt_ptr;
+__attribute__((aligned(PAGE_SIZE_4K))) extern gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
+extern gdt_ptr_t bsp_gdtptr;
 
 void gdt_init();
 void gdt_set_null(uint32_t idx);

@@ -26,7 +26,8 @@ CFLAGS := 		 		 \
 	-Wall				 \
 	-Wextra				 \
 	-fshort-wchar		 \
-	-g
+	-g					 \
+	-O2
 
 all: $(TARGET)
 

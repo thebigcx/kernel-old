@@ -23,6 +23,7 @@
 // Page structure entry flags
 #define PML4_PRESENT       1
 #define PML4_WRITABLE      (1 << 1)
+#define PML4_USER          (1 << 2)
 #define PML4_FRAME         0xffffffffff000
 
 #define PDP_PRESENT        1
@@ -79,21 +80,30 @@ typedef struct page_table
     page_t entries[PAGES_PER_TABLE];
 } __attribute__((aligned(PAGE_SIZE_4K))) page_table_t;
 
+// Maximum of 512 GB, AKA one PDP
 typedef struct page_map
 {
     pml4_t* pml4;
     uint64_t pml4_phys;
 
+    pdp_t* pdp;
+    uint64_t pdp_phys;
+
+    pd_entry_t** page_dirs;
+    uint64_t* page_dirs_phys;
+
+    page_t*** page_tables;
+
 } __attribute__((packed)) page_map_t;
 
 void paging_init();
-void* get_physaddr(void* virt_adr, pml4_t* pml4);
-void* get_kernel_physaddr(void* virt_adr);
+void* get_physaddr(void* virt, pml4_t* pml4);
+void* get_kernel_physaddr(void* virt);
 
 // Map virtual address to physical address
-void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4, uint32_t cnt);
+void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map);
 // Map memory for kernel
-void page_kernel_map_memory(void* virt_adr, void* phys_adr, uint32_t cnt);
+void page_kernel_map_memory(void* virt, void* phys, uint32_t cnt);
 
 void* page_map_mmio(void* physaddr);
 
@@ -101,9 +111,13 @@ void* page_map_mmio(void* physaddr);
 void* page_kernel_alloc4k(uint32_t cnt);
 void  page_kernel_free4k(void* addr, uint32_t cnt);
 
+void page_mk_table(uint64_t pdpidx, uint64_t pdidx, page_map_t* map);
+
 // Create a page map
-pml4_t* page_mk_map();
+page_map_t* page_mk_map();
 // Copy a pml4
-pml4_t* page_clone_pml4(pml4_t* src);
+page_map_t* page_clone_pml4(page_map_t* src);
 
 pml4_t* page_get_kpml4();
+
+void page_alloc_region(uint64_t base, uint64_t size, page_map_t* map);

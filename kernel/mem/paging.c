@@ -4,6 +4,7 @@
 #include <sys/system.h>
 #include <mem/pmm.h>
 #include <mem/kheap.h>
+#include <util/assert.h>
 
 extern void* _kernel_start;
 extern void* _kernel_end;
@@ -106,15 +107,15 @@ void* get_physaddr(void* virt_adr, pml4_t* pml4)
     return (void*)(pt->entries[pt_index] & PAGE_FRAME);
 }
 
-void* get_kernel_physaddr(void* virt_adr)
+void* get_kernel_physaddr(void* virt)
 {
-    return get_physaddr(virt_adr, &kpml4);
+    return get_physaddr(virt, &kpml4);
 }
 
 // TODO: use the cnt parameter and refactor
-void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4, uint32_t cnt)
+void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map)
 {
-    uint32_t pml4_index = PML4_IDX(virt_adr);
+    /*uint32_t pml4_index = PML4_IDX(virt_adr);
     uint32_t pdp_index = PDP_IDX(virt_adr);
     uint32_t pd_index = PD_IDX(virt_adr);
     uint32_t pt_index = PT_IDX(virt_adr);
@@ -159,7 +160,25 @@ void page_map_memory(void* virt_adr, void* phys_adr, pml4_t* pml4, uint32_t cnt)
     }
 
     table->entries[pt_index] |= PAGE_PRESENT | PAGE_WRITABLE;
-    set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);
+    set_page_frame(&table->entries[pt_index], (uint64_t)phys_adr);*/
+
+    while (cnt--)
+    {
+        uint64_t pml4idx = PML4_IDX(virt);
+        uint64_t pdpidx = PDP_IDX(virt);
+        uint64_t pdidx = PD_IDX(virt);
+        uint64_t ptidx = PT_IDX(virt);
+
+        if (!(map->page_dirs[pdpidx][pdidx] & PD_PRESENT)) page_mk_table(pdpidx, pdidx, map);
+
+        set_page_frame(&map->page_tables[pdpidx][pdidx][ptidx], phys);
+        map->page_tables[pdpidx][pdidx][ptidx] |= PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
+
+        invlpg(virt);
+
+        phys += PAGE_SIZE_4K;
+        virt += PAGE_SIZE_4K;
+    }
 }
 
 void page_kernel_map_memory(void* virt_adr, void* phys_adr, uint32_t cnt)
@@ -177,23 +196,73 @@ void page_kernel_map_memory(void* virt_adr, void* phys_adr, uint32_t cnt)
     }
 }
 
+void page_mk_table(uint64_t pdpidx, uint64_t pdidx, page_map_t* map)
+{
+    page_table_t* table = page_kernel_alloc4k(1);
+    uint64_t table_phys = pmm_request();
+    page_kernel_map_memory(table, table_phys, 1);
+
+    set_page_frame(&(map->page_dirs[pdpidx][pdidx]), table_phys);
+    map->page_dirs[pdpidx][pdidx] |= PAGE_PRESENT | PAGE_WRITABLE;
+    map->page_tables[pdpidx][pdidx] = table;
+}
+
 pml4_t* page_get_kpml4()
 {
     return &kpml4;
 }
 
-pml4_t* page_mk_map()
+page_map_t* page_mk_map()
 {
-    pml4_t* pml4 = pmm_request(PAGE_SIZE_4K);
-    memset(pml4, 0, PAGE_SIZE_4K);
+    pml4_t* pml4 = page_kernel_alloc4k(1);
+    uint64_t pml4_phys = pmm_request();
+    page_kernel_map_memory(pml4, pml4_phys, 1);
+    memcpy(pml4, &kpml4, PAGE_SIZE_4K);
 
-    return pml4;
+    pdp_t* pdp = page_kernel_alloc4k(1);
+    uint64_t pdp_phys = pmm_request();
+    page_kernel_map_memory(pdp, pdp_phys, 1);
+    memset(pdp, 0, PAGE_SIZE_4K);
+
+    //set_page_frame(&pml4->entries[0], pdp_phys);
+    //pml4->entries[0] |= PML4_PRESENT | PML4_WRITABLE | PML4_USER;
+
+    pd_entry_t** page_dirs = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_dirs, pmm_request(), 1);
+    uint64_t* page_dirs_phys = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_dirs_phys, pmm_request(), 1);
+    page_t*** page_tables = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_tables, pmm_request(), 1);
+
+    for (uint32_t i = 0; i < DIRS_PER_PDP; i++)
+    {
+        page_dirs[i] = page_kernel_alloc4k(1);
+        page_dirs_phys[i] = pmm_request();
+        page_kernel_map_memory(page_dirs[i], page_dirs_phys[i], 1);
+        memset(page_dirs[i], 0, PAGE_SIZE_4K);
+
+        set_page_frame(&pdp->entries[i], page_dirs_phys[i]);
+        pdp->entries[i] |= PDP_PRESENT | PDP_WRITABLE | PDP_USER;
+
+        page_tables[i] = page_kernel_alloc4k(1);
+        memset(page_tables[i], 0, PAGE_SIZE_4K);
+    }
+
+    page_map_t* map = kmalloc(sizeof(page_map_t));
+    map->pml4 = pml4;
+    map->pml4_phys = pml4_phys;
+    map->pdp = pdp;
+    map->pdp_phys = pdp_phys;
+    map->page_dirs = page_dirs;
+    map->page_dirs_phys = page_dirs_phys;
+    map->page_tables = page_tables;
+    return map;
 }
 
-pml4_t* page_clone_pml4(pml4_t* src)
+page_map_t* page_clone_pml4(page_map_t* src)
 {
-    return src;
-    pml4_t* dst = pmm_request(); // Physical
+    //return src;
+    /*pml4_t* dst = pmm_request(); // Physical
     memset(dst, 0, PAGE_SIZE_4K);
 
     for (uint32_t i = 0; i < PDPS_PER_PML4; i++)
@@ -255,7 +324,7 @@ pml4_t* page_clone_pml4(pml4_t* src)
                 }
             }
         }
-    }
+    }*/
 }
 
 // TODO: acknowledge size parameter
@@ -373,5 +442,17 @@ void page_kernel_free4k(void* addr, uint32_t cnt)
         kheap_tables[PD_IDX(virt)][PT_IDX(virt)] = 0; // Non-present
         invlpg(virt); // Flush TLB
         virt += PAGE_SIZE_4K;
+    }
+}
+
+void page_alloc_region(uint64_t base, uint64_t size, page_map_t* map)
+{
+    assert(base % PAGE_SIZE_4K == 0);
+
+    uint32_t pgcnt = size / PAGE_SIZE_4K + 1;
+
+    for (uint32_t i = 0; i < pgcnt; i++)
+    {
+        page_map_memory(base + i * PAGE_SIZE_4K, pmm_request(), 1, map);
     }
 }

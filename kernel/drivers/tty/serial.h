@@ -2,6 +2,16 @@
 
 #include <util/types.h>
 
+#define ANSI_RED    "\033[91m"
+#define ANSI_GREEN  "\033[92m"
+#define ANSI_YELLOW "\033[93m"
+#define ANSI_BLUE   "\033[94m"
+#define ANSI_PINK   "\033[95m"
+#define ANSI_CYAN   "\033[96m"
+#define ANSI_WHITE  "\033[97m"
+#define ANSI_BOLD   "\033[1m"
+#define ANSI_RESET  "\033[0m"
+
 #define PORT_COM1 0x3f8
 #define PORT_COM2 0x2f8
 

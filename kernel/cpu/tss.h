@@ -1,6 +1,7 @@
 #pragma once
 
 #include <util/types.h>
+#include <cpu/gdt.h>
 
 // Task State Segment
 typedef struct tss_ent
@@ -33,4 +34,4 @@ typedef struct tss_ent
 
 } __attribute__((packed)) tss_ent_t;
 
-void tss_init(uint32_t idx, uint64_t krsp);
+void tss_init(tss_ent_t* tss, uint32_t select, gdt_entry_t* gdt);

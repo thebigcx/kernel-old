@@ -44,7 +44,7 @@ void init_extra()
     apic_init();
     serial_writestr("Ok\n");
 
-    serial_writestr("Initializing SMP and attempting to initialize other CPUs...");
+    serial_writestr("Initializing SMP and attempting to initialize other CPUs...\n");
     //smp_init();
     serial_writestr("Ok\n");
 }
@@ -130,6 +130,8 @@ void init_stivale2(st2_struct_t* st2)
             }
         }
     }
+
+    pmm_reserve_m(0, 0x10); // For SMP
     
     sti();
     init_extra();

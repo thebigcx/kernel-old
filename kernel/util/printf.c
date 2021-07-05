@@ -61,3 +61,11 @@ int vsnprintf(char* str, const char* format, va_list list)
 
     return stridx;
 }
+
+int snprintf(char* s, size_t n, const char* format, ...)
+{
+    va_list list;
+    va_start(list, format);
+    vsnprintf(s, format, list);
+    va_end(list);
+}
