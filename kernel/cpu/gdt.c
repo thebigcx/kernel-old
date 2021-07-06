@@ -1,21 +1,6 @@
 #include <cpu/gdt.h>
 #include <util/stdlib.h>
 
-/*#define GRANLONG GDTF_GRAN | GDTF_LONG
-
-gdt_desc_t gdt_desc;
-
-__attribute__((aligned(PAGE_SIZE_4K)))
-gdt_t gdt_def = 
-{
-    { 0, 0, 0, 0x0,                                                      0x0,      0 }, // Null
-    { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_EXEC | GDTA_WRITABLE, GRANLONG, 0 }, // Kernel code seg
-    { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_WRITABLE,             GRANLONG, 0 }, // Kernel data seg
-    { 0, 0, 0, 0x0,                                                      0x0,      0 }, // User Null
-    { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_EXEC | GDTA_WRITABLE, GRANLONG, 0 }, // User code seg
-    { 0, 0, 0, GDTA_PRESENT | GDTA_CODEDATA | GDTA_WRITABLE,             GRANLONG, 0 }  // User data seg
-};*/
-//gdt_t gdt_def;
 __attribute__((aligned(PAGE_SIZE_4K))) gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
 gdt_ptr_t bsp_gdtptr;
 
@@ -23,11 +8,12 @@ void gdt_init()
 {
     gdt_set_null(0);
 
-    gdt_set_entry(1, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 1, 1);
-    gdt_set_entry(2, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 0, 1);
+    gdt_set_raw_entry(bsp_gdtents, 1, 0xffffffff, 0x00af9a00);
+    //gdt_set_raw_entry(bsp_gdtents, 2, 0xffffffff, 0x00af9200);
+    gdt_mkentry(2, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 0, 1);
 
-    gdt_set_entry(3, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 1, 1);
-    gdt_set_entry(3, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 0, 1);
+    gdt_set_raw_entry(bsp_gdtents, 3, 0xffffffff, 0x00affa00);
+    gdt_set_raw_entry(bsp_gdtents, 4, 0xffffffff, 0x008ff200);
 
     bsp_gdtptr.lim = sizeof(bsp_gdtents) - 1;
     bsp_gdtptr.base = (uint64_t)bsp_gdtents;
@@ -40,7 +26,7 @@ void gdt_set_null(uint32_t idx)
     memset(&bsp_gdtents[idx], 0, sizeof(gdt_entry_t));
 }
 
-void gdt_set_entry(uint32_t idx, uint32_t base, uint32_t lim, uint8_t rw, uint8_t dc, uint8_t dpl, uint8_t code, uint8_t codedata)
+void gdt_mkentry(uint32_t idx, uint32_t base, uint32_t lim, uint8_t rw, uint8_t dc, uint8_t dpl, uint8_t code, uint8_t codedata)
 {
     gdt_entry_t* ent = &bsp_gdtents[idx];
     ent->limlo = lim & 0xffff;
@@ -58,4 +44,27 @@ void gdt_set_entry(uint32_t idx, uint32_t base, uint32_t lim, uint8_t rw, uint8_
     ent->mode64bit = 1;
     ent->mode32bit = 0;
     ent->gran = 1;
+}
+
+void gdt_set_raw_entry(gdt_entry_t* gdt, uint32_t select, uint32_t low, uint32_t high)
+{
+    gdt[select].low = low;
+    gdt[select].high = high;
+}
+
+void gdt_set_entry(gdt_entry_t* gdt, uint32_t select, gdt_entry_t* entry)
+{
+    gdt_set_raw_entry(gdt, select, entry->low, entry->high);
+}
+
+void gdt_setbase(gdt_entry_t* entry, uint32_t base)
+{
+    entry->baselo = base & 0xffffff;
+    entry->basehi = (base >> 24) & 0xff;
+}
+
+void gdt_setlim(gdt_entry_t* entry, uint32_t lim)
+{
+    entry->limlo = lim & 0xffff;
+    entry->limhi = (lim >> 16) & 0x0f;
 }

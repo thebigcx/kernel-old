@@ -26,6 +26,7 @@ void dumpregs(reg_ctx_t* r)
 
 void generic_isr(const char* err, isr_frame_t* frame)
 {
+    serial_writestr(ANSI_RED);
     serial_writestr(err);
     dumpregs(&frame->regs);
 
@@ -34,6 +35,7 @@ void generic_isr(const char* err, isr_frame_t* frame)
 
 void pagefault_handler(isr_frame_t* frame)
 {
+    serial_writestr(ANSI_RED);
     serial_writestr("Page fault\n");
     dumpregs(&frame->regs);
 
@@ -59,8 +61,40 @@ void pagefault_handler(isr_frame_t* frame)
 
 void general_protection_fault_handler(isr_frame_t* frame)
 {
+    serial_writestr(ANSI_RED);
     serial_writestr("General protection fault\n");
     dumpregs(&frame->regs);
+
+    if (frame->errcode)
+    {
+        serial_writestr("\nError code:\n\n");
+
+        if (frame->errcode & 0x1)
+        {
+            serial_writestr("External\n");
+        }
+        switch (frame->errcode & 0x6)
+        {
+            case 0x0:
+                serial_writestr("GDT selector index: ");
+                break;
+            case 0x1:
+                serial_writestr("IDT selector index: ");
+                break;
+            case 0x2:
+                serial_writestr("LDT selector index: ");
+                break;
+            case 0x3:
+                serial_writestr("IDT selector index: ");
+                break;
+        }
+
+        serial_printf("%d\n", (frame->errcode >> 3) & 13);
+    }
+    else
+    {
+        serial_writestr("No error code");
+    }
 
     asm volatile ("1: jmp 1b");
 }

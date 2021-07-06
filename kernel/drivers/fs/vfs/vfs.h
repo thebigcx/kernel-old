@@ -89,7 +89,7 @@ void vfs_init();
 fs_fd_t* vfs_open(vfs_node_t* node, uint32_t flags, uint32_t mode);
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size);
 size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size);
-void vfs_close(vfs_node_t* file);
+void vfs_close(fs_fd_t* file);
 vfs_node_t* vfs_resolve_path(const char* path, const char* working_dir);
 list_t* vfs_listdir(vfs_node_t* dir);
 void vfs_mkfile(vfs_node_t* parent, const char* name);

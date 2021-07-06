@@ -47,7 +47,11 @@ uint64_t sys_write(reg_ctx_t* regs)
 
 uint64_t sys_close(reg_ctx_t* regs)
 {
-    console_write("Syscall close!", 255, 255, 255);
+    proc_t* proc = sched_get_currproc();
+    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    vfs_close(fd);
+    kfree(fd);
+    return 0;
 }
 
 uint64_t sys_mmap(reg_ctx_t* regs)
@@ -78,7 +82,18 @@ uint64_t sys_ioctl(reg_ctx_t* regs)
 
 uint64_t sys_stat(reg_ctx_t* regs)
 {
-    return vfs_stat(regs->rdi);
+    vfs_stat(regs->rdi, regs->rsi);
+    return 0;
+}
+
+uint64_t sys_fork(reg_ctx_t* regs)
+{
+    sched_fork(sched_get_currproc());
+}
+
+uint64_t sys_exec(reg_ctx_t* regs)
+{
+    
 }
 
 syscall_t syscalls[SYSCALL_CNT] =
@@ -89,7 +104,9 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_close,
     sys_mmap,
     sys_ioctl,
-    sys_stat
+    sys_stat,
+    sys_fork,
+    sys_exec
 };
 
 void syscall_handler(reg_ctx_t* regs)

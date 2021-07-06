@@ -106,3 +106,26 @@ list_node_t* list_get(list_t* list, uint32_t idx)
 
     return NULL;
 }
+
+void list_remove(list_t* list, uint32_t idx)
+{
+    list_node_t* node = list_get(list, idx);
+
+    if (node->prev)
+        node->prev->next = node->next;
+
+    if (node->next)
+        node->next->prev = node->prev;
+
+    if (node == list->head)
+    {
+        list->head = node->next;
+    }
+    if (node == list->tail)
+    {
+        list->tail = node->prev;
+    }
+
+    list->cnt--;
+    kfree(node);
+}

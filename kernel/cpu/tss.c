@@ -3,21 +3,34 @@
 #include <util/stdlib.h>
 
 extern void tss_flush();
+extern void* stack;
 
-void tss_init(tss_ent_t* tss, uint32_t select, gdt_entry_t* gdt)
+void tss_init(tss_t* tss, uint32_t select, gdt_entry_t* gdt)
 {
-    //memset(&ktss, 0, sizeof(tss_ent_t));
-    //ktss.rsp0l = krsp & 0xffffffff;
-    //ktss.rsp0h = krsp >> 32;
-    //ktss.iomap_base = sizeof(tss_ent_t);
+    memset(tss, 0, sizeof(tss_t));
 
     uint64_t base = tss;
-    uint64_t lim = tss + sizeof(tss_ent_t);
+    uint64_t lim = sizeof(tss_t) - 1;
 
-    gdt_set_entry(select, base, lim, GDT_READ, 0, GDT_RING3, 1, 0);
-    gdt[select].access = 1; // Inidicates TSS?
-    gdt[select].mode64bit = 0; // According to manuals
-    gdt[select].gran = 0; // Limit in bytes, not pages
+    gdt_entry_t ent;
+    memset(&ent, 0, sizeof(gdt_entry_t));
+
+    gdt_setlim(&ent, sizeof(tss_t) - 1);
+    gdt_setbase(&ent, tss);
+
+    ent.access = 1; // Inidicates TSS?
+    ent.mode32bit = 1; // According to manuals
+    ent.present = 1;
+    ent.code = 1;
+    
+    gdt_set_entry(gdt, 5, &ent);
+
+    gdt[6].low = (uint64_t)tss >> 32;
+
+    tss->rsp0l = (uint64_t)stack & 0xffffffff;
+    tss->rsp0h = (uint64_t)stack >> 32;
+    tss->iomap_base = sizeof(tss_t);
 
     tss_flush();
+    serial_writestr("TSS");
 }

@@ -6,28 +6,40 @@ size_t ext2_read(vfs_node_t* node, void* ptr, size_t off, size_t size)
 {
     ext2_vol_t* vol = (ext2_vol_t*)node->device;
 
-    uint32_t start_blk = off / vol->blk_sz;
-    uint32_t end_blk = (off + size) / vol->blk_sz;
-
-    uint8_t* buf = kmalloc(vol->blk_sz);
+    uint32_t startblk = off / vol->blk_sz;          // Start block
+    uint32_t endblk   = (size + off) / vol->blk_sz; // End block
+    uint32_t modoff   = off % vol->blk_sz;          // Byte offset of start block
+    uint32_t modend   = (size + off) % vol->blk_sz; // Byte offset of end block
 
     ext2_inode_t ino;
     ext2_read_inode(vol, node->inode_num, &ino);
 
-    uint32_t blk_cnt = end_blk - start_blk + 1;
-    uint32_t blk_off = 0;
-    for (uint32_t i = 0; i < blk_cnt; i++)
+    uint8_t* buf = kmalloc(vol->blk_sz);
+    
+    uint64_t ptroff = 0;
+    for (uint32_t i = startblk; i <= endblk; i++)
     {
-        blk_off = i * vol->blk_sz;
+        ext2_read_inode_blk(vol, i, &ino, buf);
 
-        uint32_t blk = ext2_get_inode_blk(vol, i, &ino);
-        vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, blk), vol->blk_sz / 512);
+        uint32_t start = 0;
+        uint32_t size = vol->blk_sz;
 
-        memcpy(ptr + blk_off, buf, vol->blk_sz);
+        if (i == startblk)
+        {
+            start = modoff;
+            size = vol->blk_sz - start;
+        }
+        if (i == endblk)
+        {
+            size = modend;
+        }
+
+        memcpy(ptr + ptroff, buf + start, size);
+
+        ptroff += size;
     }
-    
+
     kfree(buf);
-    
     return size;
 }
 
@@ -38,7 +50,7 @@ size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
     ext2_inode_t ino;
     ext2_read_inode(vol, file->inode_num, &ino);
 
-    if (off + size > file->size)
+    if (off + size > file->size + (file->size % vol->blk_sz))
     {
         file->size = off + size;
 
@@ -53,25 +65,39 @@ size_t ext2_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
         // Free blocks
     }
 
-    uint32_t start_blk = off / vol->blk_sz;
-    uint32_t end_blk = (off + size) / vol->blk_sz;
+    uint32_t startblk = off / vol->blk_sz;          // Start block
+    uint32_t endblk   = (size + off) / vol->blk_sz; // End block
+    uint32_t modoff   = off % vol->blk_sz;          // Byte offset of start block
+    uint32_t modend   = (size + off) % vol->blk_sz; // Byte offset of end block
 
     uint8_t* buf = kmalloc(vol->blk_sz);
-
-    uint32_t cnt = end_blk - start_blk + 1;
-    for (uint32_t i = 0; i < cnt; i++)
+    
+    uint64_t ptroff = 0;
+    for (uint32_t i = startblk; i <= endblk; i++)
     {
-        uint32_t blk_off = i * vol->blk_sz;
+        ext2_read_inode_blk(vol, i, &ino, buf);
 
-        uint32_t blk = ext2_get_inode_blk(vol, i, &ino);
+        uint32_t start = 0;
+        uint32_t size = vol->blk_sz;
 
-        vol->dev->read(vol->dev, buf, ext2_blk_to_lba(vol, blk), vol->blk_sz / 512);
-        memcpy(buf, ptr + blk_off, vol->blk_sz);
-        vol->dev->write(vol->dev, buf, ext2_blk_to_lba(vol, blk), vol->blk_sz / 512);
+        if (i == startblk)
+        {
+            start = modoff;
+            size = vol->blk_sz - start;
+        }
+        if (i == endblk)
+        {
+            size = modend;
+        }
+
+        memcpy(buf + start, ptr + ptroff, size);
+
+        ext2_write_inode_blk(vol, i, &ino, buf);
+
+        ptroff += size;
     }
 
     kfree(buf);
-
     return size;
 }
 

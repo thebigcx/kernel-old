@@ -7,3 +7,5 @@
 #define SYS_MMAP  4
 #define SYS_IOCTL 5
 #define SYS_STAT  6
+#define SYS_FORK  7
+#define SYS_EXEC  8

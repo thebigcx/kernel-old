@@ -26,36 +26,20 @@
 #include <drivers/tty/serial.h>
 #include <drivers/storage/partmgr/gpt.h>
 
+sem_t* testsem;
+
 void kernel_proc()
 {
-    //DONE(); // "Jumping to multitasking..."
+    sem_acquire(testsem);
     serial_writestr("Ok\n");
-    //sched_block(PROC_STATE_PAUSED);
-    //sleep(1);
-
-    // TESTS
-    
-    vfs_node_t* kb = vfs_resolve_path("/dev/keyboard", NULL);
-    vfs_open(kb, 0, 0);
-
-    vfs_node_t* mouse = vfs_resolve_path("/dev/mouse", NULL);
-    vfs_open(mouse, 0, 0);
-
-    /*vfs_node_t test = vfs_resolve_path("/system_folder/long_file_name.txt", NULL);
-    
-    char buffer[100];
-
-    vfs_read(&test, buffer, 0, 100);
-    vfs_close(&test);
-
-    for (int i = 0; i < 100; i++)
-    {
-        console_putchar(buffer[i], 255, 255, 255);
-    }*/
 
     int x = 0;
     for (;;)
     {
+        if (x > 500)
+        {
+            sem_release(testsem);
+        }
         x += 1;
 
         for (int i = 0; i < 100; i++)
@@ -63,33 +47,45 @@ void kernel_proc()
         {
             video_putpix(i + x, j, 255, 0, 0);
         }
+    }
+}
 
-        mouse_packet_t pack;
-        if (vfs_read(mouse, &pack, 0, 1))
-        {
-            serial_writestr("Mouse");
-        }
+void kernel_proc_2()
+{
+    sem_acquire(testsem);
+    int y = 0;
+    for (;;)
+    {
+        y += 1;
 
-        uint32_t key;
-        if (vfs_read(kb, &key, 0, 1))
+        for (int i = 0; i < 100; i++)
+        for (int j = 0; j < 100; j++)
         {
-            serial_printf("%d", key);
+            video_putpix(i, j + y, 255, 255, 0);
         }
     }
 }
+
+// TODO: only load drivers for devices if they are present. This should
+// take the form of kernel modules, and the initializing should not EXPECT
+// a particular device to be present.
 
 void kmain()
 {
     serial_writestr("Enumerating PCI devices...");
     pci_enumerate();
     serial_writestr("Ok\n");
-    
-    serial_writestr("Initializing AHCI controllers...");
-    ahci_init(pci_devs);
-    serial_writestr("Ok\n");
 
     serial_writestr("Initializing VFS...");
     vfs_init();
+    serial_writestr("Ok\n");
+    
+
+//                  Everything here is temporary
+// -----------------------------------------------------------------
+
+    serial_writestr("Initializing AHCI controllers...");
+    ahci_init(pci_devs);
     serial_writestr("Ok\n");
 
     serial_writestr("Mounting /dev/disk0 to /...");
@@ -105,35 +101,34 @@ void kmain()
 
     serial_writestr("Ok\n");
 
-    vfs_node_t* test = vfs_resolve_path("/bin/test", NULL);
-    vfs_open(test, 0, 0);
-
-    uint8_t* elfdat = kmalloc(1024 - (test->size % 1024) + test->size);
-    
-    vfs_read(test, elfdat, 0, test->size);
-    /*vfs_close(test);*/
+// ---------------------------------------------------------------------
 
     serial_writestr("Initializing keyboard...");
     kb_init();
     serial_writestr("Ok\n");
+
     serial_writestr("Initializing mouse...");
     mouse_init();
     serial_writestr("Ok\n");
+
     serial_writestr("Initializing random number generator...");
     rand_seed(305640980);
     serial_writestr("Ok\n");
     
     serial_writestr("Creating kernel process...");
-    proc_t* proc = mk_proc(kernel_proc);
-    sched_spawn_proc(proc);
+    sched_spawn_proc(mk_proc(kernel_proc));
+    sched_spawn_proc(mk_proc(kernel_proc_2));
     serial_writestr("Ok\n");
 
-    proc_t* elfproc = mk_elf_proc(elfdat);
-    sched_spawn_proc(elfproc);
-    elfproc->next = proc;
-    proc->next = elfproc;
+    // TEMP
+    list_t* args = list_create();
+    list_push_back(args, "Hello");
+    list_t* env = list_create();
+    proc_t* elf = mkelfproc("/bin/test", args, env);
+    sched_spawn_proc(elf);
+    testsem = sem_create(1);
 
-    serial_writestr("Jumping to multitasking...");
+    serial_writestr("Intializing scheduler...");
     sched_init();
 
     for (;;);

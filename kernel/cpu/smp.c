@@ -76,5 +76,5 @@ void smp_init()
         }
     }
 
-    //tss_init(&cpus[0].tss, 5, cpus[0].gdt);
+    tss_init(&cpus[0].tss, 5, cpus[0].gdt);
 }

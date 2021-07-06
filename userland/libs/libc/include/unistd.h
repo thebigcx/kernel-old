@@ -10,4 +10,6 @@ size_t read(int fd, void* buf, size_t cnt);
 int open(const char* path, int flags, unsigned int mode);
 int close(int fd);
 void* mmap(void* addr, size_t len, int prot, int flags, int fd, uint64_t offset);
-void stat(const char* path, stat_t* stat);
+int stat(const char* path, stat_t* stat);
+int fork();
+int exec(const char* path, char** args);

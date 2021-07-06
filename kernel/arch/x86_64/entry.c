@@ -3,7 +3,7 @@
 #include <arch/x86_64/stivale2.h>
 #include <util/printf.h>
 
-static uint8_t stack[4096];
+uint8_t stack[4096];
 
 static st2_tagterm_t termtag =
 {

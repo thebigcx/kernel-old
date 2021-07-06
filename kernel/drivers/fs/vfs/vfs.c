@@ -26,10 +26,10 @@ fs_fd_t* vfs_open(vfs_node_t* file, uint32_t flags, uint32_t mode)
     return fd;
 }
 
-void vfs_close(vfs_node_t* file)
+void vfs_close(fs_fd_t* file)
 {
-    if (file->close)
-        file->close(file);
+    if (file->node->close)
+        file->node->close(file->node);
 }
 
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)

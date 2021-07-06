@@ -48,24 +48,20 @@ void sched_fork(proc_t* proc);
 
 proc_t* sched_get_currproc();
 
-// exec.c
-proc_t* mk_elf_proc(uint8_t* elf_dat);
+proc_t* mkelfproc(const char* path, list_t* args, list_t* env);
 
-// sleep.c
 void nano_sleep(uint64_t ns);
 void sleep(uint64_t s);
 
-/*typedef struct semaphore
+typedef struct semaphore
 {
     uint32_t max_cnt;
     uint32_t curr_cnt;
     proc_t* first_wait_tsk;
     proc_t* last_wait_tsk;
 
-} semaphore_t;
+} sem_t;
 
-// lock.c
-semaphore_t* mk_semaphore(uint32_t max_cnt);
-void acquire_semaphore(semaphore_t* sem);
-void release_semaphore(semaphore_t* sem);*/
-
+sem_t* sem_create(uint32_t max_cnt);
+void sem_acquire(sem_t* sem);
+void sem_release(sem_t* sem);

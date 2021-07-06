@@ -32,6 +32,6 @@ typedef struct tss_ent
     uint16_t res4;
     uint16_t iomap_base;
 
-} __attribute__((packed)) tss_ent_t;
+} __attribute__((packed)) tss_t;
 
-void tss_init(tss_ent_t* tss, uint32_t select, gdt_entry_t* gdt);
+void tss_init(tss_t* tss, uint32_t select, gdt_entry_t* gdt);
