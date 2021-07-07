@@ -73,10 +73,10 @@ void mouse_handler(reg_ctx_t* r)
             cycle = 0;
 
             mouse_packet_t pack;
-            pack.buttons = mouse_data[0] & (MOUSE_BTN_LEFT | MOUSE_BTN_RIGHT | MOUSE_BTN_MID);
+            pack.btns = mouse_data[0] & (MOUSE_BTN_LEFT | MOUSE_BTN_RIGHT | MOUSE_BTN_MID);
 
-            pack.x_mov = mouse_data[1];
-            pack.y_mov = -mouse_data[2];
+            pack.xmov = mouse_data[1];
+            pack.ymov = -mouse_data[2];
 
             mouse_queue.packets[++mouse_queue.packet_end] = pack;
             if (mouse_queue.packet_end > MOUSE_QUEUE_SIZE)

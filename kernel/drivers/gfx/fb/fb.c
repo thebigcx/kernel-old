@@ -7,7 +7,7 @@
 #include <sched/sched.h>
 
 vid_mode_t vidmode;
-psf1_font* font;
+psf1_font_t font;
 
 static uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b)
 {
@@ -16,7 +16,17 @@ static uint32_t rgbtopix(uint8_t r, uint8_t g, uint8_t b)
 
 int fb_ioctl(vfs_node_t* node, uint64_t request, void* argp)
 {
-
+    switch (request)
+    {
+        case 0:
+        {
+            fbinfo_t* inf = argp;
+            inf->width = vidmode.width;
+            inf->height = vidmode.height;
+            inf->bpp = vidmode.depth;
+            return 0;
+        }
+    }
 }
 
 void* fb_mmap(vfs_node_t* file, proc_t* proc, void* addr, size_t len, int prot, int flags, size_t off)
@@ -35,18 +45,37 @@ void video_setmode(vid_mode_t mode)
 
 void video_init()
 {
+    memset(vidmode.fb, 0, vidmode.width * vidmode.height * (vidmode.depth / 8));
+
     vfs_node_t* node = kmalloc(sizeof(vfs_node_t));
     node->ioctl = fb_ioctl;
     node->mmap = fb_mmap;
     node->flags = FS_BLKDEV;
     node->name = strdup("fb");
     vfs_mount(node, "/dev/fb");
+
+    vfs_node_t* psffont = vfs_resolve_path("/usr/font.psf", NULL);
+
+    psf1_header_t header;
+    vfs_read(psffont, &header, 0, sizeof(psf1_header_t));
+
+    uint64_t bufsize = header.c_size * 256;
+
+    if (header.mode == 1)
+        bufsize = header.c_size * 256;
+
+    uint8_t* buf = kmalloc(bufsize);
+
+    vfs_read(psffont, buf, sizeof(psf1_header_t), bufsize);
+
+    font.glyph_buf = buf;
+    font.header = header;
 }
 
-void video_set_fnt(psf1_font* fnt)
+/*void video_set_fnt(psf1_font* fnt)
 {
     font = fnt;
-}
+}*/
 
 const vid_mode_t* video_get_mode()
 {
@@ -55,7 +84,7 @@ const vid_mode_t* video_get_mode()
 
 void video_putchar(char c, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b)
 {
-    char* face = (char*)font->glyph_buf + (c * font->header->c_size);
+    char* face = (char*)font.glyph_buf + (c * font.header.c_size);
 
     for (uint64_t j = y; j < y + 16; j++)
     {

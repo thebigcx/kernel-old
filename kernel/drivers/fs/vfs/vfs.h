@@ -95,4 +95,4 @@ list_t* vfs_listdir(vfs_node_t* dir);
 void vfs_mkfile(vfs_node_t* parent, const char* name);
 void vfs_mkdir(vfs_node_t* parent, const char* name);
 int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp);
-void vfs_stat(const char* path, vfs_stat_t* stat);
+int vfs_stat(const char* path, vfs_stat_t* stat);

@@ -48,7 +48,7 @@ void sched_fork(proc_t* proc);
 
 proc_t* sched_get_currproc();
 
-proc_t* mkelfproc(const char* path, list_t* args, list_t* env);
+proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env);
 
 void nano_sleep(uint64_t ns);
 void sleep(uint64_t s);

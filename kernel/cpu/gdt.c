@@ -59,7 +59,8 @@ void gdt_set_entry(gdt_entry_t* gdt, uint32_t select, gdt_entry_t* entry)
 
 void gdt_setbase(gdt_entry_t* entry, uint32_t base)
 {
-    entry->baselo = base & 0xffffff;
+    entry->baselo = base & 0xffff;
+    entry->basemid = (base >> 16) & 0xff;
     entry->basehi = (base >> 24) & 0xff;
 }
 

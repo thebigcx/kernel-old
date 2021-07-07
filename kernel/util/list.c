@@ -129,3 +129,26 @@ void list_remove(list_t* list, uint32_t idx)
     list->cnt--;
     kfree(node);
 }
+
+void list_insert(list_t* list, void* val, uint32_t idx)
+{
+    if (idx == list->cnt)
+    {
+        list_push_back(list, val);
+    }
+
+    list_node_t* new = kmalloc(sizeof(list_node_t));
+    new->val = val;
+
+    list_node_t* node = list_get(list, idx);
+    new->prev = node->prev;
+
+    if (new->prev)
+        new->prev->next = new;
+
+    new->next = node;
+    node->prev = new;
+
+    if (new->prev == NULL)
+        list->head = new;
+}

@@ -10,10 +10,10 @@
 
 typedef struct mouse_packet
 {
-    int8_t buttons;
-    int8_t x_mov;
-    int8_t y_mov;
-    int8_t vert_scroll;
+    int8_t btns;
+    int8_t xmov;
+    int8_t ymov;
+    int8_t scroll;
     
 } mouse_packet_t;
 

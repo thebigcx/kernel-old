@@ -24,8 +24,9 @@ typedef union gdt_entry
 {
     struct
     {
-        uint32_t limlo      : 16;
-        uint32_t baselo     : 24;
+        uint16_t limlo;
+        uint16_t baselo;
+        uint8_t  basemid;
         uint32_t access     : 1;
         uint32_t rw         : 1;
         uint32_t dc         : 1;
@@ -38,7 +39,7 @@ typedef union gdt_entry
         uint32_t mode64bit  : 1;
         uint32_t mode32bit  : 1;
         uint32_t gran       : 1;
-        uint32_t basehi     : 8;
+        uint8_t  basehi;
     } __attribute__((packed));
     struct
     {
@@ -48,7 +49,7 @@ typedef union gdt_entry
 
 } __attribute__((packed)) gdt_entry_t;
 
-#define GDT_NUM_DESCS 6
+#define GDT_NUM_DESCS 7
 
 __attribute__((aligned(PAGE_SIZE_4K))) extern gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
 extern gdt_ptr_t bsp_gdtptr;

@@ -11,6 +11,8 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 {
     serial_write(c);
 
+    const vid_mode_t* mode = video_get_mode();
+
     if (c == '\n')
     {
         curs_y++;
@@ -19,15 +21,13 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
     else
     {
         video_putchar(c, curs_x * 8, curs_y * 16, r, g, b);
-    }
 
-    const vid_mode_t* mode = video_get_mode();
-
-    curs_x++;
-    if (curs_x * 8 >= mode->width)
-    {
-        curs_x = 0;
-        curs_y++;
+        curs_x++;
+        if (curs_x * 8 >= mode->width)
+        {
+            curs_x = 0;
+            curs_y++;
+        }
     }
 
     if (curs_y * 16 >= mode->height)
@@ -38,11 +38,11 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 
 void console_write(const char* str, uint8_t r, uint8_t g, uint8_t b)
 {
-    /*while (*str != 0)
+    while (*str != 0)
     {
         console_putchar(*str, r, g, b);
         str++;
-    }*/
+    }
 }
 
 void console_clear()
@@ -65,7 +65,10 @@ void console_printf(const char* format, uint8_t r, uint8_t g, uint8_t b, ...)
 
 size_t conwrite(vfs_node_t* node, const void* ptr, size_t off, size_t size)
 {
-    serial_writestr(ptr);
+    for (int i = 0; i < size; i++)
+    {
+        console_putchar(((char*)ptr)[i], 255, 255, 255);
+    }
 
     return size;
 }

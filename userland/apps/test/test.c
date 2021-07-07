@@ -3,57 +3,104 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <os/keyboard.h>
+#include <sys/stat.h>
+
+static int keyboard;
+
+void runcmd(char* cmd)
+{
+    printf("\n");
+
+    char bin[50];
+    strncpy(bin, "/bin/", 5);
+
+    // Extract the command name
+    for (int i = 0; cmd[i] != ' '; i++)
+    {
+        bin[i + 5] = cmd[i];
+    }
+
+    stat_t binstat;
+    if (stat(bin, &binstat) != 0)
+    {
+        printf("%s: command not found\n", bin);
+        return;
+    }
+
+    exec(bin, 0, NULL);
+}
+
+static char scancode_toascii[] =
+{
+    'c', '~', '1', '2', '3', '4', '5',
+    '6', '7', '8', '9', '0', '-', '=',
+    '~', '~', 'q', 'w', 'e', 'r', 't',
+    'y', 'u', 'i', 'o', 'p', '[', ']',
+    '~', '~', 'a', 's', 'd', 'f', 'g',
+    'h', 'j', 'k', 'l', ';', '\'', '`',
+    '~', '\\', 'z', 'x', 'c', 'v', 'b',
+    'n', 'm', ',', '.', '/', '~', '*',
+    '~', ' ', '~', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c'
+};
+
+void getcmd()
+{
+    int fb = open("/dev/fb", 0, 0);
+    void* addr = mmap(NULL, 0, 0, 0, 0, 0);
+    *((uint32_t*)addr) = 0xffffffff;
+
+    char cmd[200];
+    int cmdlen = 0;
+
+    printf(">> ");
+
+    while (1)
+    {
+        uint32_t scancode;
+        if (read(keyboard, &scancode, 1))
+        {
+            if (scancode == KEY_ENTER)
+            {
+                if (cmdlen == 0)
+                {
+                    printf("\n");
+                    return;
+                }
+
+                cmd[cmdlen] = 0; // Null terminate
+                runcmd(cmd);
+                return;
+            }
+            else if (scancode < 88) // Key press
+            {
+                char c = scancode_toascii[scancode];
+                cmd[cmdlen++] = c;
+                write(1, &c, 1);
+            }
+        }
+    }
+}
+
 void _start(int argc, char** argv)
 {
-    /*char buffer[100];
-    buffer[0] = 'H';
-    buffer[1] = 'e';
-    buffer[2] = 'l';
-    buffer[3] = 'l';
-    buffer[4] = 'o';
-    buffer[5] = '!';
+    keyboard = open("/dev/keyboard", 0, 0);
 
-    int file = open("/text/test.txt", 0, 0);
-    write(1, "Hello, world!", 100);
-    //char buffer[1024];
-    read(file, buffer, 100);
-
-    write(1, buffer, 6);*/ // stdout
-
-    char* nl = "\n";
-    write(1, argv[0], 1);
-    write(1, nl, 1);
-    write(1, argv[1], 1);
-    write(1, nl, 1);
-
-    int keyboard = open("/dev/keyboard", 0, 0);
-
-    //int fd = open("/dev/fb", 0, 0);
-    //void* fb = mmap(NULL, 0, 0, 0, fd, 0);
+    printf("Minimal bash-like shell - type 'help' for a list of commands\n\n");
     
     while (1)
     {
-        
-
-        /*for (int y = 0; y < 1; y++)
-        for (int x = 0; x < 1; x++)
-        {
-            *((uint32_t*)fb + x + y * 768) = 0xffffffff;
-        }*/
-
-        uint32_t key;
-        if (read(keyboard, &key, 1))
-        {
-            char buf[3];
-            write(1, itoa(key, buf, 16), 1);
-        }
+        getcmd();
     }
-
-    
-
-    
-
-    
 
     for (;;);
 }

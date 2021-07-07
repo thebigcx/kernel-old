@@ -105,7 +105,15 @@ int vfs_ioctl(vfs_node_t* file, uint64_t request, void* argp)
     return 0;
 }
 
-void vfs_stat(const char* path, vfs_stat_t* stat)
+int vfs_stat(const char* path, vfs_stat_t* stat)
 {
-    
+    proc_t* proc = sched_get_currproc();
+    vfs_node_t* node = vfs_resolve_path(path, proc->working_dir);
+
+    if (!node)
+    {
+        return -1;
+    }
+
+    return 0;
 }

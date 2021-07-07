@@ -30,7 +30,7 @@ sem_t* testsem;
 
 void kernel_proc()
 {
-    sem_acquire(testsem);
+    /*sem_acquire(testsem);
     serial_writestr("Ok\n");
 
     int x = 0;
@@ -47,12 +47,13 @@ void kernel_proc()
         {
             video_putpix(i + x, j, 255, 0, 0);
         }
-    }
+    }*/
+    for (;;);
 }
 
 void kernel_proc_2()
 {
-    sem_acquire(testsem);
+    /*sem_acquire(testsem);
     int y = 0;
     for (;;)
     {
@@ -63,7 +64,8 @@ void kernel_proc_2()
         {
             video_putpix(i, j + y, 255, 255, 0);
         }
-    }
+    }*/
+    for (;;);
 }
 
 // TODO: only load drivers for devices if they are present. This should
@@ -121,10 +123,8 @@ void kmain()
     serial_writestr("Ok\n");
 
     // TEMP
-    list_t* args = list_create();
-    list_push_back(args, "Hello");
-    list_t* env = list_create();
-    proc_t* elf = mkelfproc("/bin/test", args, env);
+    const char* hello = "Hello, this is the first parameter!";
+    proc_t* elf = mkelfproc("/bin/test", 1, &hello, 0, NULL);
     sched_spawn_proc(elf);
     testsem = sem_create(1);
 

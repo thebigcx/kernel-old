@@ -53,13 +53,13 @@ typedef struct elf64_sym
 typedef struct elf64_phdr
 {
     uint32_t  type;
+    uint32_t  flags;
     uint64_t  offset;
     uint64_t  vaddr;
     uint64_t  paddr;
-    uint32_t  file_sz;
-    uint32_t  mem_sz;
-    uint32_t  flags;
-    uint32_t  align;
+    uint64_t  file_sz;
+    uint64_t  mem_sz;
+    uint64_t  align;
 
 } elf64_phdr_t;
 

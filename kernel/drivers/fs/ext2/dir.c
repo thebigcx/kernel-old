@@ -21,7 +21,7 @@ vfs_node_t* ext2_finddir(vfs_node_t* dir, const char* name)
         char* fnd_name = (uint8_t*)fnd_dir + EXT2_DIRENT_NAME_OFF;
         blk_off += fnd_dir->size;
 
-        if (strncmp(fnd_name, name, fnd_dir->name_len) == 0)
+        if (strlen(name) == fnd_dir->name_len && strncmp(fnd_name, name, fnd_dir->name_len) == 0)
         {
             vfs_node_t* node = ext2_dirent_to_node(e2vol, fnd_dir);
             kfree(buf);

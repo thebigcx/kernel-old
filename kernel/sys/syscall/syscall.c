@@ -3,6 +3,7 @@
 #include <mem/paging.h>
 #include <sched/sched.h>
 #include <drivers/fs/vfs/vfs.h>
+#include <drivers/gfx/fb/fb.h>
 
 #define SYSCALL_CNT 256
 
@@ -54,21 +55,36 @@ uint64_t sys_close(reg_ctx_t* regs)
     return 0;
 }
 
+// TODO: fix bug where memory cannot be mapped from a syscall
 uint64_t sys_mmap(reg_ctx_t* regs)
 {
     void* addr = regs->rdi;
-    size_t* len = regs->rsi;
+    size_t len = regs->rsi;
     int prot = regs->rdx;
     int flags = regs->r10;
     int fdno = regs->r8;
     size_t off = regs->r9;
 
     proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = procgetfd(fdno);
-    vfs_node_t* node = fd->node;
 
-    if (node->mmap)
-        return node->mmap(node, proc, addr, len, prot, flags, off);
+    if (fdno)
+    {
+        fs_fd_t* fd = procgetfd(fdno);
+        vfs_node_t* node = fd->node;
+
+        if (node->mmap)
+            return node->mmap(node, proc, addr, len, prot, flags, off);
+    }
+    else
+    {
+        void* mem = space_alloc_region(len, proc->addr_space);
+        for (uint32_t i = 0; i < len / PAGE_SIZE_4K; i++)
+        {
+            page_map_memory(mem + i * PAGE_SIZE_4K, pmm_request(), 1, proc->addr_space);
+        }
+
+        return mem;
+    }
 }
 
 uint64_t sys_ioctl(reg_ctx_t* regs)
@@ -82,8 +98,7 @@ uint64_t sys_ioctl(reg_ctx_t* regs)
 
 uint64_t sys_stat(reg_ctx_t* regs)
 {
-    vfs_stat(regs->rdi, regs->rsi);
-    return 0;
+    return vfs_stat(regs->rdi, regs->rsi);
 }
 
 uint64_t sys_fork(reg_ctx_t* regs)
@@ -93,7 +108,13 @@ uint64_t sys_fork(reg_ctx_t* regs)
 
 uint64_t sys_exec(reg_ctx_t* regs)
 {
-    
+    proc_t* proc = sched_get_currproc();
+    char* str = kmalloc(strlen(regs->rdi) + 1); // mkelfproc switches page maps, so we must copy the user args
+    strcpy(str, regs->rdi);
+    proc_t* new = mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
+    kfree(str);
+    sched_spawn_proc(new);
+    return 0;
 }
 
 syscall_t syscalls[SYSCALL_CNT] =

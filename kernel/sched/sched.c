@@ -138,6 +138,7 @@ void sched_tick(reg_ctx_t* r)
 
 void sched_spawn_proc(proc_t* proc)
 {
+    cli();
     //acquire_lock(ready_lst_lock);
 
     if (!ready_lst_start || !ready_lst_end) // First process
@@ -149,6 +150,8 @@ void sched_spawn_proc(proc_t* proc)
 
     ready_lst_end->next = proc;
     ready_lst_end = proc;
+
+    sti();
 
     //release_lock(ready_lst_lock);
 }
@@ -201,7 +204,8 @@ void sched_unblock(proc_t* proc)
 void sched_fork(proc_t* proc)
 {
     proc_t* new = kmalloc(sizeof(proc_t));
-    new->addr_space = page_clone_map(proc->addr_space);
+    //new->addr_space = page_clone_map(proc->addr_space);
+    new->addr_space = page_mk_map();
     new->next = NULL;
     new->pid = creatpid();
     new->sleep_exp = 0;
@@ -212,7 +216,8 @@ void sched_fork(proc_t* proc)
     strcpy(new->working_dir, proc->working_dir);
 
     // Child processes get a new stack
-    page_alloc_region(0x20000, 0x4000, proc->addr_space);
+    space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
+    sched_spawn_proc(new);
 }
 
 proc_t* sched_get_currproc()
@@ -282,14 +287,24 @@ void* loadelf(uint8_t* elf_dat, proc_t* proc)
         if (phdr.type == PT_LOAD)
         {
             uint64_t begin = phdr.vaddr;
-            uint64_t size = phdr.file_sz;
+            uint64_t size = phdr.mem_sz; // TODO: fix
+
+            if (size % PAGE_SIZE_4K != 0)
+                size = size - (size % PAGE_SIZE_4K) + PAGE_SIZE_4K;
+
+            space_alloc_region_at(begin, size / PAGE_SIZE_4K, proc->addr_space);
+
+            void* tmp = page_kernel_alloc4k(1);
 
             for (uint32_t i = 0; i < size; i += PAGE_SIZE_4K)
             {
                 void* phys = pmm_request();
-                memcpy(phys, elf_dat + phdr.offset + i * PAGE_SIZE_4K, PAGE_SIZE_4K);
-                page_map_memory(phdr.vaddr + i * PAGE_SIZE_4K, phys, 1, proc->addr_space);
+                page_kernel_map_memory(tmp, phys, 1);
+                memcpy(tmp, elf_dat + phdr.offset + i, PAGE_SIZE_4K);
+                page_map_memory(phdr.vaddr + i, phys, 1, proc->addr_space);
             }
+
+            page_kernel_free4k(tmp, 1);
         }
     }
 
@@ -297,13 +312,11 @@ void* loadelf(uint8_t* elf_dat, proc_t* proc)
 }
 
 // Prepare the stack of a process, by pushing the necessary variables (argc, argv, env, envp)
-static void prepstack(proc_t* proc, const char* file, list_t* args, list_t* env)
+static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int envp, char** env)
 {
-    proc->regs.rdi = '6';
+    uint64_t stack = proc->regs.rsp;
 
-    void* stack = proc->regs.rsp;
-
-    char** argv = kmalloc((args->cnt + 1) * sizeof(char*)); // First arg is exec path
+    uint64_t* tmp_argv = kmalloc((argc + 1) * sizeof(uint64_t)); // First arg is exec path
 
     // Push 'args' onto the stack (load proc's virtual address space)
     uint64_t cr3;
@@ -313,22 +326,21 @@ static void prepstack(proc_t* proc, const char* file, list_t* args, list_t* env)
     asm volatile ("mov %%rax, %%cr3" :: "a"(proc->addr_space->pml4_phys));
 
     stack -= strlen(file) + 1;
-    strcpy(stack, file);
-    argv[0] = stack;
+    strcpy((char*)stack, file);
+    tmp_argv[0] = stack;
 
-    int i = 1;
-    list_foreach(args, arg)
+    for (int i = 0; i < argc; i++)
     {
-        stack -= strlen(arg->val) + 1;
-        strcpy(stack, arg->val);
-        argv[i] = stack;
-        i++;
+        stack -= strlen(argv[i]) + 1;
+        strcpy(stack, argv[i]);
+        tmp_argv[i + 1] = stack;
     }
 
-    for (i = args->cnt; i >= 0; i--)
+    for (int i = argc; i >= 0; i--)
     {
         stack -= sizeof(uint64_t);
-        *((uint64_t*)stack) = argv[i];
+        *((uint64_t*)stack) = tmp_argv[i];
+        serial_printf("d\n");
     }
 
     asm volatile ("mov %%rax, %%cr3" :: "a"(cr3));
@@ -336,14 +348,14 @@ static void prepstack(proc_t* proc, const char* file, list_t* args, list_t* env)
 
     proc->regs.rsp = stack;
     proc->regs.rsi = stack;
-
-    kfree(argv);
+    
+    kfree(tmp_argv);
 }
 
-proc_t* mkelfproc(const char* path, list_t* args, list_t* env)
+proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
 {
     vfs_node_t* node = vfs_resolve_path(path, NULL);
-    uint8_t* buffer = kmalloc(node->size + 1024); // TODO: fix block-size aligned reading bug
+    uint8_t* buffer = kmalloc(node->size);
     vfs_read(node, buffer, 0, node->size);
 
     proc_t* proc = kmalloc(sizeof(proc_t));
@@ -364,8 +376,12 @@ proc_t* mkelfproc(const char* path, list_t* args, list_t* env)
     fs_fd_t* stdout = vfs_open(stdout_node, 0, 0);
     list_push_back(proc->file_descs, stdout);
 
-    page_alloc_region(0x20000, 0x4000, proc->addr_space);
-
+    space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
+    for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
+    {
+        page_map_memory(0x20000 + i, pmm_request(), 1, proc->addr_space);
+    }
+    
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     loadelf(buffer, proc);
     proc->regs.rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
@@ -374,7 +390,8 @@ proc_t* mkelfproc(const char* path, list_t* args, list_t* env)
     proc->regs.rbp = (uint64_t)0x24000;
     proc->regs.rsp = (uint64_t)0x24000;
 
-    prepstack(proc, path, args, env);
+    // TODO: this does not work without the TSS. PLEASE FIX!!!!
+    //prepstack(proc, path, argc, argv, envp, env);
     
     kfree(buffer);
 

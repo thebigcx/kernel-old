@@ -41,13 +41,24 @@ int vsnprintf(char* str, const char* format, va_list list)
                     break;
 
                 case 'x':
-                    itoa(va_arg(list, int), buffer, 16);
+                    ultoa(va_arg(list, unsigned long), buffer, 16);
                     len = strlen(buffer);
 
                     for (size_t j = 0; j < len; j++)
                         str[stridx++] = buffer[j];
 
                     break;
+
+                case 'l':
+                {
+                    ultoa(va_arg(list, long), buffer, 10);
+                    len = strlen(buffer);
+
+                    for (size_t j = 0; j < len; j++)
+                        str[stridx++] = buffer[j];
+
+                    break;
+                }
             }
         }
         else

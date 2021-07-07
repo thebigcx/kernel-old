@@ -12,4 +12,5 @@ int close(int fd);
 void* mmap(void* addr, size_t len, int prot, int flags, int fd, uint64_t offset);
 int stat(const char* path, stat_t* stat);
 int fork();
-int exec(const char* path, char** args);
+int exec(const char* path, int argc, char** argv);
+int ioctl(int fd, uint64_t request, void* argp);

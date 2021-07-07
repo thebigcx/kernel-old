@@ -13,6 +13,7 @@ extern void* _kernel_end;
 #define KHEAP_PML4_IDX 511
 
 // Definitions
+uint64_t kpml4_phys;
 pml4_t kpml4 __attribute__((aligned(PAGE_SIZE_4K)));
 pdp_t kpdp __attribute__((aligned(PAGE_SIZE_4K)));
 page_dir_t kpd __attribute__((aligned(PAGE_SIZE_4K)));
@@ -73,20 +74,20 @@ void paging_init()
         memset(&(kheap_tables[i]), 0, sizeof(page_t) * PAGES_PER_TABLE);
     }
 
-    uint64_t kpml4_phys = (uint64_t)&kpml4 - KERNEL_VIRTUAL_ADDR;
+    kpml4_phys = (uint64_t)&kpml4 - KERNEL_VIRTUAL_ADDR;
     asm ("mov %0, %%cr3" :: "r"(kpml4_phys));
 }
 
 // Page map indexing function implementations
 
-void* get_physaddr(void* virt_adr, pml4_t* pml4)
+void* page_getphys(void* virt, page_map_t* map)
 {
-    uint32_t pml4_index = PML4_IDX(virt_adr);
-    uint32_t pdp_index = PDP_IDX(virt_adr);
-    uint32_t pd_index = PD_IDX(virt_adr);
-    uint32_t pt_index = PT_IDX(virt_adr);
+    uint32_t pml4_index = PML4_IDX(virt);
+    uint32_t pdp_index = PDP_IDX(virt);
+    uint32_t pd_index = PD_IDX(virt);
+    uint32_t pt_index = PT_IDX(virt);
 
-    if (!(pml4->entries[pml4_index] & PML4_PRESENT))
+    /*if (!(pml4->entries[pml4_index] & PML4_PRESENT))
         serial_writestr("Page Directory Pointer not present!\n");
 
     pdp_t* pdp = (pdp_t*)((uint64_t)pml4->entries[pml4_index] & PML4_FRAME);
@@ -104,14 +105,27 @@ void* get_physaddr(void* virt_adr, pml4_t* pml4)
     if (!(pt->entries[pt_index] & PAGE_PRESENT))
         serial_writestr("Page not present!\n");
 
-    return (void*)(pt->entries[pt_index] & PAGE_FRAME);
+    return (void*)(pt->entries[pt_index] & PAGE_FRAME);*/
+
+    // User space
+    if (pml4_index == 0)
+    {
+        if (!(map->page_dirs[pdp_index][pd_index] & PD_PRESENT) || !(map->page_tables[pdp_index][pd_index])) return 0;
+
+        return map->page_tables[pdp_index][pd_index][pt_index] & PAGE_FRAME;
+    }
+    else // Kernel space
+    {
+        return 0;
+    }
 }
 
-void* get_kernel_physaddr(void* virt)
+void* page_kernel_getphys(void* virt)
 {
-    return get_physaddr(virt, &kpml4);
+    //return page_getphys(virt, &kpml4);
 }
 
+// TODO: fix bug where this function fucks up in userspace
 void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map)
 {
     while (cnt--)
@@ -123,7 +137,7 @@ void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map)
 
         if (!(map->page_dirs[pdpidx][pdidx] & PD_PRESENT)) page_mk_table(pdpidx, pdidx, map);
 
-        set_page_frame(&map->page_tables[pdpidx][pdidx][ptidx], phys);
+        set_page_frame(&(map->page_tables[pdpidx][pdidx][ptidx]), phys);
         map->page_tables[pdpidx][pdidx][ptidx] |= PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
 
         invlpg(virt);
@@ -153,9 +167,11 @@ void page_mk_table(uint64_t pdpidx, uint64_t pdidx, page_map_t* map)
     page_table_t* table = page_kernel_alloc4k(1);
     uint64_t table_phys = pmm_request();
     page_kernel_map_memory(table, table_phys, 1);
+    memset(table, 0, PAGE_SIZE_4K);
 
     set_page_frame(&(map->page_dirs[pdpidx][pdidx]), table_phys);
-    map->page_dirs[pdpidx][pdidx] |= PAGE_PRESENT | PAGE_WRITABLE;
+    map->page_dirs[pdpidx][pdidx] |= PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
+    
     map->page_tables[pdpidx][pdidx] = table;
 }
 
@@ -208,6 +224,7 @@ page_map_t* page_mk_map()
     map->page_dirs = page_dirs;
     map->page_dirs_phys = page_dirs_phys;
     map->page_tables = page_tables;
+    map->regions = list_create();
     return map;
 }
 
@@ -397,14 +414,93 @@ void page_kernel_free4k(void* addr, uint32_t cnt)
     }
 }
 
-void page_alloc_region(uint64_t base, uint64_t size, page_map_t* map)
+void space_alloc_region_at(uint64_t base, uint64_t size, page_map_t* map)
 {
-    assert(base % PAGE_SIZE_4K == 0);
+    /*assert(base % PAGE_SIZE_4K == 0);
 
     uint32_t pgcnt = size / PAGE_SIZE_4K + 1;
 
     for (uint32_t i = 0; i < pgcnt; i++)
     {
         page_map_memory(base + i * PAGE_SIZE_4K, pmm_request(), 1, map);
+    }*/
+
+    mregion_t* newreg = kmalloc(sizeof(mregion_t));
+    newreg->base = base;
+    newreg->end = base + size;
+
+    uint32_t i = 0;
+    list_foreach(map->regions, node)
+    {
+        mregion_t* region = node->val;
+
+        if (region->base >= base + size)
+        {
+            list_insert(map->regions, newreg, i);
+            return newreg->base;
+        }
+
+        i++;
     }
+
+    list_push_back(map->regions, newreg);
+    return NULL;
+}
+
+uint64_t space_alloc_region(uint64_t size, page_map_t* map)
+{
+    uint64_t base = PAGE_SIZE_4K;
+    uint64_t end = base + size;
+
+    uint32_t i = 0;
+    list_foreach(map->regions, node)
+    {
+        mregion_t* region = node->val;
+
+        if (region->base >= end)
+        {
+            mregion_t* newreg = kmalloc(sizeof(mregion_t));
+            newreg->base = base;
+            newreg->end = end;
+
+            list_insert(map->regions, newreg, i);
+
+            return newreg->base;
+        }
+
+        // Intersects
+        if (base >= region->base && base < region->end)
+        {
+            base = region->end;
+            end = base + size;
+        }
+
+        if (end > region->base && end <= region->end)
+        {
+            base = region->end;
+            end = base + size;
+        }
+
+        // Encapsulates
+        if (base < region->base && end > region->end)
+        {
+            base = region->end;
+            end = base + size;
+        }
+
+        i++;
+    }
+
+    if (end < KERNEL_VIRTUAL_ADDR)
+    {
+        mregion_t* newreg = kmalloc(sizeof(mregion_t));
+        newreg->base = base;
+        newreg->end = end;
+
+        list_push_back(map->regions, newreg);
+        return newreg->base;
+    }
+
+    // Could not allocate
+    return NULL;
 }

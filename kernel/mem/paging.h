@@ -1,6 +1,7 @@
 #pragma once
 
 #include <util/types.h>
+#include <util/list.h>
 
 #define KERNEL_VIRTUAL_ADDR 0xffffffff80000000ull
 #define IO_VIRTUAL_ADDR     (KERNEL_VIRTUAL_ADDR - 0x100000000ull)
@@ -80,6 +81,13 @@ typedef struct page_table
     page_t entries[PAGES_PER_TABLE];
 } __attribute__((aligned(PAGE_SIZE_4K))) page_table_t;
 
+typedef struct mregion
+{
+    uint64_t base;
+    uint64_t end;
+
+} mregion_t;
+
 // Maximum of 512 GB, AKA one PDP
 typedef struct page_map
 {
@@ -94,11 +102,14 @@ typedef struct page_map
 
     page_t*** page_tables;
 
+    // Allocated regions
+    list_t* regions;
+
 } __attribute__((packed)) page_map_t;
 
 void paging_init();
-void* get_physaddr(void* virt, pml4_t* pml4);
-void* get_kernel_physaddr(void* virt);
+void* page_getphys(void* virt, page_map_t* map);
+void* page_kernel_getphys(void* virt);
 
 // Map virtual address to physical address
 void page_map_memory(void* virt, void* phys, uint32_t cnt, page_map_t* map);
@@ -120,4 +131,5 @@ page_map_t* page_clone_map(page_map_t* src);
 
 pml4_t* page_get_kpml4();
 
-void page_alloc_region(uint64_t base, uint64_t size, page_map_t* map);
+void space_alloc_region_at(uint64_t base, uint64_t size, page_map_t* map);
+uint64_t space_alloc_region(uint64_t size, page_map_t* map);
