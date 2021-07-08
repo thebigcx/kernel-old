@@ -17,16 +17,15 @@
 
 void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
 
-proc_t* ready_lst_start = NULL;
-proc_t* ready_lst_end = NULL;
-lock_t ready_lst_lock = 0;
-proc_t* last_proc = NULL;
-
-proc_t* idle_proc = NULL;
-
-proc_t* sleep_tsk_lst = NULL;
-
 int scheduler_ready = 0;
+
+tree_t* proctree;
+list_t* procs;
+list_t* proc_queue;
+list_t* sleep_lst;
+proc_t* currproc = NULL;
+
+extern void kernel_proc();
 
 int creatpid()
 {
@@ -37,14 +36,21 @@ int creatpid()
 void idle()
 {
     while (1);
-    //hlt();
 }
 
 void sched_init()
 {
+    proc_queue = list_create();
+    sleep_lst = list_create();
+    procs = list_create();
+    proctree = tree_create();
+}
+
+void sched_start()
+{
     idt_set_int(IPI_SCHED, schedule); // Software interrupt for schedule (0xfd)
 
-    idle_proc = mk_proc(idle);
+    //idle_proc = mk_proc(idle);
 
     scheduler_ready = 1;
     
@@ -54,27 +60,23 @@ void sched_init()
 
 void schedule(reg_ctx_t* r)
 {
-    proc_t* tsk = ready_lst_start;
-
-    if (tsk != NULL)
+    if (proc_queue->head != NULL)
     {
-        if (last_proc)
+        if (currproc)
         {
-            last_proc->regs = *r;
+            currproc->regs = *r;
             // If it hasn't blocked or is sleeping, add it back to the ready list
-            if (last_proc->state == PROC_STATE_RUNNING)
+            if (currproc->state == PROC_STATE_RUNNING)
             {
-                last_proc->state = PROC_STATE_READY;
-                ready_lst_end->next = last_proc;
-                ready_lst_end = last_proc;
+                currproc->state = PROC_STATE_READY;
+                list_push_back(proc_queue, currproc);
             }
         }
 
-        ready_lst_start = tsk->next;
-        last_proc = tsk;
-        tsk->state = PROC_STATE_RUNNING;
+        currproc = list_pop_front(proc_queue);
+        currproc->state = PROC_STATE_RUNNING;
 
-        ctx_switch(&(tsk->regs), (uint64_t)tsk->addr_space->pml4_phys);
+        ctx_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
     }
 }
 
@@ -84,9 +86,9 @@ proc_t* mk_proc(void* entry)
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_mk_map();
     proc->pid = creatpid();
-    proc->next = NULL;
     proc->sleep_exp = 0;
     proc->file_descs = list_create();
+    strcpy(proc->name, "unknown");
 
     void* stack = page_kernel_alloc4k(16);
     for (uint32_t i = 0; i < 16; i++)
@@ -136,32 +138,28 @@ void sched_tick(reg_ctx_t* r)
     schedule(r);
 }
 
-void sched_spawn_proc(proc_t* proc)
+void sched_spawn(proc_t* proc, proc_t* parent)
 {
     cli();
     //acquire_lock(ready_lst_lock);
 
-    if (!ready_lst_start || !ready_lst_end) // First process
-    {
-        ready_lst_start = proc;
-        ready_lst_end = proc;
-        return;
-    }
-
-    ready_lst_end->next = proc;
-    ready_lst_end = proc;
+    list_push_back(proc_queue, proc);
+    list_push_back(procs, proc);
+    //if (parent)
+        //proc->treenode = tree_insert(proctree, parent->treenode, proc);
+    //else
+        proc->treenode = tree_insert(proctree, proctree->root, proc);
 
     sti();
-
     //release_lock(ready_lst_lock);
 }
 
-void sched_kill_proc()
+void sched_terminate()
 {
     /*sched_lock();
 
-    last_proc->next = kill_tsk_lst;
-    kill_tsk_lst = last_proc;
+    currproc->next = kill_tsk_lst;
+    kill_tsk_lst = currproc;
 
     sched_unlock();
 
@@ -170,11 +168,25 @@ void sched_kill_proc()
     sched_unblock();*/
 }
 
+void sched_proc_destroy(proc_t* proc)
+{
+    uint32_t files = proc->file_descs->cnt;
+    for (uint32_t i = 0; i < files; i++)
+    {
+        fs_fd_t* fd = list_pop_front(proc->file_descs);
+        vfs_close(fd);
+    }
+
+    page_destroy_map(proc->addr_space);
+
+    kfree(proc);
+}
+
 void sched_block(uint32_t state)
 {
     cli();
 
-    last_proc->state = state;
+    currproc->state = state;
     //lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_SCHED);
     lapic_send_ipi(0, ICR_SELF, ICR_FIXED, IPI_SCHED);
 
@@ -185,18 +197,8 @@ void sched_unblock(proc_t* proc)
 {
     cli();
 
-    if (ready_lst_start)
-    {
-        // Need to wait (other processes running)
-        ready_lst_end->next = proc;
-        ready_lst_end = proc;
-        proc->state = PROC_STATE_READY;
-    }
-    else
-    {
-        ready_lst_start = proc;
-        ready_lst_end = proc;
-    }
+    list_push_back(proc_queue, proc);
+    proc->state = PROC_STATE_READY;
 
     sti();
 }
@@ -204,25 +206,32 @@ void sched_unblock(proc_t* proc)
 void sched_fork(proc_t* proc)
 {
     proc_t* new = kmalloc(sizeof(proc_t));
-    //new->addr_space = page_clone_map(proc->addr_space);
-    new->addr_space = page_mk_map();
-    new->next = NULL;
+    new->addr_space = page_clone_map(proc->addr_space);
     new->pid = creatpid();
     new->sleep_exp = 0;
     new->file_descs = list_create();
     new->state = proc->state;
+    strcpy(new->name, proc->name);
     
     memcpy(&new->regs, &proc->regs, sizeof(reg_ctx_t));
     strcpy(new->working_dir, proc->working_dir);
 
+    list_foreach(proc->file_descs, node)
+    {
+        fs_fd_t* fd = node->val;
+        fs_fd_t* newfd; // vfs_node_t does not need to be copied
+        memcpy(newfd, fd, sizeof(fs_fd_t));
+        list_push_back(new->file_descs, newfd);
+    }
+
     // Child processes get a new stack
     space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
-    sched_spawn_proc(new);
+    sched_spawn(new, proc);
 }
 
 proc_t* sched_get_currproc()
 {
-    return last_proc;
+    return currproc;
 }
 
 static void nano_sleep_until(uint64_t t)
@@ -235,9 +244,8 @@ static void nano_sleep_until(uint64_t t)
         return;
     }
 
-    last_proc->sleep_exp = t;
-    last_proc->next = sleep_tsk_lst;
-    sleep_tsk_lst = last_proc;
+    currproc->sleep_exp = t;
+    list_push_back(sleep_lst, currproc);
 
     sti();
 
@@ -360,12 +368,12 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
 
     proc_t* proc = kmalloc(sizeof(proc_t));
 
-    proc->next = NULL;
     proc->pid = creatpid();
     proc->sleep_exp = 0;
     proc->state = PROC_STATE_READY;
     proc->addr_space = page_mk_map(); // Creates a virtual address space with kernel mapped
     proc->file_descs = list_create();
+    strcpy(proc->name, "unknown");
 
     // TODO: These are temporary - later will be hooked up to PTYs
     vfs_node_t* stdin_node = vfs_resolve_path("/dev/stdout", NULL);
@@ -390,7 +398,7 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     proc->regs.rbp = (uint64_t)0x24000;
     proc->regs.rsp = (uint64_t)0x24000;
 
-    // TODO: this does not work without the TSS. PLEASE FIX!!!!
+    // TODO: this does not work without usermode. PLEASE FIX!!!!
     //prepstack(proc, path, argc, argv, envp, env);
     
     kfree(buffer);
@@ -398,13 +406,19 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     return proc;
 }
 
+void sched_exec(const char* path, int argc, char** argv)
+{
+    proc_t* proc = mkelfproc(path, argc, argv, 0, NULL);
+    sched_spawn(proc, NULL);
+    sched_block(PROC_STATE_PAUSED); // TODO: terminate
+}
+
 sem_t* sem_create(uint32_t max_cnt)
 {
     sem_t* sem = kmalloc(sizeof(sem_t));
     sem->curr_cnt = 0;
     sem->max_cnt = max_cnt;
-    sem->first_wait_tsk = NULL;
-    sem->last_wait_tsk = NULL;
+    sem->waitlst = list_create();
     return sem;
 }
 
@@ -416,31 +430,44 @@ void sem_acquire(sem_t* sem)
     }
     else
     {
-        last_proc->next = NULL;
-        if (sem->first_wait_tsk == NULL)
-        {
-            sem->first_wait_tsk = last_proc;
-        }
-        else
-        {
-            sem->last_wait_tsk->next = last_proc;
-        }
-
-        sem->last_wait_tsk = last_proc;
+        list_push_back(sem->waitlst, currproc);
         sched_block(PROC_STATE_WAIT_LOCK);
     }
 }
 
 void sem_release(sem_t* sem)
 {
-    if (sem->first_wait_tsk != NULL)
+    if (sem->waitlst->head != NULL)
+        sched_unblock(list_pop_front(sem->waitlst));
+    else
+        sem->curr_cnt--;
+}
+
+mutex_t* mutex_create()
+{
+    mutex_t* mutex = kmalloc(sizeof(mutex_t));
+    mutex->waitlst = list_create();
+    mutex->proc = 0;
+    return mutex;
+}
+
+void mutex_acquire(mutex_t* mutex)
+{
+    if (!mutex->proc)
     {
-        proc_t* proc = sem->first_wait_tsk;
-        sem->first_wait_tsk = proc->next;
-        sched_unblock(proc);
+        mutex->proc = 1;
     }
     else
     {
-        sem->curr_cnt--;
+        list_push_back(mutex->waitlst, currproc);
+        sched_block(PROC_STATE_WAIT_LOCK);
     }
+}
+
+void mutex_release(mutex_t* mutex)
+{
+    if (mutex->waitlst->head != NULL)
+        sched_unblock(list_pop_front(mutex->waitlst));
+    else
+        mutex->proc = 0;
 }

@@ -6,6 +6,7 @@ tree_t* tree_create()
     tree_t* tree = kmalloc(sizeof(tree_t));
     tree->root = kmalloc(sizeof(tree_node_t));
     tree->root->children = list_create();
+    tree->root->parent = NULL;
     return tree;
 }
 
@@ -18,6 +19,7 @@ void tree_destroy(tree_t* tree)
 tree_node_t* tree_insert(tree_t* tree, tree_node_t* parent, void* data)
 {
     tree_node_t* node = tree_node_create(data);
+    node->parent = parent;
     list_push_back(parent->children, node);
     return node;
 }

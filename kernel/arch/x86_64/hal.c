@@ -12,7 +12,9 @@ void init_core()
 {
     serial_init();
 
+    serial_writestr("Initializing BSP GDT...");
     gdt_init();
+    serial_writestr("Ok\n");
 
     serial_writestr("Initializing IDT...");
     idt_init();

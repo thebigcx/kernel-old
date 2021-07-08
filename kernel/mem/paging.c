@@ -230,6 +230,7 @@ page_map_t* page_mk_map()
 
 page_map_t* page_clone_map(page_map_t* src)
 {
+    return page_mk_map();
     //return src;
     /*pml4_t* dst = pmm_request(); // Physical
     memset(dst, 0, PAGE_SIZE_4K);
@@ -296,7 +297,12 @@ page_map_t* page_clone_map(page_map_t* src)
     }*/
 }
 
-// TODO: acknowledge size parameter
+// TODO
+void page_destroy_map(page_map_t* map)
+{
+
+}
+
 void* page_map_mmio(void* physaddr)
 {
     return physaddr + IO_VIRTUAL_ADDR;
@@ -399,7 +405,7 @@ void* page_kernel_alloc4k(uint32_t cnt)
         }
     }
 
-    serial_writestr("Could not allocate virtual memory\n");
+    serial_printf("Could not allocate virtual memory, size: %d B\n", cnt * PAGE_SIZE_4K);
 }
 
 void page_kernel_free4k(void* addr, uint32_t cnt)
@@ -416,15 +422,6 @@ void page_kernel_free4k(void* addr, uint32_t cnt)
 
 void space_alloc_region_at(uint64_t base, uint64_t size, page_map_t* map)
 {
-    /*assert(base % PAGE_SIZE_4K == 0);
-
-    uint32_t pgcnt = size / PAGE_SIZE_4K + 1;
-
-    for (uint32_t i = 0; i < pgcnt; i++)
-    {
-        page_map_memory(base + i * PAGE_SIZE_4K, pmm_request(), 1, map);
-    }*/
-
     mregion_t* newreg = kmalloc(sizeof(mregion_t));
     newreg->base = base;
     newreg->end = base + size;
@@ -502,5 +499,6 @@ uint64_t space_alloc_region(uint64_t size, page_map_t* map)
     }
 
     // Could not allocate
+    serial_printf("Could not allocate virtual memory, size: %d B\n", size);
     return NULL;
 }

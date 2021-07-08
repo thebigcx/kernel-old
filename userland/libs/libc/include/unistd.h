@@ -14,3 +14,5 @@ int stat(const char* path, stat_t* stat);
 int fork();
 int exec(const char* path, int argc, char** argv);
 int ioctl(int fd, uint64_t request, void* argp);
+int waitpid(int pid);
+void exit(int code);

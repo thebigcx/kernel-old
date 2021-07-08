@@ -30,6 +30,8 @@ void vfs_close(fs_fd_t* file)
 {
     if (file->node->close)
         file->node->close(file->node);
+
+    kfree(file);
 }
 
 size_t vfs_read(vfs_node_t* file, void* ptr, size_t off, size_t size)

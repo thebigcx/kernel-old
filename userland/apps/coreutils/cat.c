@@ -9,5 +9,6 @@ void _start(int argc, char** argv)
 
     printf("%s\n", buffer);
 
-    for (;;);
+    exit(0);
+    for(;;);
 }

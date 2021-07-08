@@ -108,13 +108,23 @@ uint64_t sys_fork(reg_ctx_t* regs)
 
 uint64_t sys_exec(reg_ctx_t* regs)
 {
-    proc_t* proc = sched_get_currproc();
-    char* str = kmalloc(strlen(regs->rdi) + 1); // mkelfproc switches page maps, so we must copy the user args
+    /*char* str = kmalloc(strlen(regs->rdi) + 1); // mkelfproc switches page maps, so we must copy the user args
     strcpy(str, regs->rdi);
     proc_t* new = mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
     kfree(str);
-    sched_spawn_proc(new);
-    return 0;
+    sched_spawn(new);*/
+    sched_exec(regs->rdi, regs->rsi, regs->rdx);
+    return 0; // Should not return
+}
+
+uint64_t sys_waitpid(reg_ctx_t* regs)
+{
+    while (1); // TODO
+}
+
+uint64_t sys_exit(reg_ctx_t* regs)
+{
+    sched_terminate();
 }
 
 syscall_t syscalls[SYSCALL_CNT] =
@@ -127,7 +137,9 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_ioctl,
     sys_stat,
     sys_fork,
-    sys_exec
+    sys_exec,
+    sys_waitpid,
+    sys_exit
 };
 
 void syscall_handler(reg_ctx_t* regs)

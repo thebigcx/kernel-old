@@ -26,19 +26,19 @@
 #include <drivers/tty/serial.h>
 #include <drivers/storage/partmgr/gpt.h>
 
-sem_t* testsem;
+sem_t* mutex;
 
 void kernel_proc()
 {
-    /*sem_acquire(testsem);
-    serial_writestr("Ok\n");
+    serial_printf("Ok\n");
+    /*mutex_acquire(mutex);
 
     int x = 0;
     for (;;)
     {
         if (x > 500)
         {
-            sem_release(testsem);
+            mutex_release(mutex);
         }
         x += 1;
 
@@ -51,9 +51,9 @@ void kernel_proc()
     for (;;);
 }
 
-void kernel_proc_2()
+void kernel_proc2()
 {
-    /*sem_acquire(testsem);
+    /*mutex_acquire(mutex);
     int y = 0;
     for (;;)
     {
@@ -116,20 +116,22 @@ void kmain()
     serial_writestr("Initializing random number generator...");
     rand_seed(305640980);
     serial_writestr("Ok\n");
+
+    sched_init();
     
     serial_writestr("Creating kernel process...");
-    sched_spawn_proc(mk_proc(kernel_proc));
-    sched_spawn_proc(mk_proc(kernel_proc_2));
+    sched_spawn(mk_proc(kernel_proc), NULL);
+    sched_spawn(mk_proc(kernel_proc2), NULL);
     serial_writestr("Ok\n");
 
     // TEMP
     const char* hello = "Hello, this is the first parameter!";
     proc_t* elf = mkelfproc("/bin/test", 1, &hello, 0, NULL);
-    sched_spawn_proc(elf);
-    testsem = sem_create(1);
+    sched_spawn(elf, NULL);
+    mutex = mutex_create();
 
     serial_writestr("Intializing scheduler...");
-    sched_init();
+    sched_start();
 
     for (;;);
 }

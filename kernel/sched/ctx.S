@@ -29,4 +29,5 @@ ctx_switch:
     movq    %rax, %cr3
 
     popq    %rax
+    // Stack contains RSP, CS, RIP, RFLAGS, SS
     iretq

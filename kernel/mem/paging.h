@@ -126,8 +126,10 @@ void page_mk_table(uint64_t pdpidx, uint64_t pdidx, page_map_t* map);
 
 // Create a page map
 page_map_t* page_mk_map();
-// Copy a pml4
+// Copy a page map
 page_map_t* page_clone_map(page_map_t* src);
+// Destroy a page map
+void page_destroy_map(page_map_t* map);
 
 pml4_t* page_get_kpml4();
 

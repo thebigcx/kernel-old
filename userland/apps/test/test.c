@@ -28,6 +28,15 @@ void runcmd(char* cmd)
         return;
     }
 
+    /*int pid = fork();
+    if (pid == 0)
+    {
+        exec(bin, 0, NULL);
+    }
+    else
+    {
+        waitpid(pid);
+    }*/
     exec(bin, 0, NULL);
 }
 
@@ -102,5 +111,6 @@ void _start(int argc, char** argv)
         getcmd();
     }
 
+    exit(0);
     for (;;);
 }

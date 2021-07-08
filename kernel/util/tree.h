@@ -6,6 +6,7 @@ typedef struct tree_node
 {
     list_t* children;
     void* data; // User data
+    struct tree_node* parent;
 
 } tree_node_t;
 
