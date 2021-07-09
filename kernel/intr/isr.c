@@ -1,5 +1,6 @@
 #include <intr/idt.h>
 #include <drivers/tty/serial.h>
+#include <sched/sched.h>
 
 #define DUMPREG(reg, val)\
     serial_writestr(reg"=");\
@@ -26,75 +27,108 @@ void dumpregs(reg_ctx_t* r)
 
 void generic_isr(const char* err, isr_frame_t* frame)
 {
-    serial_writestr(ANSI_RED);
-    serial_writestr(err);
-    dumpregs(&frame->regs);
+    if (frame->regs.ss & 0x3)
+    {
+        proc_t* proc = sched_get_currproc();
+        serial_printf("Process (PID %d) crashed: %s\n", proc->pid, err);
+        serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
+        sched_terminate();
+    }
+    else
+    {
+        serial_writestr(ANSI_RED);
+        serial_writestr("Kernel Panic\n\n");
+        serial_writestr(err);
+        dumpregs(&frame->regs);
 
-    asm volatile ("1: jmp 1b");
+        asm volatile ("1: jmp 1b");
+    }
 }
 
 void pagefault_handler(isr_frame_t* frame)
 {
-    serial_writestr(ANSI_RED);
-    serial_writestr("Page fault\n");
-    dumpregs(&frame->regs);
-
-    if (frame->errcode & (1 << 4))
-        serial_writestr("Invalid instruction fetch\n");
-    if (frame->errcode & (1 << 3))
-        serial_writestr("Reserved bits set\n");
-    if (frame->errcode & (1 << 2))
-        serial_writestr("CPL = 3\n");
-
-    if (frame->errcode & (1 << 1))
-        serial_writestr("Invalid write\n");
+    if (frame->regs.ss & 0x3)
+    {
+        proc_t* proc = sched_get_currproc();
+        serial_printf("Process (PID %d) crashed: Page Fault\n", proc->pid);
+        serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
+        sched_terminate();
+    }
     else
-        serial_writestr("Invalid read\n");
+    {
+        serial_writestr(ANSI_RED);
+        serial_writestr("Kernel Panic\n\n");
+        serial_writestr("Page fault\n");
+        dumpregs(&frame->regs);
 
-    if (frame->errcode & (1 << 0))
-        serial_writestr("Page protection violation\n");
-    else
-        serial_writestr("Non-present page\n");
+        if (frame->errcode & (1 << 4))
+            serial_writestr("Invalid instruction fetch\n");
+        if (frame->errcode & (1 << 3))
+            serial_writestr("Reserved bits set\n");
+        if (frame->errcode & (1 << 2))
+            serial_writestr("CPL = 3\n");
 
-    asm volatile ("1: jmp 1b");
+        if (frame->errcode & (1 << 1))
+            serial_writestr("Invalid write\n");
+        else
+            serial_writestr("Invalid read\n");
+
+        if (frame->errcode & (1 << 0))
+            serial_writestr("Page protection violation\n");
+        else
+            serial_writestr("Non-present page\n");
+
+        asm volatile ("1: jmp 1b");
+    }
 }
 
 void general_protection_fault_handler(isr_frame_t* frame)
 {
-    serial_writestr(ANSI_RED);
-    serial_writestr("General protection fault\n");
-    dumpregs(&frame->regs);
-
-    if (frame->errcode)
+    if (frame->regs.ss & 0x3)
     {
-        serial_writestr("\nError code:\n\n");
-
-        if (frame->errcode & 0x1)
-        {
-            serial_writestr("External\n");
-        }
-        switch (frame->errcode & 0x6)
-        {
-            case 0x0:
-                serial_writestr("GDT selector index: ");
-                break;
-            case 0x1:
-                serial_writestr("IDT selector index: ");
-                break;
-            case 0x2:
-                serial_writestr("LDT selector index: ");
-                break;
-            case 0x3:
-                serial_writestr("IDT selector index: ");
-                break;
-        }
-
-        serial_printf("%d\n", (frame->errcode >> 3) & 13);
+        proc_t* proc = sched_get_currproc();
+        serial_printf("Process (PID %d) crashed: General Protection Fault\n", proc->pid);
+        serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
+        sched_terminate();
     }
     else
     {
-        serial_writestr("No error code");
-    }
+        serial_writestr(ANSI_RED);
+        serial_writestr("Kernel Panic\n\n");
+        serial_writestr("General protection fault\n");
+        dumpregs(&frame->regs);
 
-    asm volatile ("1: jmp 1b");
+        if (frame->errcode)
+        {
+            serial_writestr("\nError code:\n\n");
+
+            if (frame->errcode & 0x1)
+            {
+                serial_writestr("External\n");
+            }
+            switch (frame->errcode & 0x6)
+            {
+                case 0x0:
+                    serial_writestr("GDT selector index: ");
+                    break;
+                case 0x1:
+                    serial_writestr("IDT selector index: ");
+                    break;
+                case 0x2:
+                    serial_writestr("LDT selector index: ");
+                    break;
+                case 0x3:
+                    serial_writestr("IDT selector index: ");
+                    break;
+            }
+
+            serial_printf("%d\n", (frame->errcode >> 3) & 13);
+        }
+        else
+        {
+            serial_writestr("No error code");
+        }
+
+        asm volatile ("1: jmp 1b");
+    }
 }

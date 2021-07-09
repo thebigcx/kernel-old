@@ -169,7 +169,7 @@ void isr_handler(uint64_t num, isr_frame_t* r)
     {
         panic("Maximum nested exceptions reached");
     }
-
+    
     if (num == 0) generic_isr("Divide by zero error", r);
     else if (num == 1) serial_writestr("Debug\n");
     else if (num == 2) generic_isr("Non-maskable interrupt", r);

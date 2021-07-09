@@ -7,22 +7,22 @@
 #define FAT_FSINFO_SIG          0x61417272
 #define FAT_FSINFO_TRAIL_SIG    0xAA550000
 
-#define FAT_FILE      0
-#define FAT_DIRECTORY 1
-#define FAT_INVALID   2
+#define FAT_FILE                0
+#define FAT_DIRECTORY           1
+#define FAT_INVALID             2
 
-#define FAT_ATTR_RO         0x01
-#define FAT_ATTR_HIDDEN     0x02
-#define FAT_ATTR_SYSTEM     0x04
-#define FAT_ATTR_VOL_ID     0x08
-#define FAT_ATTR_DIR        0x10
-#define FAT_ATTR_ARCHIVE    0x20
-#define FAT_ATTR_LFN        0x0f
+#define FAT_ATTR_RO             0x01
+#define FAT_ATTR_HIDDEN         0x02
+#define FAT_ATTR_SYSTEM         0x04
+#define FAT_ATTR_VOL_ID         0x08
+#define FAT_ATTR_DIR            0x10
+#define FAT_ATTR_ARCHIVE        0x20
+#define FAT_ATTR_LFN            0x0f
 
 // BIOS parameter block
 typedef struct fat_bpb
 {
-    uint8_t jmp[3];                 // Jump over format information
+    uint8_t jmp[3];                 // Jump over BPB (boot code)
     int8_t oem_id[8];               // OEM identifier
     uint16_t sector_sz;             // Bytes per sector
     uint8_t sectors_per_cluster;    // Sectors per cluster

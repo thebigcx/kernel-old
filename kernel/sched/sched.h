@@ -12,6 +12,7 @@
 #define PROC_STATE_WAIT_LOCK    3
 #define PROC_STATE_PAUSED       4
 #define PROC_STATE_SLEEP        5
+#define PROC_STATE_KILLED       6
 
 #define KERNEL_CS 0x08
 #define KERNEL_SS 0x10
@@ -46,14 +47,15 @@ void sched_terminate();
 void sched_proc_destroy(proc_t* proc);
 void sched_block(uint32_t state);
 void sched_unblock(proc_t* proc);
-void sched_fork(proc_t* proc);
+void sched_fork(proc_t* proc, reg_ctx_t* regs);
 void sched_exec(const char* path, int argc, char** argv);
+list_t* sched_getprocs();
 
 proc_t* sched_get_currproc();
 
 proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env);
 
-void nano_sleep(uint64_t ns);
+void sched_sleepns(uint64_t ns);
 void sleep(uint64_t s);
 
 typedef struct sem

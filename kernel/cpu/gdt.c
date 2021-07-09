@@ -8,17 +8,21 @@ void gdt_init()
 {
     gdt_set_null(0);
 
-    gdt_set_raw_entry(bsp_gdtents, 1, 0xffffffff, 0x00af9a00);
+    //gdt_set_raw_entry(bsp_gdtents, 1, 0xffffffff, 0x00af9a00);
     //gdt_set_raw_entry(bsp_gdtents, 2, 0xffffffff, 0x00af9200);
+    //gdt_mkentry(2, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 0, 1);
+
+    //gdt_set_raw_entry(bsp_gdtents, 3, 0xffffffff, 0x00affa00);
+    //gdt_set_raw_entry(bsp_gdtents, 4, 0xffffffff, 0x00aff200);
+    gdt_mkentry(1, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 1, 1);
     gdt_mkentry(2, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING0, 0, 1);
 
-    gdt_set_raw_entry(bsp_gdtents, 3, 0xffffffff, 0x00affa00);
-    gdt_set_raw_entry(bsp_gdtents, 4, 0xffffffff, 0x00aff200);
+    gdt_mkentry(3, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 1, 1);
+    gdt_mkentry(4, 0, 0xffffffff, GDT_WRITE, 0, GDT_RING3, 0, 1);
 
     bsp_gdtptr.lim = sizeof(bsp_gdtents) - 1;
     bsp_gdtptr.base = (uint64_t)bsp_gdtents;
 
-    // TODO: this hangs when not using --enable-kvm, look into it
     gdt_flush(&bsp_gdtptr);
 }
 

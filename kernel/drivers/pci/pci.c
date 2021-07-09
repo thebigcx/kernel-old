@@ -149,6 +149,12 @@ uint64_t pci_get_base_addr(pci_dev_t* dev, uint8_t idx)
     return (bar & 0x1) ? (bar & 0xFFFFFFFFFFFFFFFC) : (bar & 0xFFFFFFFFFFFFFFF0);
 }
 
+int pci_bar_isioport(pci_dev_t* dev, uint8_t idx)
+{
+    uint64_t bar = pci_cfg_readl(dev->bus, dev->slot, dev->func, PCI_BAR0 + (idx * sizeof(uint32_t)));
+    return bar & 0x1;
+}
+
 bool pci_check_dev(uint8_t bus, uint8_t dev, uint8_t func)
 {
     if (pci_get_vendor_id(bus, dev, func) == 0xffff)

@@ -103,7 +103,7 @@ uint64_t sys_stat(reg_ctx_t* regs)
 
 uint64_t sys_fork(reg_ctx_t* regs)
 {
-    sched_fork(sched_get_currproc());
+    sched_fork(sched_get_currproc(), regs);
 }
 
 uint64_t sys_exec(reg_ctx_t* regs)
@@ -127,6 +127,11 @@ uint64_t sys_exit(reg_ctx_t* regs)
     sched_terminate();
 }
 
+uint64_t sys_sleepns(reg_ctx_t* regs)
+{
+    sched_sleepns(regs->rdi);
+}
+
 syscall_t syscalls[SYSCALL_CNT] =
 {
     sys_read,
@@ -139,7 +144,8 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_fork,
     sys_exec,
     sys_waitpid,
-    sys_exit
+    sys_exit,
+    sys_sleepns
 };
 
 void syscall_handler(reg_ctx_t* regs)

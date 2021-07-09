@@ -10,5 +10,5 @@ void _start(int argc, char** argv)
     printf("%s\n", buffer);
 
     exit(0);
-    for(;;);
+    //for(;;);
 }

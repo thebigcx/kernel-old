@@ -36,7 +36,7 @@ void init_extra()
     kheap_init();
     serial_writestr("Ok\n");
 
-    pit_init(10000);
+    pit_init(1000);
 
     serial_writestr("Parsing ACPI tables...");
     acpi_init();

@@ -84,6 +84,7 @@ uint8_t pci_get_subclass(uint8_t bus, uint8_t slot, uint8_t func);
 uint8_t pci_get_progif(uint8_t bus, uint8_t slot, uint8_t func);
 uint8_t pci_get_hdr_type(uint8_t bus, uint8_t slot, uint8_t func);
 uint64_t pci_get_base_addr(pci_dev_t* dev, uint8_t idx);
+int pci_bar_isioport(pci_dev_t* dev, uint8_t idx);
 
 bool pci_check_dev(uint8_t bus, uint8_t dev, uint8_t func);
 

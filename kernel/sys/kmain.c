@@ -25,47 +25,39 @@
 #include <util/elf.h>
 #include <drivers/tty/serial.h>
 #include <drivers/storage/partmgr/gpt.h>
+#include <drivers/net/e1000/e1000.h>
 
 sem_t* mutex;
 
 void kernel_proc()
 {
     serial_printf("Ok\n");
-    /*mutex_acquire(mutex);
 
-    int x = 0;
+    // Clean terminated processes, wake up sleeping processes when they're done
     for (;;)
     {
-        if (x > 500)
-        {
-            mutex_release(mutex);
-        }
-        x += 1;
+        list_t* procs = sched_getprocs();
 
-        for (int i = 0; i < 100; i++)
-        for (int j = 0; j < 100; j++)
+        for (uint32_t i = 0; i < procs->cnt; i++)
         {
-            video_putpix(i + x, j, 255, 0, 0);
-        }
-    }*/
-    for (;;);
-}
+            proc_t* proc = list_get(procs, i)->val;
 
-void kernel_proc2()
-{
-    /*mutex_acquire(mutex);
-    int y = 0;
-    for (;;)
-    {
-        y += 1;
+            if (proc->state == PROC_STATE_KILLED)
+            {
+                sched_proc_destroy(proc);
+                list_remove(procs, i);
+            }
 
-        for (int i = 0; i < 100; i++)
-        for (int j = 0; j < 100; j++)
-        {
-            video_putpix(i, j + y, 255, 255, 0);
+            if (proc->state == PROC_STATE_SLEEP)
+            {
+                if (proc->sleep_exp < pit_uptime() * 1000)
+                {
+                    proc->state = PROC_STATE_READY;
+                    sched_spawn(proc, NULL);
+                }
+            }
         }
-    }*/
-    for (;;);
+    }
 }
 
 // TODO: only load drivers for devices if they are present. This should
@@ -81,10 +73,20 @@ void kmain()
     serial_writestr("Initializing VFS...");
     vfs_init();
     serial_writestr("Ok\n");
-    
 
 //                  Everything here is temporary
 // -----------------------------------------------------------------
+
+    serial_writestr("Initializing network adapter...");
+    list_foreach(pci_devs, node)
+    {
+        pci_dev_t* dev = node->val;
+        if (dev->class_code == PCI_CLASS_NET && dev->subclass == PCI_SC_ETHERNET_CTRL)
+        {
+            e1000_init(dev);
+        }
+    }
+    serial_writestr("\n");
 
     serial_writestr("Initializing AHCI controllers...");
     ahci_init(pci_devs);
@@ -121,7 +123,6 @@ void kmain()
     
     serial_writestr("Creating kernel process...");
     sched_spawn(mk_proc(kernel_proc), NULL);
-    sched_spawn(mk_proc(kernel_proc2), NULL);
     serial_writestr("Ok\n");
 
     // TEMP

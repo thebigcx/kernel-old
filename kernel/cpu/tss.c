@@ -29,8 +29,7 @@ void tss_init(tss_t* tss, uint32_t select, gdt_entry_t* gdt)
     gdt[6].low = (uint64_t)tss >> 32;
     gdt[6].high = 0;
 
-    tss->rsp0l = (uint64_t)stack & 0xffffffff;
-    tss->rsp0h = (uint64_t)stack >> 32;
+    tss->rsp[0] = (uint64_t)&stack;
     tss->iomap_base = sizeof(tss_t);
 
     tss_flush();

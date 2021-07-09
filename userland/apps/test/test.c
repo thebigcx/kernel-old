@@ -16,10 +16,13 @@ void runcmd(char* cmd)
     strncpy(bin, "/bin/", 5);
 
     // Extract the command name
-    for (int i = 0; cmd[i] != ' '; i++)
+    int i = 0;
+    for (; cmd[i] != ' ' && cmd[i] != 0; i++)
     {
         bin[i + 5] = cmd[i];
     }
+
+    bin[i + 5] = 0;
 
     stat_t binstat;
     if (stat(bin, &binstat) != 0)
@@ -37,7 +40,8 @@ void runcmd(char* cmd)
     {
         waitpid(pid);
     }*/
-    exec(bin, 0, NULL);
+    //exec(bin, 0, NULL);
+    //fork();
 }
 
 static char scancode_toascii[] =
@@ -64,6 +68,7 @@ static char scancode_toascii[] =
 
 void getcmd()
 {
+    asm volatile ("hlt");
     int fb = open("/dev/fb", 0, 0);
     void* addr = mmap(NULL, 0, 0, 0, 0, 0);
     *((uint32_t*)addr) = 0xffffffff;

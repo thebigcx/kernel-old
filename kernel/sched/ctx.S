@@ -1,6 +1,7 @@
 # Switch current task
 
 .global ctx_switch
+.global user_switch
 
 .macro popaq
 
@@ -22,6 +23,23 @@
 .endm
 
 ctx_switch:
+    movq    %rdi, %rsp
+    movq    %rsi, %rax
+    popaq
+
+    movq    %rax, %cr3
+
+    popq    %rax
+    // Stack contains RSP, CS, RIP, RFLAGS, SS
+    iretq
+
+user_switch:
+    mov     $0x23, %ax
+    mov     %ax, %ds
+    mov     %ax, %es
+    mov     %ax, %fs
+    mov     %ax, %gs
+
     movq    %rdi, %rsp
     movq    %rsi, %rax
     popaq

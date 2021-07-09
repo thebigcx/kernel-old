@@ -1,8 +1,38 @@
-#include "stdlib.h"
+#include <stdlib.h>
+#include <stdint.h>
 
-//extern void* _malloc();
-
-void* malloc(size_t n)
+typedef struct heapnode
 {
-    //return _malloc(n);
+    struct heapnode* next;
+    uint32_t len;
+    uint8_t free;
+
+} heapnode_t;
+
+static heapnode_t* heapstart;
+static heapnode_t* heapend;
+
+void _malloc_init()
+{
+    
+}
+
+void* malloc(size_t size)
+{
+    
+}
+
+void free(void* ptr)
+{
+
+}
+
+void* realloc(void* ptr, size_t size)
+{
+
+}
+
+void* calloc(size_t nitems, size_t size)
+{
+
 }

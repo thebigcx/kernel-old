@@ -32,4 +32,18 @@
 #define PCI_SC_SERIAL_SCSI      0x07
 #define PCI_SC_MEMCONT          0x08
 
+#define PCI_SC_ETHERNET_CTRL    0x00
+#define PCI_SC_TOKRING_CTRL     0x01
+#define PCI_SC_FDDI_CTRL        0x02
+#define PCI_SC_ATM_CTRL         0x03
+#define PCI_SC_ISDN_CTRL        0x04
+#define PCI_SC_WORLDFIP_CTRL    0x05
+#define PCI_SC_PICMG_CTRL       0x06
+#define PCI_SC_INIFINIBAND_CTRL 0x07
+#define PCI_SC_FABRIC_CTRL      0x08
+
+#define PCI_SC_OTHER            0x80
+
+// Progifs
 #define PCI_PI_AHCI             0x01
+

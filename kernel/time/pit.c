@@ -10,7 +10,7 @@ uint64_t freq;
 
 void pit_int_handler(reg_ctx_t* r)
 {
-    uptime += 1000000 / freq;   
+    uptime += 1000000 / freq;
     sched_tick(r);
 }
 

@@ -16,6 +16,7 @@
 #include <drivers/gfx/fb/fb.h>
 
 void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
+void user_switch(reg_ctx_t* regs, uint64_t pml4);
 
 int scheduler_ready = 0;
 
@@ -76,7 +77,10 @@ void schedule(reg_ctx_t* r)
         currproc = list_pop_front(proc_queue);
         currproc->state = PROC_STATE_RUNNING;
 
-        ctx_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
+        if (currproc->regs.cs == KERNEL_CS)
+            ctx_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
+        else
+            user_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
     }
 }
 
@@ -111,9 +115,9 @@ void sched_tick(reg_ctx_t* r)
 {
     if (!scheduler_ready) return;
 
-    /*cli();
+    //cli();
 
-    proc_t* next = sleep_tsk_lst;
+    /*proc_t* next = sleep_tsk_lst;
     proc_t* this;
     sleep_tsk_lst = NULL;
 
@@ -131,9 +135,9 @@ void sched_tick(reg_ctx_t* r)
             this->next = sleep_tsk_lst;
             sleep_tsk_lst = this;
         }
-    }
+    }*/
 
-    sti();*/
+    //sti();
 
     schedule(r);
 }
@@ -156,16 +160,7 @@ void sched_spawn(proc_t* proc, proc_t* parent)
 
 void sched_terminate()
 {
-    /*sched_lock();
-
-    currproc->next = kill_tsk_lst;
-    kill_tsk_lst = currproc;
-
-    sched_unlock();
-
     sched_block(PROC_STATE_KILLED);
-
-    sched_unblock();*/
 }
 
 void sched_proc_destroy(proc_t* proc)
@@ -188,7 +183,8 @@ void sched_block(uint32_t state)
 
     currproc->state = state;
     //lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_SCHED);
-    lapic_send_ipi(0, ICR_SELF, ICR_FIXED, IPI_SCHED);
+    //lapic_send_ipi(0, ICR_SELF, ICR_FIXED, IPI_SCHED);
+    asm volatile ("int $0xfd");
 
     sti();
 }
@@ -203,7 +199,7 @@ void sched_unblock(proc_t* proc)
     sti();
 }
 
-void sched_fork(proc_t* proc)
+void sched_fork(proc_t* proc, reg_ctx_t* regs)
 {
     proc_t* new = kmalloc(sizeof(proc_t));
     new->addr_space = page_clone_map(proc->addr_space);
@@ -213,14 +209,15 @@ void sched_fork(proc_t* proc)
     new->state = proc->state;
     strcpy(new->name, proc->name);
     
-    memcpy(&new->regs, &proc->regs, sizeof(reg_ctx_t));
-    strcpy(new->working_dir, proc->working_dir);
+    new->regs = *regs;
+
+    if (proc->working_dir)
+        strcpy(new->working_dir, proc->working_dir);
 
     list_foreach(proc->file_descs, node)
     {
         fs_fd_t* fd = node->val;
-        fs_fd_t* newfd; // vfs_node_t does not need to be copied
-        memcpy(newfd, fd, sizeof(fs_fd_t));
+        fs_fd_t* newfd = vfs_open(fd->node, 0, 0); // vfs_node_t does not need to be copied
         list_push_back(new->file_descs, newfd);
     }
 
@@ -245,21 +242,20 @@ static void nano_sleep_until(uint64_t t)
     }
 
     currproc->sleep_exp = t;
-    list_push_back(sleep_lst, currproc);
 
     sti();
 
     sched_block(PROC_STATE_SLEEP);
 }
 
-void nano_sleep(uint64_t ns)
+void sched_sleepns(uint64_t ns)
 {
     nano_sleep_until(pit_uptime() * 1000 + ns);
 }
 
-void sleep(uint64_t s)
+void sched_sleeps(uint64_t s)
 {
-    nano_sleep(s * 1000000000);
+    sched_sleepns(s * 1000000000);
 }
 
 bool check_elf_hdr(elf64_hdr_t* hdr)
@@ -393,8 +389,8 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     memset(&(proc->regs), 0, sizeof(reg_ctx_t));
     loadelf(buffer, proc);
     proc->regs.rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
-    proc->regs.cs = KERNEL_CS;
-    proc->regs.ss = KERNEL_SS;
+    proc->regs.cs = USER_CS;
+    proc->regs.ss = USER_SS;
     proc->regs.rbp = (uint64_t)0x24000;
     proc->regs.rsp = (uint64_t)0x24000;
 
@@ -406,11 +402,16 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     return proc;
 }
 
+list_t* sched_getprocs()
+{
+    return procs;
+}
+
 void sched_exec(const char* path, int argc, char** argv)
 {
     proc_t* proc = mkelfproc(path, argc, argv, 0, NULL);
     sched_spawn(proc, NULL);
-    sched_block(PROC_STATE_PAUSED); // TODO: terminate
+    sched_terminate();
 }
 
 sem_t* sem_create(uint32_t max_cnt)

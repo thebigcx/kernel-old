@@ -4,38 +4,38 @@
 #include <drivers/fs/vfs/vfs.h>
 #include <util/list.h>
 
-#define EXT2_SB_LOC     1024
-#define EXT2_SB_LBA     2
-#define EXT2_ROOT_DIR   2
+#define EXT2_SB_LOC                 1024
+#define EXT2_SB_LBA                 2
+#define EXT2_ROOT_DIR               2
 
-#define EXT2_FS_STATE_CLEAN 1
-#define EXT2_FS_STATE_ERR   2
+#define EXT2_FS_STATE_CLEAN         1
+#define EXT2_FS_STATE_ERR           2
 
-#define EXT2_ERR_ACT_CONTINUE 1
-#define EXT2_ERR_ACT_REMOUNT  2
-#define EXT2_ERR_ACT_PANIC    3
+#define EXT2_ERR_ACT_CONTINUE       1
+#define EXT2_ERR_ACT_REMOUNT        2
+#define EXT2_ERR_ACT_PANIC          3
 
-#define EXT2_CREATOR_OS_LINUX   0
-#define EXT2_CREATOR_OS_HURD    1
-#define EXT2_CREATOR_OS_MASIX   2
-#define EXT2_CREATOR_OS_FREEBSD 3
-#define EXT2_CREATOR_OS_LITES   4
+#define EXT2_CREATOR_OS_LINUX       0
+#define EXT2_CREATOR_OS_HURD        1
+#define EXT2_CREATOR_OS_MASIX       2
+#define EXT2_CREATOR_OS_FREEBSD     3
+#define EXT2_CREATOR_OS_LITES       4
 
-#define EXT2_OPTFLAG_PREALLOC   0x1  // Prealloc directory blocks
-#define EXT2_OPTFLAG_AFS_INODES 0x2  // AFS server inodes exist
-#define EXT2_OPTFLAG_JOURNAL    0x4  // Has a journal
-#define EXT2_OPTFLAG_EXT_ATTR   0x8  // Inodes have extended attributes
-#define EXT2_OPTFLAG_RESIZE     0x10 // Can resize itself for large partitions
-#define EXT2_OPTFLAG_HASH_IDX   0x20 // Directories use hash index
+#define EXT2_OPTFLAG_PREALLOC       0x1  // Prealloc directory blocks
+#define EXT2_OPTFLAG_AFS_INODES     0x2  // AFS server inodes exist
+#define EXT2_OPTFLAG_JOURNAL        0x4  // Has a journal
+#define EXT2_OPTFLAG_EXT_ATTR       0x8  // Inodes have extended attributes
+#define EXT2_OPTFLAG_RESIZE         0x10 // Can resize itself for large partitions
+#define EXT2_OPTFLAG_HASH_IDX       0x20 // Directories use hash index
 
-#define EXT2_REQFLAG_COMPRESSION 0x1 // Compression is used
-#define EXT2_REQFLAG_FILETYPE    0x2 // Directory entries contain type field
-#define EXT2_REQFLAG_RECOVER     0x4 // Needs to recover
-#define EXT2_REQFLAG_JOURNAL     0x8 // Uses journal device
+#define EXT2_REQFLAG_COMPRESSION    0x1 // Compression is used
+#define EXT2_REQFLAG_FILETYPE       0x2 // Directory entries contain type field
+#define EXT2_REQFLAG_RECOVER        0x4 // Needs to recover
+#define EXT2_REQFLAG_JOURNAL        0x8 // Uses journal device
 
-#define EXT2_ROFLAG_SPARSE  0x1 // Sparse superblocks and group descriptor tables
-#define EXT2_ROFLAG_64BIT   0x2 // Uses 64-bit file size
-#define EXT2_ROFLAG_BINTREE 0x4 // Directory contents stored as binary tree
+#define EXT2_ROFLAG_SPARSE          0x1 // Sparse superblocks and group descriptor tables
+#define EXT2_ROFLAG_64BIT           0x2 // Uses 64-bit file size
+#define EXT2_ROFLAG_BINTREE         0x4 // Directory contents stored as binary tree
 
 // Inode types
 #define EXT2_INODE_TYPE_FIFO        0x1000 // FIFO
@@ -47,41 +47,41 @@
 #define EXT2_INODE_TYPE_UNIX_SOCKET 0xc000 // Unix socket
 
 // Inode permissions
-#define EXT2_INODE_PERM_OTHER_EXEC   0x001 // Other - execute permission
-#define EXT2_INODE_PERM_OTHER_WRITE  0x002 // Other - write permission
-#define EXT2_INODE_PERM_OTHER_READ   0x004 // Other - read permission
-#define EXT2_INODE_PERM_GROUP_EXEC   0x008 // Group - execute permission
-#define EXT2_INODE_PERM_GROUP_WRITE  0x010 // Group - write permission
-#define EXT2_INODE_PERM_GROUP_READ   0x020 // Group - read permission
-#define EXT2_INODE_PERM_USER_EXEC    0x040 // User - execute permission
-#define EXT2_INODE_PERM_USER_WRITE   0x080 // User - write permission
-#define EXT2_INODE_PERM_USER_READ    0x100 // User - read permission
-#define EXT2_INODE_PERM_STICKY       0x200 // Sticky bit
-#define EXT2_INODE_PERM_SET_GID      0x400 // Set Group ID
-#define EXT2_INODE_PERM_SET_UID      0x800 // Set User ID
+#define EXT2_INODE_PERM_OTHER_EXEC  0x001 // Other - execute permission
+#define EXT2_INODE_PERM_OTHER_WRITE 0x002 // Other - write permission
+#define EXT2_INODE_PERM_OTHER_READ  0x004 // Other - read permission
+#define EXT2_INODE_PERM_GROUP_EXEC  0x008 // Group - execute permission
+#define EXT2_INODE_PERM_GROUP_WRITE 0x010 // Group - write permission
+#define EXT2_INODE_PERM_GROUP_READ  0x020 // Group - read permission
+#define EXT2_INODE_PERM_USER_EXEC   0x040 // User - execute permission
+#define EXT2_INODE_PERM_USER_WRITE  0x080 // User - write permission
+#define EXT2_INODE_PERM_USER_READ   0x100 // User - read permission
+#define EXT2_INODE_PERM_STICKY      0x200 // Sticky bit
+#define EXT2_INODE_PERM_SET_GID     0x400 // Set Group ID
+#define EXT2_INODE_PERM_SET_UID     0x800 // Set User ID
  
 // Inode flags
-#define EXT2_FL_SECRM       0x00000001 // Secure deletion
-#define EXT2_FL_UNRM        0x00000002 // Undelete
-#define EXT2_FL_COMPRESS    0x00000004 // File compression
-#define EXT2_FL_SYNC_UPDATE 0x00000008 // Synchonous updates
-#define EXT2_FL_IMMUT       0x00000010 // Immutable file
-#define EXT2_FL_APPEND_ONLY 0x00000020 // Append only
-#define EXT2_FL_DUMP        0x00000040 // File is not included in 'dump' command
-#define EXT2_FL_NOATIME     0x00000080 // Do not update atime
-#define EXT2_FL_HASH_DIR    0x00010000 // Hash indexed directory
-#define EXT2_FL_AFS_DIR     0x00020000 // AFS directory
-#define EXT2_FL_JOURNAL     0x00040000 // Journal file data
+#define EXT2_FL_SECRM               0x00000001 // Secure deletion
+#define EXT2_FL_UNRM                0x00000002 // Undelete
+#define EXT2_FL_COMPRESS            0x00000004 // File compression
+#define EXT2_FL_SYNC_UPDATE         0x00000008 // Synchonous updates
+#define EXT2_FL_IMMUT               0x00000010 // Immutable file
+#define EXT2_FL_APPEND_ONLY         0x00000020 // Append only
+#define EXT2_FL_DUMP                0x00000040 // File is not included in 'dump' command
+#define EXT2_FL_NOATIME             0x00000080 // Do not update atime
+#define EXT2_FL_HASH_DIR            0x00010000 // Hash indexed directory
+#define EXT2_FL_AFS_DIR             0x00020000 // AFS directory
+#define EXT2_FL_JOURNAL             0x00040000 // Journal file data
 
 // File types
-#define EXT2_UNKNOWN        0 // Unknown file
-#define EXT2_REGFILE        1 // Regular file
-#define EXT2_DIR            2 // Directory
-#define EXT2_CHAR_DEV       3 // Character device
-#define EXT2_BLOCK_DEV      4 // Block device
-#define EXT2_FIFO           5 // FIFO
-#define EXT2_SOCKET         6 // Socket
-#define EXT2_SYMLINK        7 // Symbolic link
+#define EXT2_UNKNOWN                0 // Unknown file
+#define EXT2_REGFILE                1 // Regular file
+#define EXT2_DIR                    2 // Directory
+#define EXT2_CHAR_DEV               3 // Character device
+#define EXT2_BLOCK_DEV              4 // Block device
+#define EXT2_FIFO                   5 // FIFO
+#define EXT2_SOCKET                 6 // Socket
+#define EXT2_SYMLINK                7 // Symbolic link
 
 typedef struct ext2_superblock
 {
