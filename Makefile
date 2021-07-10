@@ -7,10 +7,6 @@ ARCHDIR ?=
 ARCHTARGET ?=
 
 all:
-#	@echo "<======== Compiling bootloader ========>"
-#	@echo ""
-#	@cd boot/arch/$(ARCHDIR) && make
-#	@echo ""
 	@echo "<========== Compiling kernel ==========>"
 	@echo ""
 	@cd kernel && make
@@ -18,6 +14,12 @@ all:
 	@echo "<======== Compiling Userland =========>"
 	@echo ""
 	@cd userland && make
+	@echo ""
+
+install:
+	@echo "<======== Installing Userland =========>"
+	@echo ""
+	@cd userland && make install
 	@echo ""
 
 clean:

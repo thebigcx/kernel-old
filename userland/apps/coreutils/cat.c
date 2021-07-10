@@ -3,6 +3,7 @@
 void _start(int argc, char** argv)
 {
     int fd = open("/text/test.txt", 0, 0);
+    //int fd = open(argv[1], 0, 0);
     char buffer[200];
 
     read(fd, buffer, 200);

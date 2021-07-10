@@ -291,7 +291,7 @@ void* loadelf(uint8_t* elf_dat, proc_t* proc)
         if (phdr.type == PT_LOAD)
         {
             uint64_t begin = phdr.vaddr;
-            uint64_t size = phdr.mem_sz; // TODO: fix
+            uint64_t size = phdr.mem_sz;
 
             if (size % PAGE_SIZE_4K != 0)
                 size = size - (size % PAGE_SIZE_4K) + PAGE_SIZE_4K;
@@ -344,7 +344,6 @@ static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int
     {
         stack -= sizeof(uint64_t);
         *((uint64_t*)stack) = tmp_argv[i];
-        serial_printf("d\n");
     }
 
     asm volatile ("mov %%rax, %%cr3" :: "a"(cr3));
@@ -395,6 +394,7 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     proc->regs.rsp = (uint64_t)0x24000;
 
     // TODO: this does not work without usermode. PLEASE FIX!!!!
+    prepstack(proc, "/bin/cat", argc, argv, 0, NULL);
     //prepstack(proc, path, argc, argv, envp, env);
     
     kfree(buffer);

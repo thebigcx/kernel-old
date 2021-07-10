@@ -40,7 +40,7 @@ void runcmd(char* cmd)
     {
         waitpid(pid);
     }*/
-    //exec(bin, 0, NULL);
+    exec(bin, 0, NULL);
     //fork();
 }
 
@@ -68,7 +68,6 @@ static char scancode_toascii[] =
 
 void getcmd()
 {
-    asm volatile ("hlt");
     int fb = open("/dev/fb", 0, 0);
     void* addr = mmap(NULL, 0, 0, 0, 0, 0);
     *((uint32_t*)addr) = 0xffffffff;

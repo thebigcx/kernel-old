@@ -1,6 +1,3 @@
-cp userland/apps/test/test base/bin
-cp userland/apps/coreutils/cat base/bin
-
 # Create the emulation disk TODO: partitions
 dd if=/dev/zero of=dist/disk.img bs=1k count=14400
 chown "$SUDO_UID":"$SUDO_GID" dist/disk.img

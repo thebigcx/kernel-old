@@ -1,29 +1,32 @@
-
-
-/*extern FILE* vfs_open(const char* path);
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
 
 FILE* fopen(const char* path, const char* mode)
 {
-    return vfs_open(path);
+    FILE* file = malloc(sizeof(FILE));
+    file->fd = open(path, 0, 0);
+    return file;
 }
-
-extern FILE* vfs_close(FILE* stream);
 
 int fclose(FILE* stream)
 {
-    return vfs_close(stream);
+    int ret = close(stream->fd);
+    free(stream);
+    return ret;
 }
-
-extern FILE* vfs_read(void* ptr, size_t size, FILE* stream);
 
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
-    return vfs_read(ptr, size * nmemb, stream);
+    return read(stream->fd, ptr, size * nmemb);
 }
-
-extern FILE* vfs_write(const void* ptr, size_t size, FILE* stream);
 
 size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
-    return vfs_write(ptr, size * nmemb, stream);
-}*/
+    return write(stream->fd, ptr, size * nmemb);
+}
+
+int fseek(FILE* stream, long int offset, int whence)
+{
+    return seek(stream->fd, offset, whence);
+}

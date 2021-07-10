@@ -11,4 +11,5 @@
 #define SYS_EXEC        8
 #define SYS_WAITPID     9
 #define SYS_EXIT        10
-#define SYS_SLEEPNS   11
+#define SYS_SLEEPNS     11
+#define SYS_SEEK        12

@@ -1,6 +1,6 @@
 include ../apps.mk
 
-TARGET := test
+TARGET := sh
 
 all: $(TARGET)
 
@@ -12,6 +12,9 @@ $(TARGET): $(OBJS)
 
 %.o: %.s
 	as $< -o $@
+
+install:
+	cp $(TARGET) ../../../base/usr/bin/
 
 .PHONY:
 clean:

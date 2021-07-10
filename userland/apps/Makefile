@@ -1,7 +1,11 @@
 all:
-	cd test && make
+	cd shell && make
 	cd coreutils && make
 
+install:
+	cd shell && make install
+	cd coreutils && make install
+
 clean:
-	cd test && make clean
+	cd shell && make clean
 	cd coreutils && make clean

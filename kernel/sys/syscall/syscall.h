@@ -13,7 +13,12 @@
 #define SYS_EXEC        8
 #define SYS_WAITPID     9
 #define SYS_EXIT        10
-#define SYS_SLEEPNS   11
+#define SYS_SLEEPNS     11
+#define SYS_SEEK        12
+
+#define SEEK_SET        1
+#define SEEK_CUR        2
+#define SEEK_END        3
 
 typedef uint64_t(*syscall_t)(reg_ctx_t*);
 

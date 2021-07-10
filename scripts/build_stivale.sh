@@ -4,6 +4,7 @@ if [ ! -d ./limine ]; then
 fi
 
 make
+make install
 mkdir -p iso
 cp -v kernel/kernel.elf kernel/arch/x86_64/limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin iso
 mkdir -p dist

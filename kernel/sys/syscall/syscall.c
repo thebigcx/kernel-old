@@ -108,12 +108,23 @@ uint64_t sys_fork(reg_ctx_t* regs)
 
 uint64_t sys_exec(reg_ctx_t* regs)
 {
+    char* path = kmalloc(strlen(regs->rdi) + 1);
+    strcpy(path, regs->rdi);
+    int argc = regs->rsi;
+    char** argv = kmalloc(argc * sizeof(char*));
+    for (int i = 0; i < argc; i++)
+    {
+        char* arg = ((char*)regs->rdx)[i];
+        argv[i] = kmalloc(strlen(arg) + 1);
+        strcpy(argv[i], arg);
+    }
     /*char* str = kmalloc(strlen(regs->rdi) + 1); // mkelfproc switches page maps, so we must copy the user args
     strcpy(str, regs->rdi);
     proc_t* new = mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
     kfree(str);
     sched_spawn(new);*/
-    sched_exec(regs->rdi, regs->rsi, regs->rdx);
+    //sched_exec(path, argc, argv);
+    sched_exec(regs->rdi, 0, NULL);
     return 0; // Should not return
 }
 
@@ -132,6 +143,26 @@ uint64_t sys_sleepns(reg_ctx_t* regs)
     sched_sleepns(regs->rdi);
 }
 
+uint64_t sys_seek(reg_ctx_t* regs)
+{
+    fs_fd_t* fd = procgetfd(regs->rdi);
+    int64_t off = regs->rsi;
+    
+    switch (regs->rdx)
+    {
+        case SEEK_SET:
+            fd->pos = off;
+            break;
+        case SEEK_CUR:
+            fd->pos += off;
+            break;
+        case SEEK_END:
+            fd->pos = fd->node->size + off;
+            break;
+    }
+    return 0;
+}
+
 syscall_t syscalls[SYSCALL_CNT] =
 {
     sys_read,
@@ -145,7 +176,8 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_exec,
     sys_waitpid,
     sys_exit,
-    sys_sleepns
+    sys_sleepns,
+    sys_seek
 };
 
 void syscall_handler(reg_ctx_t* regs)

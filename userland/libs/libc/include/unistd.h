@@ -20,3 +20,4 @@ void sleepns(uint64_t ns);
 void sleepus(uint64_t us);
 void sleepms(uint64_t ms);
 void sleeps(uint64_t s);
+int seek(int fd, int64_t off, int whence);

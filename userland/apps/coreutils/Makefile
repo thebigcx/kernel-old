@@ -12,6 +12,9 @@ $(TARGS): $(OBJS)
 %.o: %.c
 	gcc $(CFLAGS) -c $< -o $@
 
+install:
+	cp cat ../../../base/usr/bin/
+
 .PHONY:
 clean:
 	@rm -f $(TARGS)
