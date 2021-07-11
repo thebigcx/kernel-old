@@ -86,5 +86,6 @@ void ioapic_set_base(uint64_t base);
 void lapic_write(uint32_t off, uint32_t val);
 uint32_t lapic_read(uint32_t off);
 void lapic_send_ipi(uint8_t apicid, uint32_t dsh, uint32_t type, uint8_t vec);
+void lapic_enable();
 
 void lapic_eoi();

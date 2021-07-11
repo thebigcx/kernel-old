@@ -5,6 +5,7 @@
 #include <sys/system.h>
 #include <intr/apic.h>
 #include <mem/kheap.h>
+#include <sched/sched.h>
 
 extern void isr0();
 extern void isr1();
@@ -58,6 +59,7 @@ extern void irq14();
 extern void irq15();
 
 extern void ipi0xfd();
+extern void ipi0xfe();
 
 int_fn_t int_handlers[256];
 idt_record_t idtptr;
@@ -136,15 +138,23 @@ void idt_init()
     set_handler(&idt[0x2d], irq13, 0x08, IDT_TYPE_INT, IDT_KERNEL);
     set_handler(&idt[0x2e], irq14, 0x08, IDT_TYPE_INT, IDT_KERNEL);
     set_handler(&idt[0x2f], irq15, 0x08, IDT_TYPE_INT, IDT_KERNEL);
-
+    
     set_handler(&idt[0xfd], ipi0xfd, 0x08, IDT_TYPE_INT, IDT_KERNEL);
+    set_handler(&idt[0xfe], ipi0xfe, 0x08, IDT_TYPE_INT, IDT_KERNEL);
 
     idtptr.limit = 256 * sizeof(idt_entry_t) - 1;
     idtptr.base = (uint64_t)idt;
 
-    asm ("lidt %0" :: "m"(idtptr));
+    // Flush for the BSP
+    idt_flush();
 
     idt_set_int(IPI_HALT, ipi_halt);
+}
+
+// Allows multiple cores to flush the same IDT
+void idt_flush()
+{
+    asm ("lidt %0" :: "m"(idtptr));
 }
 
 void idt_set_int(uint32_t id, int_fn_t fn)

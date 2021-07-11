@@ -6,6 +6,7 @@
 #include <cpu/gdt.h>
 #include <drivers/tty/serial.h>
 #include <cpu/tss.h>
+#include <intr/idt.h>
 
 #define SMP_TRAMPOLINE_ENTRY 0x8000
 
@@ -23,15 +24,26 @@ cpu_t cpus[64];
 
 void smp_entry(uint16_t id)
 {
+    cpus[id].lapic_id = id;
+    cpus[id].gdt = kmalloc(sizeof(bsp_gdtents)); // lim is subtracted by 1
+    memcpy(cpus[id].gdt, bsp_gdtents, sizeof(bsp_gdtents));
+    cpus[id].gdtptr.base = cpus[id].gdt;
+    cpus[id].gdtptr.lim = sizeof(bsp_gdtents) - 1;
+
+    asm volatile ("lgdt (%%rax)" :: "a"(&cpus[id].gdtptr));
+    
+    idt_flush();
+    
+    tss_init(&cpus[id].tss, 5, cpus[id].gdt);
+
+    lapic_enable();
+
+    serial_printf("CPU #%d intialized.\n", id);
     ap_initialized = true;
-    serial_writestr("Hello from another CPU!\n");
 
+    //sti();
+    cli();
     for (;;);
-}
-
-void breakpoint_smp()
-{
-
 }
 
 void smp_initcpu(uint32_t id)
@@ -45,25 +57,25 @@ void smp_initcpu(uint32_t id)
 
     memcpy(SMP_TRAMPOLINE_ENTRY, &_ap_bootstrap_start, PAGE_SIZE_4K);
 
-    serial_writestr("Sending INIT IPI\n");
+    serial_printf("Sending INIT IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_INIT, 0);
 
     pit_waitms(10);
 
-    serial_writestr("Sending STARTUP IPI\n");
+    serial_printf("Sending STARTUP IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
     pit_waitms(1);
 
     if (!ap_initialized)
     {
-        serial_writestr("Resending STARTUP IPI\n");
+        serial_printf("Resending STARTUP IPI to CPU #%d\n", id);
         // Resend with longer timeout
         lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
         pit_waitms(1000);
 
         if (!ap_initialized)
         {
-            serial_writestr(ANSI_RED "CPU failed to startup\n" ANSI_WHITE);
+            serial_printf(ANSI_RED "CPU #%d failed to startup\n" ANSI_WHITE, id);
         }
     }
 }

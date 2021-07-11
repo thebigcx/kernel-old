@@ -170,10 +170,10 @@ uint64_t sys_openpty(reg_ctx_t* regs)
     pty_t* pty = pty_grant();
 
     proc_t* proc = sched_get_currproc();
-    list_get(proc->file_descs, 0)->val = vfs_open(pty->slave, 0, 0);
-    list_get(proc->file_descs, 1)->val = vfs_open(pty->slave, 0, 0);
+    //list_get(proc->file_descs, 0)->val = vfs_open(pty->slave, 0, 0);
+    //list_get(proc->file_descs, 1)->val = vfs_open(pty->slave, 0, 0);
 
-    list_push_back(proc->file_descs, pty->master);
+    //list_push_back(proc->file_descs, pty->master);
 
     *((int*)regs->rdi) = proc->file_descs->cnt - 1;
     return 0;

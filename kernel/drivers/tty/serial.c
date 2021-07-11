@@ -1,6 +1,9 @@
 #include <drivers/tty/serial.h>
 #include <sys/io.h>
 #include <util/stdlib.h>
+#include <sched/spinlock.h>
+
+lock_t lock = 0;
 
 void serial_init()
 {
@@ -45,10 +48,14 @@ void serial_write(char c)
 
 void serial_writestr(char* str)
 {
+    acquire_lock(lock);
+
     while (*str != 0)
     {
         serial_write(*str++);
     }
+
+    release_lock(lock);
 }
 
 void serial_printf(char* format, ...)

@@ -115,6 +115,7 @@ void sched_tick(reg_ctx_t* r)
 {
     if (!scheduler_ready) return;
 
+    lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_SCHED);
     schedule(r);
 }
 
@@ -158,9 +159,9 @@ void sched_block(uint32_t state)
     cli();
 
     currproc->state = state;
-    //lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_SCHED);
+    lapic_send_ipi(0, ICR_ALL_INC_SELF, ICR_FIXED, IPI_SCHED);
     //lapic_send_ipi(0, ICR_SELF, ICR_FIXED, IPI_SCHED);
-    asm volatile ("int $0xfd");
+    //asm volatile ("int $0xfd");
 
     sti();
 }

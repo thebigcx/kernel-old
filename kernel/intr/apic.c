@@ -37,6 +37,11 @@ void lapic_init()
 
     idt_set_int(0xff, spur_int);
 
+    lapic_enable();
+}
+
+void lapic_enable()
+{
     lapic_set_base(lapic_read_base() | (1ul << 11));
     lapic_write(LAPIC_SIVR, lapic_read(LAPIC_SIVR) | 0x1ff);
 }

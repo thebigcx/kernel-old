@@ -45,6 +45,7 @@ typedef struct idt_record
 typedef void (*int_fn_t)(reg_ctx_t* r);
 
 void idt_init();
+void idt_flush();
 void idt_set_int(uint32_t id, int_fn_t fn);
 void generic_isr(const char* err, isr_frame_t* frame);
 void pagefault_handler(isr_frame_t* frame);

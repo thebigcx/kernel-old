@@ -1,6 +1,7 @@
 #include <intr/idt.h>
 #include <drivers/tty/serial.h>
 #include <sched/sched.h>
+#include <intr/apic.h>
 
 #define DUMPREG(reg, val)\
     serial_writestr(reg"=");\
@@ -36,6 +37,7 @@ void generic_isr(const char* err, isr_frame_t* frame)
     }
     else
     {
+        lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_HALT);
         serial_writestr(ANSI_RED);
         serial_writestr("Kernel Panic\n\n");
         serial_writestr(err);
@@ -56,6 +58,7 @@ void pagefault_handler(isr_frame_t* frame)
     }
     else
     {
+        lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_HALT);
         serial_writestr(ANSI_RED);
         serial_writestr("Kernel Panic\n\n");
         serial_writestr("Page fault\n");
@@ -93,6 +96,7 @@ void general_protection_fault_handler(isr_frame_t* frame)
     }
     else
     {
+        lapic_send_ipi(0, ICR_ALL_EX_SELF, ICR_FIXED, IPI_HALT);
         serial_writestr(ANSI_RED);
         serial_writestr("Kernel Panic\n\n");
         serial_writestr("General protection fault\n");

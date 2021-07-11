@@ -175,3 +175,4 @@ IRQ 14, 46
 IRQ 15, 47
 
 IPI 0xfd
+IPI 0xfe
