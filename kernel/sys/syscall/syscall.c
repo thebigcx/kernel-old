@@ -4,6 +4,7 @@
 #include <sched/sched.h>
 #include <drivers/fs/vfs/vfs.h>
 #include <drivers/gfx/fb/fb.h>
+#include <drivers/tty/pty/pty.h>
 
 #define SYSCALL_CNT 256
 
@@ -114,7 +115,7 @@ uint64_t sys_exec(reg_ctx_t* regs)
     char** argv = kmalloc(argc * sizeof(char*));
     for (int i = 0; i < argc; i++)
     {
-        char* arg = ((char*)regs->rdx)[i];
+        char* arg = ((char**)regs->rdx)[i];
         argv[i] = kmalloc(strlen(arg) + 1);
         strcpy(argv[i], arg);
     }
@@ -124,7 +125,7 @@ uint64_t sys_exec(reg_ctx_t* regs)
     kfree(str);
     sched_spawn(new);*/
     //sched_exec(path, argc, argv);
-    sched_exec(regs->rdi, 0, NULL);
+    sched_exec(path, argc, argv);
     return 0; // Should not return
 }
 
@@ -163,6 +164,21 @@ uint64_t sys_seek(reg_ctx_t* regs)
     return 0;
 }
 
+// TODO: delete resources properly and add stderr
+uint64_t sys_openpty(reg_ctx_t* regs)
+{
+    pty_t* pty = pty_grant();
+
+    proc_t* proc = sched_get_currproc();
+    list_get(proc->file_descs, 0)->val = vfs_open(pty->slave, 0, 0);
+    list_get(proc->file_descs, 1)->val = vfs_open(pty->slave, 0, 0);
+
+    list_push_back(proc->file_descs, pty->master);
+
+    *((int*)regs->rdi) = proc->file_descs->cnt - 1;
+    return 0;
+}
+
 syscall_t syscalls[SYSCALL_CNT] =
 {
     sys_read,
@@ -177,7 +193,8 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_waitpid,
     sys_exit,
     sys_sleepns,
-    sys_seek
+    sys_seek,
+    sys_openpty
 };
 
 void syscall_handler(reg_ctx_t* regs)

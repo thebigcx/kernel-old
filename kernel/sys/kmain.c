@@ -127,7 +127,7 @@ void kmain()
 
     // TEMP
     const char* hello = "Hello, this is the first parameter!";
-    proc_t* elf = mkelfproc("/bin/test", 1, &hello, 0, NULL);
+    proc_t* elf = mkelfproc("/usr/bin/sh", 1, &hello, 0, NULL);
     sched_spawn(elf, NULL);
     mutex = mutex_create();
 

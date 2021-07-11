@@ -9,9 +9,10 @@
 
 #define SMP_TRAMPOLINE_ENTRY 0x8000
 
-volatile uint64_t* smp_cr3 = 0x1000;
-volatile uint64_t* smp_gdt = 0x1008;
-volatile uint64_t* smp_ent = 0x1010;
+volatile uint64_t* smp_cr3   = 0x1000;
+volatile uint64_t* smp_gdt   = 0x1008;
+volatile uint64_t* smp_ent   = 0x1010;
+volatile uint64_t* smp_stack = 0x1018;
 
 volatile int ap_initialized = false;
 
@@ -23,7 +24,9 @@ cpu_t cpus[64];
 void smp_entry(uint16_t id)
 {
     ap_initialized = true;
-    serial_writestr("Hello from another core!\n");
+    serial_writestr("Hello from another CPU!\n");
+
+    for (;;);
 }
 
 void breakpoint_smp()
@@ -36,18 +39,24 @@ void smp_initcpu(uint32_t id)
     asm ("mov %%cr3, %0" : "=r"(*smp_cr3));
     *smp_gdt = &bsp_gdtptr;
     *smp_ent = smp_entry;
+    *smp_stack = page_kernel_alloc4k(1);
+    page_kernel_map_memory(*smp_stack, pmm_request(), 1);
+    *smp_stack += PAGE_SIZE_4K; // Top of the 4K stack
 
     memcpy(SMP_TRAMPOLINE_ENTRY, &_ap_bootstrap_start, PAGE_SIZE_4K);
 
+    serial_writestr("Sending INIT IPI\n");
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_INIT, 0);
 
     pit_waitms(10);
 
+    serial_writestr("Sending STARTUP IPI\n");
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
     pit_waitms(1);
 
     if (!ap_initialized)
     {
+        serial_writestr("Resending STARTUP IPI\n");
         // Resend with longer timeout
         lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
         pit_waitms(1000);
@@ -72,7 +81,7 @@ void smp_init()
         uint32_t id = acpi_cpus[i];
         if (id != locid)
         {
-            //smp_initcpu(id);
+            smp_initcpu(id);
         }
     }
 

@@ -42,7 +42,7 @@ bool kb_get_key(uint32_t* key)
 {
     if (key_queue.queue_end < 0)
         return false;
-
+    
     *key = key_queue.keys[key_queue.queue_end--];
 
     return true;

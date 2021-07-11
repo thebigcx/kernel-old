@@ -14,6 +14,7 @@ $(TARGS): $(OBJS)
 
 install:
 	cp cat ../../../base/usr/bin/
+	cp ls ../../../base/usr/bin/
 
 .PHONY:
 clean:

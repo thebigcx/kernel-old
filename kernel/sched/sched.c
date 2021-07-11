@@ -15,10 +15,10 @@
 #include <cpu/cpu.h>
 #include <drivers/gfx/fb/fb.h>
 
-void ctx_switch(reg_ctx_t* regs, uint64_t pml4);
+void kernel_switch(reg_ctx_t* regs, uint64_t pml4);
 void user_switch(reg_ctx_t* regs, uint64_t pml4);
 
-int scheduler_ready = 0;
+static int scheduler_ready = 0;
 
 tree_t* proctree;
 list_t* procs;
@@ -78,7 +78,7 @@ void schedule(reg_ctx_t* r)
         currproc->state = PROC_STATE_RUNNING;
 
         if (currproc->regs.cs == KERNEL_CS)
-            ctx_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
+            kernel_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
         else
             user_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
     }
@@ -114,30 +114,6 @@ proc_t* mk_proc(void* entry)
 void sched_tick(reg_ctx_t* r)
 {
     if (!scheduler_ready) return;
-
-    //cli();
-
-    /*proc_t* next = sleep_tsk_lst;
-    proc_t* this;
-    sleep_tsk_lst = NULL;
-
-    while (next != NULL)
-    {
-        this = next;
-        next = this->next;
-
-        if (this->sleep_exp <= pit_uptime() * 1000)
-        {
-            sched_unblock(this);
-        }
-        else
-        {
-            this->next = sleep_tsk_lst;
-            sleep_tsk_lst = this;
-        }
-    }*/
-
-    //sti();
 
     schedule(r);
 }
@@ -338,6 +314,7 @@ static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int
         stack -= strlen(argv[i]) + 1;
         strcpy(stack, argv[i]);
         tmp_argv[i + 1] = stack;
+        
     }
 
     for (int i = argc; i >= 0; i--)
@@ -371,12 +348,10 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     strcpy(proc->name, "unknown");
 
     // TODO: These are temporary - later will be hooked up to PTYs
-    vfs_node_t* stdin_node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdin = vfs_open(stdin_node, 0, 0);
+    vfs_node_t* console = vfs_resolve_path("/dev/console", NULL);
+    fs_fd_t* stdin = vfs_open(console, 0, 0);
+    fs_fd_t* stdout = vfs_open(console, 0, 0);
     list_push_back(proc->file_descs, stdin);
-
-    vfs_node_t* stdout_node = vfs_resolve_path("/dev/stdout", NULL);
-    fs_fd_t* stdout = vfs_open(stdout_node, 0, 0);
     list_push_back(proc->file_descs, stdout);
 
     space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
@@ -394,7 +369,7 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     proc->regs.rsp = (uint64_t)0x24000;
 
     // TODO: this does not work without usermode. PLEASE FIX!!!!
-    prepstack(proc, "/bin/cat", argc, argv, 0, NULL);
+    prepstack(proc, path, argc, argv, 0, NULL);
     //prepstack(proc, path, argc, argv, envp, env);
     
     kfree(buffer);

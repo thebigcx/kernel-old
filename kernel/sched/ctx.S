@@ -1,6 +1,6 @@
 # Switch current task
 
-.global ctx_switch
+.global kernel_switch
 .global user_switch
 
 .macro popaq
@@ -22,7 +22,7 @@
 
 .endm
 
-ctx_switch:
+kernel_switch:
     movq    %rdi, %rsp
     movq    %rsi, %rax
     popaq

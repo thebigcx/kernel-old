@@ -6,6 +6,7 @@
 
 uint32_t curs_x = 0;
 uint32_t curs_y = 0;
+vfs_node_t* kb = NULL;
 
 void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 {
@@ -63,6 +64,7 @@ void console_printf(const char* format, uint8_t r, uint8_t g, uint8_t b, ...)
     console_write(str, r, g, b);
 }
 
+// System console stdout
 size_t conwrite(vfs_node_t* node, const void* ptr, size_t off, size_t size)
 {
     for (int i = 0; i < size; i++)
@@ -73,11 +75,64 @@ size_t conwrite(vfs_node_t* node, const void* ptr, size_t off, size_t size)
     return size;
 }
 
+static char scancode_toascii[] =
+{
+    'c', '~', '1', '2', '3', '4', '5',
+    '6', '7', '8', '9', '0', '-', '=',
+    '\b', '\t', 'q', 'w', 'e', 'r', 't',
+    'y', 'u', 'i', 'o', 'p', '[', ']',
+    '\n', '~', 'a', 's', 'd', 'f', 'g',
+    'h', 'j', 'k', 'l', ';', '\'', '`',
+    '~', '\\', 'z', 'x', 'c', 'v', 'b',
+    'n', 'm', ',', '.', '/', '~', '*',
+    '~', ' ', '~', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c',
+    'c', 'c', 'c', 'c', 'c', 'c', 'c'
+};
+
+// System console stdin
+size_t conread(vfs_node_t* node, void* ptr, size_t off, size_t size)
+{
+    if (!kb)
+    {
+        kb = vfs_resolve_path("/dev/keyboard", NULL);
+    }
+
+    uint8_t* buffer = kmalloc(size);
+    if (vfs_read(kb, buffer, off, size))
+    {
+        uint32_t read = 0;
+        for (int i = 0; i < size; i++)
+        {
+            if (buffer[i] > 88)
+                continue;
+            
+            *((char*)ptr) = scancode_toascii[buffer[i]];
+            ptr++;
+            read++;
+        }
+
+        kfree(buffer);
+        return read;
+    }
+
+    kfree(buffer);
+    return 0;
+}
+
 void console_init()
 {
-    vfs_node_t* stdout = kmalloc(sizeof(vfs_node_t));
-    stdout->write = conwrite;
-    stdout->flags = FS_CHARDEV;
-    stdout->name = strdup("stdout");
-    vfs_mount(stdout, "/dev/stdout");
+    vfs_node_t* console = kmalloc(sizeof(vfs_node_t));
+    console->write = conwrite;
+    console->read = conread;
+    console->flags = FS_CHARDEV;
+    console->name = strdup("console");
+    vfs_mount(console, "/dev/console");
 }

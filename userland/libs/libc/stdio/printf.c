@@ -42,6 +42,15 @@ int vsnprintf(char* str, size_t n, const char* format, va_list list)
                         str[stridx++] = arg[i];
                     
                     break;
+                
+                case 'x':
+                    ultoa(va_arg(list, long unsigned int), buffer, 16);
+                    len = strlen(buffer);
+
+                    for (size_t j = 0; j < len; j++)
+                        str[stridx++] = buffer[j];
+
+                    break;
             }
         }
         else
@@ -58,7 +67,7 @@ int vsnprintf(char* str, size_t n, const char* format, va_list list)
 
 int vsprintf(char* str, const char* format, va_list args)
 {
-
+    return vsnprintf(str, 200, format, args);
 }
 
 int snprintf(char* str, size_t n, const char* format, ...)
@@ -85,7 +94,7 @@ void vfprintf(FILE* file, const char* format, va_list args)
     //char* str = malloc(strlen(format));
     // TODO: userspace malloc/free
     char str[100];
-    vsprintf(str, format, args);
+    vsnprintf(str, 100, format, args);
     write(file->fd, str, strlen(str));
     //free(str);
     

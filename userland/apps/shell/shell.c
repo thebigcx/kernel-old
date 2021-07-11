@@ -6,23 +6,35 @@
 #include <os/keyboard.h>
 #include <sys/stat.h>
 
-static int keyboard;
-
 void runcmd(char* cmd)
 {
     printf("\n");
 
     char bin[50];
-    strncpy(bin, "/bin/", 5);
+    strncpy(bin, "/usr/bin/", 9);
+    char argv[50];
+    int argc;
 
     // Extract the command name
     int i = 0;
-    for (; cmd[i] != ' ' && cmd[i] != 0; i++)
+    while (*cmd != ' ' && *cmd != 0)
     {
-        bin[i + 5] = cmd[i];
+        bin[i + 9] = *cmd++;
+        i++;
     }
+    
+    bin[i + 9] = 0;
 
-    bin[i + 5] = 0;
+    *cmd++;
+
+    i = 0;
+    // First argument
+    while (*cmd != ' ' && *cmd != 0)
+    {
+        argv[i] = *cmd++;
+        i++;
+    }
+    argv[i] = 0;
 
     stat_t binstat;
     if (stat(bin, &binstat) != 0)
@@ -40,38 +52,14 @@ void runcmd(char* cmd)
     {
         waitpid(pid);
     }*/
-    exec(bin, 0, NULL);
+    //char* hello = "/text/test.txt";
+    char* argv_ptr = &argv;
+    exec(bin, 1, &argv_ptr);
     //fork();
 }
 
-static char scancode_toascii[] =
-{
-    'c', '~', '1', '2', '3', '4', '5',
-    '6', '7', '8', '9', '0', '-', '=',
-    '~', '~', 'q', 'w', 'e', 'r', 't',
-    'y', 'u', 'i', 'o', 'p', '[', ']',
-    '~', '~', 'a', 's', 'd', 'f', 'g',
-    'h', 'j', 'k', 'l', ';', '\'', '`',
-    '~', '\\', 'z', 'x', 'c', 'v', 'b',
-    'n', 'm', ',', '.', '/', '~', '*',
-    '~', ' ', '~', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c',
-    'c', 'c', 'c', 'c', 'c', 'c', 'c'
-};
-
 void getcmd()
 {
-    int fb = open("/dev/fb", 0, 0);
-    void* addr = mmap(NULL, 0, 0, 0, 0, 0);
-    *((uint32_t*)addr) = 0xffffffff;
-
     char cmd[200];
     int cmdlen = 0;
 
@@ -79,10 +67,10 @@ void getcmd()
 
     while (1)
     {
-        uint32_t scancode;
-        if (read(keyboard, &scancode, 1))
+        char c;
+        if (read(0, &c, 1))
         {
-            if (scancode == KEY_ENTER)
+            if (c == '\n')
             {
                 if (cmdlen == 0)
                 {
@@ -94,11 +82,10 @@ void getcmd()
                 runcmd(cmd);
                 return;
             }
-            else if (scancode < 88) // Key press
+            else // Key press
             {
-                char c = scancode_toascii[scancode];
                 cmd[cmdlen++] = c;
-                write(1, &c, 1);
+                putchar(c);
             }
         }
     }
@@ -106,8 +93,6 @@ void getcmd()
 
 void _start(int argc, char** argv)
 {
-    keyboard = open("/dev/keyboard", 0, 0);
-
     printf("Minimal bash-like shell - type 'help' for a list of commands\n\n");
     
     while (1)

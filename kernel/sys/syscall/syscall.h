@@ -15,6 +15,7 @@
 #define SYS_EXIT        10
 #define SYS_SLEEPNS     11
 #define SYS_SEEK        12
+#define SYS_OPENPTY     13
 
 #define SEEK_SET        1
 #define SEEK_CUR        2

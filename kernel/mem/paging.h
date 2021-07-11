@@ -36,9 +36,9 @@
 #define PD_PRESENT         1
 #define PD_WRITABLE        (1 << 1)
 #define PD_USER            (1 << 2)
-#define PD_CACHEDISABLED  (1 << 4)
-#define PD_2M             (1 << 7) // 2 MiB pages
-#define PD_PAT            (1 << 12)
+#define PD_CACHEDISABLED   (1 << 4)
+#define PD_2M              (1 << 7) // 2 MiB pages
+#define PD_PAT             (1 << 12)
 #define PD_FRAME           0xffffffffff000
 
 #define PAGE_PRESENT       1

@@ -1,9 +1,9 @@
 .section .text
 
-.set SMP_TRAMPOLINE_CR3, 0x1000
-.set SMP_TRAMPOLINE_GDT, 0x1008
+.set SMP_TRAMPOLINE_CR3,   0x1000
+.set SMP_TRAMPOLINE_GDT,   0x1008
 .set SMP_TRAMPOLINE_ENTRY, 0x1010
-.set SMP_MAGIC, 0x1020
+.set SMP_TRAMPOLINE_STACK, 0x1018
 
 .global _ap_bootstrap_start
 _ap_bootstrap_start:
@@ -34,14 +34,14 @@ smpentry32:
     movw    %ax, %fs
     movw    %ax, %gs
 
-    lgdtl   (gdtptr64 - ap_trampoline)
+    lgdtl   (gdtptr64 - ap_trampoline + 0x8000)
 
     movl    $0xc0000080, %ecx
     rdmsr
     orl     $0x800, %eax
     wrmsr
 
-    mov     $SMP_TRAMPOLINE_CR3, %eax
+    mov     SMP_TRAMPOLINE_CR3, %eax
     mov     %eax, %cr3
 
     movl    $0xc0000080, %ecx
@@ -56,24 +56,22 @@ smpentry32:
     movl    %cr0, %eax
     orl     $0x80000000, %eax
     movl    %eax, %cr0
-
-    //lgdtl   ap_cpu_gdtptr64 - ap_trampoline
-
-    //ljmpl   $0x8, $(smpentry64 - ap_trampoline + 0x8000)
-
-    //lgdtl   (ap_cpu_gdtptr64 - ap_trampoline)
     
     ljmpl   $0x8, $(smpentry64 - ap_trampoline + 0x8000)
 
 .code64
 smpentry64:
-    
+    movq    $SMP_TRAMPOLINE_STACK, %rsp
+    xorq    %rbp, %rbp
+
     mov     $1, %eax
     cpuid
     shrl    $24, %ebx
     movl    %ebx, %edi
     movq    $SMP_TRAMPOLINE_ENTRY, %rax
     jmp     *(%rax)
+
+    hlt // Should not reach, but just in case
 
 .align 16
 gdt32:
