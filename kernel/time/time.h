@@ -3,7 +3,7 @@
 #include <util/types.h>
 #include <sys/system.h>
 
-/*#define PIT_FREQ 1193182
+#define PIT_FREQ 1193182
 
 #define PIT_CHAN0       0x40
 #define PIT_CHAN1       0x41
@@ -28,8 +28,9 @@
 #define PIT_CMD_CHAN0   0x00
 #define PIT_CMD_CHAN1   0x40
 #define PIT_CMD_CHAN2   0x80
-#define PIT_CMD_RBACK   0xc0*/
+#define PIT_CMD_RBACK   0xc0
 
+typedef uint64_t time_t;
 // Time point
 typedef struct timept
 {
@@ -43,31 +44,13 @@ typedef struct timept
 
 } timept_t;
 
-typedef uint64_t (*time_getuptime_t)();
-typedef void (*time_wait_t)(uint64_t ns);
-
-// API for timing devices (APIC timer, PIT, etc)
-typedef struct timer
-{
-    time_getuptime_t uptime;
-    time_wait_t wait;
-
-} timer_t;
-
 // pit.c
-/*void pit_init(uint64_t frequency);
+void pit_init(uint64_t frequency);
 time_t pit_uptime(); // Time (in microseconds) since boot
 void pit_handler(reg_ctx_t* r);
 void pit_wait(uint64_t us); // Wait for microseconds
 void pit_waitms(uint64_t ms); // Wait for milliseconds
-uint64_t pit_ticks_to_us(uint64_t ticks);*/
+uint64_t pit_ticks_to_us(uint64_t ticks);
 
 // time.c
-timept_t mk_timept(uint64_t time);
-
-void timer_init(timer_t* timerdev);
-uint64_t timer_uptime();
-void timer_wait(uint64_t ns);
-void timer_waitus(uint64_t us);
-void timer_waitms(uint64_t ms);
-void timer_waits(uint64_t s);
+timept_t mk_timept(time_t time);

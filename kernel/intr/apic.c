@@ -1,9 +1,9 @@
 #include <intr/apic.h>
 #include <intr/idt.h>
-#include <cpu/cpuid.h>
 #include <sys/console.h>
 #include <mem/paging.h>
 #include <acpi/acpi.h>
+#include <cpu/cpu.h>
 
 uint64_t lapic_base;
 volatile uint64_t lapic_vbase;

@@ -66,12 +66,12 @@ void smp_initcpu(uint32_t id)
     serial_printf("Sending INIT IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_INIT, 0);
 
-    pit_wait(10000000);
+    pit_waitms(10);
     //timer_waitms(10);
 
     serial_printf("Sending STARTUP IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
-    pit_wait(1000000);
+    pit_waitms(1);
     //timer_waitus(200);
 
     if (!ap_initialized)
@@ -79,7 +79,8 @@ void smp_initcpu(uint32_t id)
         serial_printf("Resending STARTUP IPI to CPU #%d\n", id);
         // Resend with longer timeout
         lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
-        pit_wait(1000000000);
+        pit_waitms(1000);
+        //pit_wait(1000000000);
         //timer_waits(1);
 
         if (!ap_initialized)
