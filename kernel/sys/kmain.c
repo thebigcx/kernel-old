@@ -4,15 +4,15 @@
 #include <mem/kheap.h>
 #include <intr/idt.h>
 #include <cpu/gdt.h>
-#include <drivers/input/mouse/ps2_mouse.h>
-#include <drivers/input/keyboard/ps2_keyboard.h>
+#include <drivers/input/mouse/ps2mouse.h>
+#include <drivers/input/keyboard/ps2kb.h>
 #include <sys/io.h>
 #include <time/time.h>
 #include <acpi/acpi.h>
 #include <drivers/pci/pci.h>
 #include <drivers/pci/pci_ids.h>
 #include <drivers/storage/ata/ahci/ahci.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 #include <sched/sched.h>
 #include <intr/apic.h>
 #include <sys/syscall/syscall.h>
@@ -23,11 +23,9 @@
 #include <util/bmp.h>
 #include <util/stdlib.h>
 #include <util/elf.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 #include <drivers/storage/partmgr/gpt.h>
 #include <drivers/net/e1000/e1000.h>
-
-sem_t* mutex;
 
 void kernel_proc()
 {
@@ -154,19 +152,16 @@ void kmain()
     rand_seed(305640980);
     serial_writestr("Ok\n");
 
-    sched_init();
-    
     serial_writestr("Creating kernel process...");
-    //sched_spawn(mk_proc(kernel_proc), NULL);
-    sched_spawn(mk_proc(test1), NULL);
-    sched_spawn(mk_proc(test2), NULL);
+    sched_spawn(mk_proc(kernel_proc), NULL);
+    //sched_spawn(mk_proc(test1), NULL);
+    //sched_spawn(mk_proc(test2), NULL);
     serial_writestr("Ok\n");
 
     // TEMP
     const char* hello = "Hello, this is the first parameter!";
     proc_t* elf = mkelfproc("/usr/bin/sh", 1, &hello, 0, NULL);
     sched_spawn(elf, NULL);
-    mutex = mutex_create();
 
     serial_writestr("Intializing scheduler...");
     sched_start();

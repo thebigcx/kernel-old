@@ -2,9 +2,10 @@
 #include <sys/console.h>
 #include <mem/paging.h>
 #include <sched/sched.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 #include <drivers/gfx/fb/fb.h>
 #include <drivers/tty/pty/pty.h>
+#include <sched/thread.h>
 
 #define SYSCALL_CNT 256
 
@@ -136,12 +137,13 @@ uint64_t sys_waitpid(reg_ctx_t* regs)
 
 uint64_t sys_exit(reg_ctx_t* regs)
 {
-    //sched_terminate();
+    sched_terminate();
 }
 
 uint64_t sys_sleepns(reg_ctx_t* regs)
 {
     //sched_sleepns(regs->rdi);
+    thread_sleepns(regs->rdi);
 }
 
 uint64_t sys_seek(reg_ctx_t* regs)
@@ -179,6 +181,42 @@ uint64_t sys_openpty(reg_ctx_t* regs)
     return 0;
 }
 
+uint64_t sys_threadcreat(reg_ctx_t* regs)
+{
+
+}
+
+uint64_t sys_threadexit(reg_ctx_t* regs)
+{
+    thread_exit();
+}
+
+uint64_t sys_threadkill(reg_ctx_t* regs)
+{
+    proc_t* proc = sched_get_currproc();
+    thread_t* found = NULL;
+
+    list_foreach(proc->threads, node)
+    {
+        thread_t* thread = node->val;
+        if (thread->tid == regs->rdi)
+        {
+            found = thread;
+            break;
+        }
+    }
+
+    if (found)
+    {
+        thread_kill(found);
+    }
+}
+
+uint64_t sys_threadjoin(reg_ctx_t* regs)
+{
+
+}
+
 syscall_t syscalls[SYSCALL_CNT] =
 {
     sys_read,
@@ -194,7 +232,11 @@ syscall_t syscalls[SYSCALL_CNT] =
     sys_exit,
     sys_sleepns,
     sys_seek,
-    sys_openpty
+    sys_openpty,
+    sys_threadcreat,
+    sys_threadexit,
+    sys_threadkill,
+    sys_threadjoin
 };
 
 void syscall_handler(reg_ctx_t* regs)

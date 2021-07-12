@@ -50,7 +50,6 @@ time_t pit_uptime(); // Time (in microseconds) since boot
 void pit_handler(reg_ctx_t* r);
 void pit_wait(uint64_t us); // Wait for microseconds
 void pit_waitms(uint64_t ms); // Wait for milliseconds
-uint64_t pit_ticks_to_us(uint64_t ticks);
 
 // time.c
 timept_t mk_timept(time_t time);

@@ -4,7 +4,7 @@
 #include <time/time.h>
 #include <mem/paging.h>
 #include <cpu/gdt.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 #include <cpu/tss.h>
 #include <intr/idt.h>
 

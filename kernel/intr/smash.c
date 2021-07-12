@@ -1,6 +1,6 @@
 // Stack smash protector
 #include <util/types.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 
 #define STACK_CHK_GUARD 0x595e9fbd94fda766
 

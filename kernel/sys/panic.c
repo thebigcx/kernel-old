@@ -1,5 +1,5 @@
 #include <sys/system.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 
 void panic(const char* msg)
 {

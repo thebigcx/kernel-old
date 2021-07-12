@@ -47,7 +47,12 @@ void thread_sleepns(uint64_t ns)
     thread_sleepuntil(pit_uptime() + ns);
 }
 
-void thread_kill()
+void thread_exit()
 {
     thread_block(THREAD_STATE_KILLED);
+}
+
+void thread_kill(thread_t* thread)
+{
+    
 }

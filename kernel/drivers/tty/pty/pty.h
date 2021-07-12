@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 
 enum PTYTYPE
 {

@@ -1,4 +1,6 @@
 #pragma once
 
-typedef uint32_t dev_t;
-typedef uint32_t mode_t;
+typedef long int ssize_t;
+typedef unsigned long int size_t;
+typedef long int off_t;
+typedef unsigned int mode_t;

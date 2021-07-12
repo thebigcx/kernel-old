@@ -2,7 +2,7 @@
 
 #include <util/types.h>
 #include <util/list.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 #include <drivers/pci/pci.h>
 
 #define AHCI_PORT_NULL 0

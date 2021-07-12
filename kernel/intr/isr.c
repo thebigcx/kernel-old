@@ -1,5 +1,5 @@
 #include <intr/idt.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 #include <sched/sched.h>
 #include <intr/apic.h>
 

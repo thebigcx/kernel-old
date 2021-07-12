@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 
 #define GPT_ATTR_RES    (1     ) // Reserved for firmware
 #define GPT_ATTR_BOOT   (1 << 1) // Necessary for os boot

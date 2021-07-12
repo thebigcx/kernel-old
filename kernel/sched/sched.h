@@ -28,7 +28,6 @@ typedef struct proc
 } proc_t;
 
 // shed.c
-void sched_init();
 void schedule(reg_ctx_t* r);
 proc_t* mk_proc(void* entry);
 void sched_tick(reg_ctx_t* r);

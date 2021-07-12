@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <os/keyboard.h>
-#include <sys/stat.h>
+#include <os/input.h>
+#include <os/fs.h>
 
 void runcmd(char* cmd)
 {
@@ -37,7 +37,7 @@ void runcmd(char* cmd)
     argv[i] = 0;
 
     stat_t binstat;
-    if (stat(bin, &binstat) != 0)
+    if (file_stat(bin, &binstat) != 0)
     {
         printf("%s: command not found\n", bin);
         return;
@@ -68,7 +68,7 @@ void getcmd()
     while (1)
     {
         char c;
-        if (read(0, &c, 1))
+        if (read(0, &c, 1)) // read from stdin
         {
             if (c == '\n')
             {

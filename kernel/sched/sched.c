@@ -1,10 +1,10 @@
 #include <sched/sched.h>
 #include <mem/paging.h>
 #include <intr/idt.h>
-#include <drivers/input/keyboard/ps2_keyboard.h>
-#include <drivers/input/mouse/ps2_mouse.h>
+#include <drivers/input/keyboard/ps2kb.h>
+#include <drivers/input/mouse/ps2mouse.h>
 #include <util/elf.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 #include <util/types.h>
 #include <util/stdlib.h>
 #include <mem/kheap.h>
@@ -38,14 +38,6 @@ int creatpid()
 void idle()
 {
     while (1);
-}
-
-void sched_init()
-{
-    //proc_queue = list_create();
-    //sleep_lst = list_create();
-    //procs = list_create();
-    //proctree = tree_create();
 }
 
 void sched_start()
@@ -140,6 +132,7 @@ proc_t* mk_proc(void* entry)
     thread->state = THREAD_STATE_READY;
     thread->parent = proc;
     thread->sleepexp = 0;
+    thread->tid = 0; // Primary thread
     
     reg_ctx_t* regs = &thread->regs;
 
@@ -431,6 +424,7 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     thread->parent = proc;
     thread->state = THREAD_STATE_READY;
     thread->sleepexp = 0;
+    thread->tid = 0; // Primary thread
 
     reg_ctx_t* regs = &thread->regs;
     

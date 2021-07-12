@@ -3,7 +3,7 @@
 #include <sys/console.h>
 #include <intr/apic.h>
 #include <mem/paging.h>
-#include <drivers/tty/serial.h>
+#include <drivers/tty//serial/serial.h>
 
 acpi_xsdp_t* desc;
 acpi_rsdt_t* rsdt;

@@ -3,7 +3,7 @@ ASM := $(shell find ./ -type f -name '*.S')
 OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.S, %.o, $(ASM))
 AR := libc.a
 SO := libc.so
-CFLAGS := -ffreestanding -fno-stack-protector -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -nostdinc -Iinclude
+CFLAGS := -ffreestanding -fno-stack-protector -O2 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -nostdinc -Iinclude -I../libos/include
 
 all: $(AR) $(SO)
 

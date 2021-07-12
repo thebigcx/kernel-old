@@ -1,8 +1,8 @@
 #include <sys/console.h>
 #include <util/stdlib.h>
 #include <drivers/gfx/fb/fb.h>
-#include <drivers/fs/vfs/vfs.h>
-#include <drivers/tty/serial.h>
+#include <fs/vfs/vfs.h>
+#include <drivers/tty//serial/serial.h>
 
 uint32_t curs_x = 0;
 uint32_t curs_y = 0;
@@ -10,8 +10,6 @@ vfs_node_t* kb = NULL;
 
 void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
 {
-    serial_write(c);
-
     const vid_mode_t* mode = video_get_mode();
 
     if (c == '\n')

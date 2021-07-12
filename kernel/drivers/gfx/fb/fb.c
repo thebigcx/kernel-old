@@ -1,7 +1,7 @@
 #include <drivers/gfx/fb/fb.h>
 #include <util/stdlib.h>
 #include <util/bmp.h>
-#include <drivers/fs/vfs/vfs.h>
+#include <fs/vfs/vfs.h>
 #include <mem/kheap.h>
 #include <mem/paging.h>
 #include <sched/sched.h>

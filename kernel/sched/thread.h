@@ -18,6 +18,7 @@ typedef struct thread
     int state;
     reg_ctx_t regs;
     uint64_t sleepexp; // If asleep, contains the expiry time point in nanoseconds
+    uint64_t tid; // Thread ID
 
 } thread_t;
 
@@ -25,4 +26,5 @@ void thread_block(int state);
 void thread_unblock(thread_t* thread);
 void thread_sleepuntil(uint64_t timepoint);
 void thread_sleepns(uint64_t ns);
-void thread_kill();
+void thread_exit();
+void thread_kill(thread_t* thread);
