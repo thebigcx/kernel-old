@@ -22,30 +22,27 @@ typedef struct proc
     char* working_dir; // Working directory
 
     list_t* threads;
+    int nexttid;
 
-    tree_node_t* treenode; // Node in the tree this process belongs to
+    list_t* children; // Child processes (created with fork())
+    struct proc* parent; // Parent
 
 } proc_t;
 
-// shed.c
 void schedule(reg_ctx_t* r);
-proc_t* mk_proc(void* entry);
+
 void sched_tick(reg_ctx_t* r);
 void sched_spawn(proc_t* proc, proc_t* parent);
 void sched_terminate();
 void sched_proc_destroy(proc_t* proc);
-//void sched_block(uint32_t state);
-//void sched_unblock(proc_t* proc);
+
 void sched_fork(proc_t* proc, reg_ctx_t* regs);
 void sched_exec(const char* path, int argc, char** argv);
-list_t* sched_getprocs();
 
 proc_t* sched_get_currproc();
 
-proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env);
-
-//void sched_sleepns(uint64_t ns);
-//void sleep(uint64_t s);
+proc_t* sched_mkproc(void* entry);
+proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char** env);
 
 typedef struct sem
 {

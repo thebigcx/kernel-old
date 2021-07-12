@@ -57,7 +57,6 @@ uint64_t sys_close(reg_ctx_t* regs)
     return 0;
 }
 
-// TODO: fix bug where memory cannot be mapped from a syscall
 uint64_t sys_mmap(reg_ctx_t* regs)
 {
     void* addr = regs->rdi;
@@ -120,9 +119,9 @@ uint64_t sys_exec(reg_ctx_t* regs)
         argv[i] = kmalloc(strlen(arg) + 1);
         strcpy(argv[i], arg);
     }
-    /*char* str = kmalloc(strlen(regs->rdi) + 1); // mkelfproc switches page maps, so we must copy the user args
+    /*char* str = kmalloc(strlen(regs->rdi) + 1); // sched_mkelfproc switches page maps, so we must copy the user args
     strcpy(str, regs->rdi);
-    proc_t* new = mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
+    proc_t* new = sched_mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
     kfree(str);
     sched_spawn(new);*/
     //sched_exec(path, argc, argv);

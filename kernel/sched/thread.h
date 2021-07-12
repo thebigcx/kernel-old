@@ -22,8 +22,10 @@ typedef struct thread
 
 } thread_t;
 
+thread_t* thread_creat(proc_t* parent, void* entry, int kernel);
 void thread_block(int state);
 void thread_unblock(thread_t* thread);
+void thread_spawn(thread_t* thread);
 void thread_sleepuntil(uint64_t timepoint);
 void thread_sleepns(uint64_t ns);
 void thread_exit();

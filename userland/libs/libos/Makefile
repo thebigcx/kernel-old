@@ -22,6 +22,7 @@ $(SO): $(OBJS)
 install:
 	cp $(AR) ../../../base/usr/lib/
 	cp $(SO) ../../../base/usr/lib/
+	cp -r include/os ../../../base/usr/include/
 
 .PHONY:
 clean:

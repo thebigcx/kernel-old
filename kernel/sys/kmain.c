@@ -153,14 +153,14 @@ void kmain()
     serial_writestr("Ok\n");
 
     serial_writestr("Creating kernel process...");
-    sched_spawn(mk_proc(kernel_proc), NULL);
-    //sched_spawn(mk_proc(test1), NULL);
-    //sched_spawn(mk_proc(test2), NULL);
+    sched_spawn(sched_mkproc(kernel_proc), NULL);
+    //sched_spawn(sched_mkproc(test1), NULL);
+    //sched_spawn(sched_mkproc(test2), NULL);
     serial_writestr("Ok\n");
 
     // TEMP
     const char* hello = "Hello, this is the first parameter!";
-    proc_t* elf = mkelfproc("/usr/bin/sh", 1, &hello, 0, NULL);
+    proc_t* elf = sched_mkelfproc("/usr/bin/sh", 1, &hello, 0, NULL);
     sched_spawn(elf, NULL);
 
     serial_writestr("Intializing scheduler...");
