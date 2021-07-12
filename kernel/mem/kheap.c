@@ -2,10 +2,12 @@
 #include <mem/paging.h>
 #include <util/types.h>
 #include <util/stdlib.h>
+#include <util/spinlock.h>
 
 static void* heap_start;
 static void* heap_end;
 static heap_block_t* last_block;
+static lock_t kheap_lock = 0;
 
 static void heap_combine_forward(heap_block_t* block)
 {
@@ -78,6 +80,8 @@ void* kmalloc(size_t n)
     if (n % 16 != 0)
         n = n - (n % 16) + 16;
 
+    acquire_lock(kheap_lock);
+
     heap_block_t* curr = (heap_block_t*)heap_start;
     while (1)
     {
@@ -87,12 +91,14 @@ void* kmalloc(size_t n)
             {
                 heap_split_block(curr, n);
                 curr->free = false;
+                release_lock(kheap_lock);
                 memset((void*)((uint64_t)curr + sizeof(heap_block_t)), 0, n);
                 return (void*)((uint64_t)curr + sizeof(heap_block_t));
             }
             if (curr->len == n)
             {
                 curr->free = false;
+                release_lock(kheap_lock);
                 memset((void*)((uint64_t)curr + sizeof(heap_block_t)), 0, n);
                 return (void*)((uint64_t)curr + sizeof(heap_block_t));
             }
@@ -102,6 +108,8 @@ void* kmalloc(size_t n)
         curr = curr->next;
     }
     
+    release_lock(kheap_lock);
+
     // Expand heap and re-run kmalloc()
     kheap_expand(n);
     return kmalloc(n);
@@ -109,10 +117,14 @@ void* kmalloc(size_t n)
 
 void kfree(void* ptr)
 {
+    acquire_lock(kheap_lock);
+
     heap_block_t* block = (heap_block_t*)ptr - 1;
     block->free = true;
     heap_combine_forward(block);
     heap_combine_back(block);
+
+    release_lock(kheap_lock);
 }
 
 void* krealloc(void* ptr, size_t size)
@@ -130,6 +142,8 @@ void* krealloc(void* ptr, size_t size)
 
 void kheap_expand(size_t n)
 {
+    acquire_lock(kheap_lock);
+
     heap_block_t* new = (uint64_t)last_block + last_block->len + sizeof(heap_block_t);
 
     new->free = true;
@@ -138,5 +152,7 @@ void kheap_expand(size_t n)
     last_block = new;
     new->next = NULL;
     new->len = n;
+    
     heap_combine_back(new);
+    release_lock(kheap_lock);
 }

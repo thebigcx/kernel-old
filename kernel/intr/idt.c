@@ -79,7 +79,8 @@ static void set_handler(idt_entry_t* entry, void* fn, uint16_t select, uint8_t t
 void ipi_halt(reg_ctx_t* regs)
 {
     cli();
-    asm ("hlt");
+    while (1);
+    //asm ("hlt");
 }
 
 idt_entry_t idt[256];

@@ -136,12 +136,12 @@ uint64_t sys_waitpid(reg_ctx_t* regs)
 
 uint64_t sys_exit(reg_ctx_t* regs)
 {
-    sched_terminate();
+    //sched_terminate();
 }
 
 uint64_t sys_sleepns(reg_ctx_t* regs)
 {
-    sched_sleepns(regs->rdi);
+    //sched_sleepns(regs->rdi);
 }
 
 uint64_t sys_seek(reg_ctx_t* regs)

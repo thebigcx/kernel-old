@@ -1,4 +1,13 @@
-#include <cpu/cpuid.h>
+#include <cpu/cpu.h>
+#include <cpu/smp.h>
+
+// CPUID retrieves the Local APIC ID
+cpu_t* cpu_getcurr()
+{
+    uint32_t ebx;
+    asm volatile ("cpuid" : "=b"(ebx) : "a"(1));
+    return &cpus[ebx >> 24];
+}
 
 cpuid_inf_t cpuid()
 {

@@ -36,7 +36,7 @@ void kernel_proc()
     // Clean terminated processes, wake up sleeping processes when they're done
     for (;;)
     {
-        list_t* procs = sched_getprocs();
+        /*list_t* procs = sched_getprocs();
 
         for (uint32_t i = 0; i < procs->cnt; i++)
         {
@@ -56,8 +56,43 @@ void kernel_proc()
                     sched_spawn(proc, NULL);
                 }
             }
-        }
+        }*/
+
+        /*for (uint32_t i = 0; i < cpu_count; i++)
+        {
+            cpu_t* cpu = &cpus[i];
+
+            for (uint32_t i = 0; i < cpu->threads->cnt; i++)
+            {
+                thread_t* thread = list_get(cpu->threads, i)->val;
+
+                if (thread->state == THREAD_STATE_KILLED)
+                {
+                    //sched_proc_destroy(proc);
+                    //list_remove(procs, i);
+                }
+
+                if (thread->state == THREAD_STATE_ASLEEP)
+                {
+                    /*if (thread->sleep_exp < pit_uptime() * 1000)
+                    {
+                        thread->state = THREAD_STATE_READY;
+                        sched_spawn(proc, NULL);
+                    }
+                }
+            }
+        }*/
     }
+}
+
+void test1()
+{
+    for (;;);
+}
+
+void test2()
+{
+    for (;;);
 }
 
 // TODO: only load drivers for devices if they are present. This should
@@ -122,7 +157,9 @@ void kmain()
     sched_init();
     
     serial_writestr("Creating kernel process...");
-    sched_spawn(mk_proc(kernel_proc), NULL);
+    //sched_spawn(mk_proc(kernel_proc), NULL);
+    sched_spawn(mk_proc(test1), NULL);
+    sched_spawn(mk_proc(test2), NULL);
     serial_writestr("Ok\n");
 
     // TEMP

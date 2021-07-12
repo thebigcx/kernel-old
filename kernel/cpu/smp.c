@@ -21,6 +21,7 @@ extern void* _ap_bootstrap_start;
 extern void* _ap_bootstrap_end;
 
 cpu_t cpus[64];
+uint32_t cpu_count = 0;
 
 void smp_entry(uint16_t id)
 {
@@ -38,11 +39,16 @@ void smp_entry(uint16_t id)
 
     lapic_enable();
 
+    cpus[id].threads = list_create();
+    cpus[id].run_queue = list_create();
+    cpus[id].currthread = NULL;
+    cpus[id].lock = 0;
+
+    cpu_count++;
     serial_printf("CPU #%d intialized.\n", id);
     ap_initialized = true;
 
-    //sti();
-    cli();
+    sti();
     for (;;);
 }
 
@@ -60,18 +66,21 @@ void smp_initcpu(uint32_t id)
     serial_printf("Sending INIT IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_INIT, 0);
 
-    pit_waitms(10);
+    pit_wait(10000000);
+    //timer_waitms(10);
 
     serial_printf("Sending STARTUP IPI to CPU #%d\n", id);
     lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
-    pit_waitms(1);
+    pit_wait(1000000);
+    //timer_waitus(200);
 
     if (!ap_initialized)
     {
         serial_printf("Resending STARTUP IPI to CPU #%d\n", id);
         // Resend with longer timeout
         lapic_send_ipi(id, ICR_NO_SHORT, ICR_STRTUP | ICR_ASSERT, SMP_TRAMPOLINE_ENTRY >> 12);
-        pit_waitms(1000);
+        pit_wait(1000000000);
+        //timer_waits(1);
 
         if (!ap_initialized)
         {
@@ -87,6 +96,11 @@ void smp_init()
     cpus[0].gdt = bsp_gdtents;
     cpus[0].gdtptr = bsp_gdtptr;
     cpus[0].lapic_id = locid;
+    cpus[0].run_queue = list_create();
+    cpus[0].threads = list_create();
+    cpus[0].currthread = NULL;
+    cpus[0].lock = 0;
+    cpu_count = 1;
 
     for (uint32_t i = 0; i < acpi_cpu_cnt; i++)
     {

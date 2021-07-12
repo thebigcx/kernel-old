@@ -1,7 +1,7 @@
 #include <drivers/tty/serial.h>
 #include <sys/io.h>
 #include <util/stdlib.h>
-#include <sched/spinlock.h>
+#include <util/spinlock.h>
 
 lock_t lock = 0;
 

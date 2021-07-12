@@ -9,22 +9,23 @@
 #include <util/stdlib.h>
 #include <mem/kheap.h>
 #include <sys/system.h>
-#include <sched/spinlock.h>
+#include <util/spinlock.h>
 #include <intr/apic.h>
 #include <time/time.h>
 #include <cpu/cpu.h>
 #include <drivers/gfx/fb/fb.h>
+#include <cpu/smp.h>
 
 void kernel_switch(reg_ctx_t* regs, uint64_t pml4);
 void user_switch(reg_ctx_t* regs, uint64_t pml4);
 
 static int scheduler_ready = 0;
 
-tree_t* proctree;
-list_t* procs;
-list_t* proc_queue;
-list_t* sleep_lst;
-proc_t* currproc = NULL;
+//tree_t* proctree;
+//list_t* procs;
+//list_t* proc_queue;
+//list_t* sleep_lst;
+//proc_t* currproc = NULL;
 
 extern void kernel_proc();
 
@@ -41,10 +42,10 @@ void idle()
 
 void sched_init()
 {
-    proc_queue = list_create();
-    sleep_lst = list_create();
-    procs = list_create();
-    proctree = tree_create();
+    //proc_queue = list_create();
+    //sleep_lst = list_create();
+    //procs = list_create();
+    //proctree = tree_create();
 }
 
 void sched_start()
@@ -61,7 +62,7 @@ void sched_start()
 
 void schedule(reg_ctx_t* r)
 {
-    if (proc_queue->head != NULL)
+    /*if (proc_queue->head != NULL)
     {
         if (currproc)
         {
@@ -81,32 +82,74 @@ void schedule(reg_ctx_t* r)
             kernel_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
         else
             user_switch(&(currproc->regs), (uint64_t)currproc->addr_space->pml4_phys);
+    }*/
+
+    cpu_t* cpu = cpu_getcurr();
+    acquire_lock(cpu->lock);
+
+    if (cpu->currthread)
+    {
+        cpu->currthread->regs = *r;
+        // If it hasn't blocked or is sleeping, add it back to the ready list
+        if (cpu->currthread->state == THREAD_STATE_RUNNING)
+        {
+            cpu->currthread->state = THREAD_STATE_READY;
+            list_push_back(cpu->run_queue, cpu->currthread);
+        }
     }
+
+    if (cpu->run_queue->head != NULL)
+    {
+        // Remove the next ready to run thread
+        cpu->currthread = list_pop_front(cpu->run_queue);
+        cpu->currthread->state = THREAD_STATE_RUNNING;
+
+        release_lock(cpu->lock);
+
+        if (cpu->currthread->regs.cs == KERNEL_CS)
+            kernel_switch(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
+        else
+            user_switch(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
+    }
+
+    release_lock(cpu->lock);
+    for (;;);
 }
 
 proc_t* mk_proc(void* entry)
 {
     proc_t* proc = kmalloc(sizeof(proc_t));
-    proc->state = PROC_STATE_READY;
+    //proc->state = PROC_STATE_READY;
     proc->addr_space = page_mk_map();
     proc->pid = creatpid();
-    proc->sleep_exp = 0;
+    //proc->sleep_exp = 0;
     proc->file_descs = list_create();
     strcpy(proc->name, "unknown");
+    proc->threads = list_create();
+
+    thread_t* thread = kmalloc(sizeof(thread_t));
+    list_push_back(proc->threads, thread);
 
     void* stack = page_kernel_alloc4k(16);
+    
     for (uint32_t i = 0; i < 16; i++)
     {
         page_kernel_map_memory(stack + i * PAGE_SIZE_4K, pmm_request(), 1);
     }
 
-    memset(&(proc->regs), 0, sizeof(reg_ctx_t));
-    proc->regs.rip = (uint64_t)entry;
-    proc->regs.rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
-    proc->regs.cs = KERNEL_CS;
-    proc->regs.ss = KERNEL_SS;
-    proc->regs.rbp = (uint64_t)stack + 0x16000;
-    proc->regs.rsp = (uint64_t)stack + 0x16000;
+    thread->state = THREAD_STATE_READY;
+    thread->parent = proc;
+    thread->sleepexp = 0;
+    
+    reg_ctx_t* regs = &thread->regs;
+
+    memset(regs, 0, sizeof(reg_ctx_t));
+    regs->rip = (uint64_t)entry;
+    regs->rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
+    regs->cs = KERNEL_CS;
+    regs->ss = KERNEL_SS;
+    regs->rbp = (uint64_t)stack + 0x10000;
+    regs->rsp = (uint64_t)stack + 0x10000;
 
     return proc;
 }
@@ -122,14 +165,28 @@ void sched_tick(reg_ctx_t* r)
 void sched_spawn(proc_t* proc, proc_t* parent)
 {
     cli();
+
+    // Find the CPU with the least threads to add the new one to
+    cpu_t* cpu = NULL;
+    for (uint32_t i = 0; i < cpu_count; i++)
+    {
+        cpu_t* nextcpu = &cpus[i];
+
+        if (!cpu || nextcpu->threads->cnt < cpu->threads->cnt)
+            cpu = nextcpu;
+    }
+
+    list_push_back(cpu->threads, proc->threads->head->val);
+    list_push_back(cpu->run_queue, proc->threads->head->val);
     //acquire_lock(ready_lst_lock);
 
-    list_push_back(proc_queue, proc);
-    list_push_back(procs, proc);
+    //list_push_back(proc_queue, proc);
+    //list_push_back(procs, proc);
+
     //if (parent)
         //proc->treenode = tree_insert(proctree, parent->treenode, proc);
     //else
-        proc->treenode = tree_insert(proctree, proctree->root, proc);
+        //proc->treenode = tree_insert(proctree, proctree->root, proc);
 
     sti();
     //release_lock(ready_lst_lock);
@@ -137,7 +194,7 @@ void sched_spawn(proc_t* proc, proc_t* parent)
 
 void sched_terminate()
 {
-    sched_block(PROC_STATE_KILLED);
+    //sched_block(PROC_STATE_KILLED);
 }
 
 void sched_proc_destroy(proc_t* proc)
@@ -154,7 +211,7 @@ void sched_proc_destroy(proc_t* proc)
     kfree(proc);
 }
 
-void sched_block(uint32_t state)
+/*void sched_block(uint32_t state)
 {
     cli();
 
@@ -174,11 +231,11 @@ void sched_unblock(proc_t* proc)
     proc->state = PROC_STATE_READY;
 
     sti();
-}
+}*/
 
 void sched_fork(proc_t* proc, reg_ctx_t* regs)
 {
-    proc_t* new = kmalloc(sizeof(proc_t));
+    /*proc_t* new = kmalloc(sizeof(proc_t));
     new->addr_space = page_clone_map(proc->addr_space);
     new->pid = creatpid();
     new->sleep_exp = 0;
@@ -200,15 +257,21 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
 
     // Child processes get a new stack
     space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
-    sched_spawn(new, proc);
+    sched_spawn(new, proc);*/
 }
 
 proc_t* sched_get_currproc()
 {
-    return currproc;
+    //return currproc;
+    cpu_t* cpu = cpu_getcurr();
+    
+    if (cpu->currthread)
+        return cpu->currthread->parent;
+
+    return NULL;
 }
 
-static void nano_sleep_until(uint64_t t)
+/*static void nano_sleep_until(uint64_t t)
 {
     cli();
 
@@ -233,7 +296,7 @@ void sched_sleepns(uint64_t ns)
 void sched_sleeps(uint64_t s)
 {
     sched_sleepns(s * 1000000000);
-}
+}*/
 
 bool check_elf_hdr(elf64_hdr_t* hdr)
 {
@@ -289,13 +352,13 @@ void* loadelf(uint8_t* elf_dat, proc_t* proc)
         }
     }
 
-    proc->regs.rip = hdr.entry;
+    return hdr.entry;
 }
 
 // Prepare the stack of a process, by pushing the necessary variables (argc, argv, env, envp)
 static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int envp, char** env)
 {
-    uint64_t stack = proc->regs.rsp;
+    /*uint64_t stack = proc->regs.rsp;
 
     uint64_t* tmp_argv = kmalloc((argc + 1) * sizeof(uint64_t)); // First arg is exec path
 
@@ -330,7 +393,7 @@ static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int
     proc->regs.rsp = stack;
     proc->regs.rsi = stack;
     
-    kfree(tmp_argv);
+    kfree(tmp_argv);*/
 }
 
 proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
@@ -342,11 +405,15 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     proc_t* proc = kmalloc(sizeof(proc_t));
 
     proc->pid = creatpid();
-    proc->sleep_exp = 0;
-    proc->state = PROC_STATE_READY;
+    //proc->sleep_exp = 0;
+    //proc->state = PROC_STATE_READY;
     proc->addr_space = page_mk_map(); // Creates a virtual address space with kernel mapped
     proc->file_descs = list_create();
+    proc->threads = list_create();
     strcpy(proc->name, "unknown");
+
+    thread_t* thread = kmalloc(sizeof(thread_t));
+    list_push_back(proc->threads, thread);
 
     // TODO: These are temporary - later will be hooked up to PTYs
     vfs_node_t* console = vfs_resolve_path("/dev/console", NULL);
@@ -360,14 +427,21 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     {
         page_map_memory(0x20000 + i, pmm_request(), 1, proc->addr_space);
     }
+
+    thread->parent = proc;
+    thread->state = THREAD_STATE_READY;
+    thread->sleepexp = 0;
+
+    reg_ctx_t* regs = &thread->regs;
     
-    memset(&(proc->regs), 0, sizeof(reg_ctx_t));
-    loadelf(buffer, proc);
-    proc->regs.rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
-    proc->regs.cs = USER_CS;
-    proc->regs.ss = USER_SS;
-    proc->regs.rbp = (uint64_t)0x24000;
-    proc->regs.rsp = (uint64_t)0x24000;
+    memset(regs, 0, sizeof(reg_ctx_t));
+    //loadelf(buffer, proc);
+    regs->rip = loadelf(buffer, proc);
+    regs->rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
+    regs->cs = USER_CS;
+    regs->ss = USER_SS;
+    regs->rbp = (uint64_t)0x24000;
+    regs->rsp = (uint64_t)0x24000;
 
     // TODO: this does not work without usermode. PLEASE FIX!!!!
     prepstack(proc, path, argc, argv, 0, NULL);
@@ -378,10 +452,10 @@ proc_t* mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
     return proc;
 }
 
-list_t* sched_getprocs()
+/*list_t* sched_getprocs()
 {
     return procs;
-}
+}*/
 
 void sched_exec(const char* path, int argc, char** argv)
 {
@@ -407,15 +481,18 @@ void sem_acquire(sem_t* sem)
     }
     else
     {
-        list_push_back(sem->waitlst, currproc);
-        sched_block(PROC_STATE_WAIT_LOCK);
+        //list_push_back(sem->waitlst, currproc);
+        //sched_block(PROC_STATE_WAIT_LOCK);
+        cpu_t* cpu = cpu_getcurr();
+        list_push_back(sem->waitlst, cpu->currthread);
+        thread_block(THREAD_STATE_WAIT_LOCK);
     }
 }
 
 void sem_release(sem_t* sem)
 {
     if (sem->waitlst->head != NULL)
-        sched_unblock(list_pop_front(sem->waitlst));
+        thread_unblock(list_pop_front(sem->waitlst));
     else
         sem->curr_cnt--;
 }
@@ -436,15 +513,18 @@ void mutex_acquire(mutex_t* mutex)
     }
     else
     {
-        list_push_back(mutex->waitlst, currproc);
-        sched_block(PROC_STATE_WAIT_LOCK);
+        //list_push_back(mutex->waitlst, currproc);
+        //sched_block(PROC_STATE_WAIT_LOCK);
+        cpu_t* cpu = cpu_getcurr();
+        list_push_back(mutex->waitlst, cpu->currthread);
+        thread_block(THREAD_STATE_WAIT_LOCK);
     }
 }
 
 void mutex_release(mutex_t* mutex)
 {
     if (mutex->waitlst->head != NULL)
-        sched_unblock(list_pop_front(mutex->waitlst));
+        thread_unblock(list_pop_front(mutex->waitlst));
     else
         mutex->proc = 0;
 }
