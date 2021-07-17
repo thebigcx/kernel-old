@@ -25,16 +25,19 @@ void runcmd(char* cmd)
     
     bin[i + 9] = 0;
 
-    *cmd++;
-
-    i = 0;
-    // First argument
-    while (*cmd != ' ' && *cmd != 0)
+    if (*cmd != 0)
     {
-        argv[i] = *cmd++;
-        i++;
+        *cmd++;
+
+        i = 0;
+        // First argument
+        while (*cmd != ' ' && *cmd != 0)
+        {
+            argv[i] = *cmd++;
+            i++;
+        }
+        argv[i] = 0;
     }
-    argv[i] = 0;
 
     stat_t binstat;
     if (file_stat(bin, &binstat) != 0)
@@ -43,19 +46,12 @@ void runcmd(char* cmd)
         return;
     }
 
-    /*int pid = fork();
-    if (pid == 0)
-    {
-        exec(bin, 0, NULL);
-    }
-    else
-    {
-        waitpid(pid);
-    }*/
-    //char* hello = "/text/test.txt";
     char* argv_ptr = &argv;
     exec(bin, 1, &argv_ptr);
-    //fork();
+
+    int spin = 0;
+    while (spin++ < 1000000000);
+    //for(;;);
 }
 
 void getcmd()
@@ -76,7 +72,7 @@ void getcmd()
                 {
                     printf("\n");
                     return;
-                }
+                } 
 
                 cmd[cmdlen] = 0; // Null terminate
                 runcmd(cmd);

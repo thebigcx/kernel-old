@@ -98,5 +98,5 @@ void thread_exit()
 
 void thread_kill(thread_t* thread)
 {
-    
+    thread->state = THREAD_STATE_KILLED;
 }

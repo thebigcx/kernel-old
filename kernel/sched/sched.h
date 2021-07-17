@@ -33,8 +33,9 @@ void schedule(reg_ctx_t* r);
 
 void sched_tick(reg_ctx_t* r);
 void sched_spawn(proc_t* proc, proc_t* parent);
-void sched_terminate();
+void sched_kill(proc_t* proc);
 void sched_proc_destroy(proc_t* proc);
+void sched_yield();
 
 void sched_fork(proc_t* proc, reg_ctx_t* regs);
 void sched_exec(const char* path, int argc, char** argv);

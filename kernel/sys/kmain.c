@@ -55,10 +55,12 @@ void kernel_proc()
                 }
             }
         }*/
+        continue;
 
-        /*for (uint32_t i = 0; i < cpu_count; i++)
+        for (uint32_t i = 0; i < cpu_count; i++)
         {
             cpu_t* cpu = &cpus[i];
+            acquire_lock(cpu->lock);
 
             for (uint32_t i = 0; i < cpu->threads->cnt; i++)
             {
@@ -66,20 +68,23 @@ void kernel_proc()
 
                 if (thread->state == THREAD_STATE_KILLED)
                 {
+                    //list_remove(cpu->threads, i);
                     //sched_proc_destroy(proc);
                     //list_remove(procs, i);
                 }
 
-                if (thread->state == THREAD_STATE_ASLEEP)
+                /*if (thread->state == THREAD_STATE_ASLEEP)
                 {
-                    /*if (thread->sleep_exp < pit_uptime() * 1000)
+                    if (thread->sleep_exp < pit_uptime() * 1000)
                     {
                         thread->state = THREAD_STATE_READY;
                         sched_spawn(proc, NULL);
                     }
-                }
+                }*/
             }
-        }*/
+
+            release_lock(cpu->lock);
+        }
     }
 }
 

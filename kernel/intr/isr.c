@@ -33,7 +33,7 @@ void generic_isr(const char* err, isr_frame_t* frame)
         proc_t* proc = sched_get_currproc();
         serial_printf("Process (PID %d) crashed: %s\n", proc->pid, err);
         serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_terminate();
+        sched_kill(proc);
     }
     else
     {
@@ -54,7 +54,7 @@ void pagefault_handler(isr_frame_t* frame)
         proc_t* proc = sched_get_currproc();
         serial_printf("Process (PID %d) crashed: Page Fault\n", proc->pid);
         serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_terminate();
+        sched_kill(proc);
     }
     else
     {
@@ -92,7 +92,7 @@ void general_protection_fault_handler(isr_frame_t* frame)
         proc_t* proc = sched_get_currproc();
         serial_printf("Process (PID %d) crashed: General Protection Fault\n", proc->pid);
         serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_terminate();
+        sched_kill(proc);
     }
     else
     {

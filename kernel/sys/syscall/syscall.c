@@ -7,22 +7,28 @@
 #include <drivers/tty/pty/pty.h>
 #include <sched/thread.h>
 
-#define SYSCALL_CNT 256
+// Some syscalls need the registers
+static reg_ctx_t* syscall_regs = NULL;
 
 static fs_fd_t* procgetfd(int fdnum)
 {
     proc_t* proc = sched_get_currproc();
+    if (fdnum < 0 || fdnum >= proc->file_descs->cnt) // Invalid FD
+        return NULL;
+
     fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, fdnum)->val;
     return fd;
 }
 
-uint64_t sys_open(reg_ctx_t* regs)
+static uint64_t sys_open(const char* path, uint32_t flags, uint32_t mode)
 {
-    char* path = regs->rdi;
-
     proc_t* proc = sched_get_currproc();
     vfs_node_t* node = vfs_resolve_path(path, proc->working_dir);
-    fs_fd_t* fd = vfs_open(node, regs->rsi, regs->rdx);
+    if (node == NULL)
+    {
+        return -1;
+    }
+    fs_fd_t* fd = vfs_open(node, flags, mode);
 
     list_push_back(proc->file_descs, fd);
 
@@ -30,47 +36,41 @@ uint64_t sys_open(reg_ctx_t* regs)
 }
 
 // TODO: file descriptor position/offset
-uint64_t sys_read(reg_ctx_t* regs)
+static uint64_t sys_read(int fdno, void* ptr, size_t len)
 {
-    fs_fd_t* fd = procgetfd(regs->rdi);
-    uint8_t* buf = regs->rsi;
-    size_t size = regs->rdx;
+    fs_fd_t* fd = procgetfd(fdno);
+    if (!fd) return -1;
 
-    return vfs_read(fd->node, buf, 0, size);
+    return vfs_read(fd->node, ptr, 0, len);
 }
 
-uint64_t sys_write(reg_ctx_t* regs)
+static uint64_t sys_write(int fdno, const void* ptr, size_t len)
 {
-    fs_fd_t* fd = procgetfd(regs->rdi);
-    uint8_t* buf = regs->rsi;
-    size_t size = regs->rdx;
+    fs_fd_t* fd = procgetfd(fdno);
+    if (!fd) return -1;
 
-    return vfs_write(fd->node, buf, 0, size);
+    return vfs_write(fd->node, ptr, 0, len);
 }
 
-uint64_t sys_close(reg_ctx_t* regs)
+static uint64_t sys_close(int fdno)
 {
-    proc_t* proc = sched_get_currproc();
-    fs_fd_t* fd = (fs_fd_t*)list_get(proc->file_descs, regs->rdi)->val;
+    fs_fd_t* fd = procgetfd(fdno);
+    if (!fd) return -1;
+
     vfs_close(fd);
     kfree(fd);
     return 0;
 }
 
-uint64_t sys_mmap(reg_ctx_t* regs)
+static uint64_t sys_mmap(void* addr, size_t len, int prot, int flags, int fdno, size_t off)
 {
-    void* addr = regs->rdi;
-    size_t len = regs->rsi;
-    int prot = regs->rdx;
-    int flags = regs->r10;
-    int fdno = regs->r8;
-    size_t off = regs->r9;
-
     proc_t* proc = sched_get_currproc();
 
     if (fdno)
     {
         fs_fd_t* fd = procgetfd(fdno);
+        if (!fd) return -1;
+
         vfs_node_t* node = fd->node;
 
         if (node->mmap)
@@ -86,71 +86,66 @@ uint64_t sys_mmap(reg_ctx_t* regs)
 
         return mem;
     }
+    return NULL;
 }
 
-uint64_t sys_ioctl(reg_ctx_t* regs)
+static uint64_t sys_ioctl(int fdno, uint64_t cmd, void* argp)
 {
-    fs_fd_t* fd = procgetfd(regs->rdi);
-    uint64_t cmd = regs->rsi;
-    void* argp = regs->rdx;
+    fs_fd_t* fd = procgetfd(fdno);
+    if (!fd) return -1;
 
     return vfs_ioctl(fd->node, cmd, argp);
 }
 
-uint64_t sys_stat(reg_ctx_t* regs)
+static uint64_t sys_stat(const char* path, vfs_stat_t* status)
 {
-    return vfs_stat(regs->rdi, regs->rsi);
+    return vfs_stat(path, status);
 }
 
-uint64_t sys_fork(reg_ctx_t* regs)
+static uint64_t sys_fork()
 {
-    sched_fork(sched_get_currproc(), regs);
+    sched_fork(sched_get_currproc(), syscall_regs);
+    return 0;
 }
 
-uint64_t sys_exec(reg_ctx_t* regs)
+static uint64_t sys_exec(const char* path, int argc, char** argv)
 {
-    char* path = kmalloc(strlen(regs->rdi) + 1);
-    strcpy(path, regs->rdi);
-    int argc = regs->rsi;
-    char** argv = kmalloc(argc * sizeof(char*));
+    char* npath = kmalloc(strlen(path) + 1);
+    strcpy(npath, path);
+    char** nargv = kmalloc(argc * sizeof(char*));
     for (int i = 0; i < argc; i++)
     {
-        char* arg = ((char**)regs->rdx)[i];
-        argv[i] = kmalloc(strlen(arg) + 1);
-        strcpy(argv[i], arg);
+        nargv[i] = kmalloc(strlen(argv[i]) + 1);
+        strcpy(nargv[i], argv[i]);
     }
-    /*char* str = kmalloc(strlen(regs->rdi) + 1); // sched_mkelfproc switches page maps, so we must copy the user args
-    strcpy(str, regs->rdi);
-    proc_t* new = sched_mkelfproc(str, regs->rsi, regs->rdx, 0, NULL); // TODO: args
-    kfree(str);
-    sched_spawn(new);*/
-    //sched_exec(path, argc, argv);
-    sched_exec(path, argc, argv);
+    
+    sched_exec(npath, argc, nargv);
     return 0; // Should not return
 }
 
-uint64_t sys_waitpid(reg_ctx_t* regs)
+static uint64_t sys_waitpid()
 {
     while (1); // TODO
+    return 0;
 }
 
-uint64_t sys_exit(reg_ctx_t* regs)
+static uint64_t sys_exit()
 {
-    sched_terminate();
+    sched_kill(sched_get_currproc());
+    return 0;
 }
 
-uint64_t sys_sleepns(reg_ctx_t* regs)
+static uint64_t sys_sleepns(uint64_t ns)
 {
-    //sched_sleepns(regs->rdi);
-    thread_sleepns(regs->rdi);
+    thread_sleepns(ns);
+    return 0;
 }
 
-uint64_t sys_seek(reg_ctx_t* regs)
+static uint64_t sys_seek(int fdno, int64_t off, int whence)
 {
-    fs_fd_t* fd = procgetfd(regs->rdi);
-    int64_t off = regs->rsi;
+    fs_fd_t* fd = procgetfd(fdno);
     
-    switch (regs->rdx)
+    switch (whence)
     {
         case SEEK_SET:
             fd->pos = off;
@@ -166,7 +161,7 @@ uint64_t sys_seek(reg_ctx_t* regs)
 }
 
 // TODO: delete resources properly and add stderr
-uint64_t sys_openpty(reg_ctx_t* regs)
+static uint64_t sys_openpty(int* master)
 {
     pty_t* pty = pty_grant();
 
@@ -176,21 +171,22 @@ uint64_t sys_openpty(reg_ctx_t* regs)
 
     //list_push_back(proc->file_descs, pty->master);
 
-    *((int*)regs->rdi) = proc->file_descs->cnt - 1;
+    *master = proc->file_descs->cnt - 1;
     return 0;
 }
 
-uint64_t sys_threadcreat(reg_ctx_t* regs)
+static uint64_t sys_threadcreat()
 {
-
+    return 0;
 }
 
-uint64_t sys_threadexit(reg_ctx_t* regs)
+static uint64_t sys_threadexit()
 {
     thread_exit();
+    return 0;
 }
 
-uint64_t sys_threadkill(reg_ctx_t* regs)
+static uint64_t sys_threadkill(int tid)
 {
     proc_t* proc = sched_get_currproc();
     thread_t* found = NULL;
@@ -198,7 +194,7 @@ uint64_t sys_threadkill(reg_ctx_t* regs)
     list_foreach(proc->threads, node)
     {
         thread_t* thread = node->val;
-        if (thread->tid == regs->rdi)
+        if (thread->tid == tid)
         {
             found = thread;
             break;
@@ -209,36 +205,38 @@ uint64_t sys_threadkill(reg_ctx_t* regs)
     {
         thread_kill(found);
     }
+    return 0;
 }
 
-uint64_t sys_threadjoin(reg_ctx_t* regs)
+static uint64_t sys_threadjoin()
 {
-
+    return 0;
 }
 
-syscall_t syscalls[SYSCALL_CNT] =
+static uint64_t (*syscalls[])() =
 {
-    sys_read,
-    sys_write,
-    sys_open,
-    sys_close,
-    sys_mmap,
-    sys_ioctl,
-    sys_stat,
-    sys_fork,
-    sys_exec,
-    sys_waitpid,
-    sys_exit,
-    sys_sleepns,
-    sys_seek,
-    sys_openpty,
-    sys_threadcreat,
-    sys_threadexit,
-    sys_threadkill,
-    sys_threadjoin
+    &sys_read,
+    &sys_write,
+    &sys_open,
+    &sys_close,
+    &sys_mmap,
+    &sys_ioctl,
+    &sys_stat,
+    &sys_fork,
+    &sys_exec,
+    &sys_waitpid,
+    &sys_exit,
+    &sys_sleepns,
+    &sys_seek,
+    &sys_openpty,
+    &sys_threadcreat,
+    &sys_threadexit,
+    &sys_threadkill,
+    &sys_threadjoin
 };
 
 void syscall_handler(reg_ctx_t* regs)
 {
-    regs->rax = syscalls[regs->rax](regs);
+    syscall_regs = regs;
+    regs->rax = syscalls[regs->rax](regs->rdi, regs->rsi, regs->rdx, regs->rcx, regs->rbx);
 }

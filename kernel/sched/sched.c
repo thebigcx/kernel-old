@@ -129,14 +129,30 @@ void sched_tick(reg_ctx_t* r)
     schedule(r);
 }
 
+void sched_yield()
+{
+    asm volatile ("int $0xfd"); // Schedule IPI to self
+}
+
 void sched_spawn(proc_t* proc, proc_t* parent)
 {
     thread_spawn(proc->threads->head->val);
 }
 
-void sched_terminate()
+// TODO: proc_t struct cleanup
+void sched_kill(proc_t* proc)
 {
-    //sched_block(PROC_STATE_KILLED);
+    // Kill every thread in the process
+    list_foreach(proc->threads, node)
+    {
+        thread_t* thread = node->val;
+        thread_kill(thread);
+    }
+    if (proc == sched_get_currproc())
+    {
+        sched_yield();
+        //thread_block(THREAD_STATE_KILLED);
+    }
 }
 
 void sched_proc_destroy(proc_t* proc)
@@ -155,6 +171,40 @@ void sched_proc_destroy(proc_t* proc)
 
 void sched_fork(proc_t* proc, reg_ctx_t* regs)
 {
+    proc_t* nproc = kmalloc(sizeof(proc_t));
+    nproc->addr_space = page_clone_map(proc->addr_space);
+    nproc->pid        = creatpid();
+    nproc->file_descs = list_create();
+    nproc->threads    = list_create();
+    nproc->children   = list_create();
+    nproc->nexttid    = 1;
+    nproc->parent     = NULL;
+
+    nproc->name = strdup("unknown");
+
+    thread_t* thread = kmalloc(sizeof(thread_t));
+    list_push_back(nproc->threads, thread);
+
+    list_foreach(proc->file_descs, node)
+    {
+        fs_fd_t* fd = node->val;
+        list_push_back(nproc->file_descs, vfs_open(fd->node, fd->flags, fd->mode));
+    }
+
+    space_alloc_region_at(0x20000, 0x4000, nproc->addr_space);
+    for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
+    {
+        page_map_memory(0x20000 + i, pmm_request(), 1, nproc->addr_space);
+    }
+
+    thread->parent = nproc;
+    thread->state = THREAD_STATE_READY;
+    thread->sleepexp = 0;
+    thread->tid = 0; // Primary thread
+
+    memcpy(&thread->regs, &((thread_t*)proc->threads->head->val)->regs, sizeof(reg_ctx_t));
+    
+    
     /*proc_t* new = kmalloc(sizeof(proc_t));
     new->addr_space = page_clone_map(proc->addr_space);
     new->pid = creatpid();
@@ -320,6 +370,16 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
     list_push_back(proc->file_descs, stdin);
     list_push_back(proc->file_descs, stdout);
 
+    // TODO: it should be this
+    /*uint64_t stacktop = KERNEL_VIRTUAL_ADDR;
+    uint64_t stackbot = KERNEL_VIRTUAL_ADDR - 0x4000;
+
+    space_alloc_region_at(stackbot, 0x4000, proc->addr_space);
+    for (uint64_t i = stackbot; i < stacktop; i += PAGE_SIZE_4K)
+    {
+        page_map_memory(i, pmm_request(), 1, proc->addr_space);
+    }*/
+
     space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
     for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
     {
@@ -348,11 +408,13 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
     return proc;
 }
 
+// Cheap way of implementing exec() - spawning a new process and killing the old one
 void sched_exec(const char* path, int argc, char** argv)
 {
     proc_t* proc = sched_mkelfproc(path, argc, argv, 0, NULL);
     sched_spawn(proc, NULL);
-    sched_terminate();
+    //sched_kill(sched_get_currproc());
+    //sched_yield();
 }
 
 sem_t* sem_create(uint32_t max_cnt)

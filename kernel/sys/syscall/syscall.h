@@ -23,6 +23,4 @@
 #define SEEK_CUR        2
 #define SEEK_END        3
 
-typedef uint64_t(*syscall_t)(reg_ctx_t*);
-
 void syscall_handler(reg_ctx_t* regs);
