@@ -10,6 +10,16 @@ void runcmd(char* cmd)
 {
     printf("\n");
 
+    if (strcmp(cmd, "help") == 0)
+    {
+        printf(
+            "Commands:\n"
+            "\tls\n"
+            "\tcat\n"
+        );
+        return;
+    }
+
     char bin[50];
     strncpy(bin, "/usr/bin/", 9);
     char argv[50];
@@ -17,7 +27,7 @@ void runcmd(char* cmd)
 
     // Extract the command name
     int i = 0;
-    while (*cmd != ' ' && *cmd != 0)
+    while (*cmd != ' ' && *cmd != 0 && *cmd != '\t')
     {
         bin[i + 9] = *cmd++;
         i++;
@@ -47,11 +57,7 @@ void runcmd(char* cmd)
     }
 
     char* argv_ptr = &argv;
-    exec(bin, 1, &argv_ptr);
-
-    int spin = 0;
-    while (spin++ < 1000000000);
-    //for(;;);
+    proc_exec(bin, 1, &argv_ptr);
 }
 
 void getcmd()
@@ -78,6 +84,11 @@ void getcmd()
                 runcmd(cmd);
                 return;
             }
+            else if (c == '\b')
+            {
+                putchar(c);
+                cmdlen--;
+            }
             else // Key press
             {
                 cmd[cmdlen++] = c;
@@ -87,7 +98,7 @@ void getcmd()
     }
 }
 
-void _start(int argc, char** argv)
+int main(int argc, char** argv)
 {
     printf("Minimal bash-like shell - type 'help' for a list of commands\n\n");
     
@@ -96,6 +107,5 @@ void _start(int argc, char** argv)
         getcmd();
     }
 
-    exit(0);
-    for (;;);
+    return 0;
 }

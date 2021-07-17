@@ -17,6 +17,14 @@ void console_putchar(char c, uint8_t r, uint8_t g, uint8_t b)
         curs_y++;
         curs_x = 0;
     }
+    else if (c == '\t')
+    {
+        curs_x += 4;
+    }
+    else if (c == '\b')
+    {
+        curs_x--;
+    }
     else
     {
         video_putchar(c, curs_x * 8, curs_y * 16, r, g, b);

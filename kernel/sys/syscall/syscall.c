@@ -129,9 +129,12 @@ static uint64_t sys_waitpid()
     return 0;
 }
 
+// TODO: broken
 static uint64_t sys_exit()
 {
-    sched_kill(sched_get_currproc());
+    //sched_kill(sched_get_currproc());
+    //serial_printf("S");
+    while (1);
     return 0;
 }
 

@@ -5,7 +5,7 @@ TARGET := sh
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	ld -o $(TARGET) $(OBJS) $(LDFLAGS)
+	ld -o $(TARGET) $(OBJS) ../../libs/libc/crt0.o $(LDFLAGS)
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<

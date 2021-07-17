@@ -151,7 +151,6 @@ void sched_kill(proc_t* proc)
     if (proc == sched_get_currproc())
     {
         sched_yield();
-        //thread_block(THREAD_STATE_KILLED);
     }
 }
 
@@ -413,7 +412,7 @@ void sched_exec(const char* path, int argc, char** argv)
 {
     proc_t* proc = sched_mkelfproc(path, argc, argv, 0, NULL);
     sched_spawn(proc, NULL);
-    //sched_kill(sched_get_currproc());
+    sched_kill(sched_get_currproc());
     //sched_yield();
 }
 
