@@ -28,5 +28,5 @@ size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 
 int fseek(FILE* stream, long int offset, int whence)
 {
-    return seek(stream->fd, offset, whence);
+    return lseek(stream->fd, offset, whence);
 }

@@ -20,3 +20,13 @@ void proc_exit(int code)
 {
     syscall(SYS_EXIT, code);
 }
+
+void sigsend(int pid, int signal)
+{
+    syscall(SYS_SIGSEND, pid, signal);
+}
+
+int proc_getpid()
+{
+    return syscall(SYS_GETPID);
+}

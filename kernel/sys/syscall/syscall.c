@@ -39,7 +39,7 @@ static uint64_t sys_open(const char* path, uint32_t flags, uint32_t mode)
 static uint64_t sys_read(int fdno, void* ptr, size_t len)
 {
     fs_fd_t* fd = procgetfd(fdno);
-    if (!fd) return -1;
+    if (!fd) return -1;   
 
     return vfs_read(fd->node, ptr, 0, len);
 }
@@ -108,7 +108,7 @@ static uint64_t sys_fork()
     return 0;
 }
 
-static uint64_t sys_exec(const char* path, int argc, char** argv)
+uint64_t sys_exec(const char* path, int argc, char** argv)
 {
     char* npath = kmalloc(strlen(path) + 1);
     strcpy(npath, path);
@@ -129,12 +129,14 @@ static uint64_t sys_waitpid()
     return 0;
 }
 
-// TODO: broken
-static uint64_t sys_exit()
+static uint64_t sys_exit(int status)
 {
-    //sched_kill(sched_get_currproc());
-    //serial_printf("S");
-    while (1);
+    if (status != 0)
+    {
+        serial_printf("info: proc pid=%d exited with non-zero exit code %d\n", sched_get_currproc()->pid, status);
+    }
+
+    sched_kill(sched_get_currproc());
     return 0;
 }
 
@@ -216,30 +218,44 @@ static uint64_t sys_threadjoin()
     return 0;
 }
 
+static uint64_t sys_sigsend(int pid, int signal)
+{
+    proc_t* proc = sched_procfrompid(pid);
+    signal_send(proc, signal);
+    return 0;
+}
+
+static uint64_t sys_getpid()
+{
+    return sched_get_currproc()->pid;
+}
+
 static uint64_t (*syscalls[])() =
 {
-    &sys_read,
-    &sys_write,
-    &sys_open,
-    &sys_close,
-    &sys_mmap,
-    &sys_ioctl,
-    &sys_stat,
-    &sys_fork,
-    &sys_exec,
-    &sys_waitpid,
-    &sys_exit,
-    &sys_sleepns,
-    &sys_seek,
-    &sys_openpty,
-    &sys_threadcreat,
-    &sys_threadexit,
-    &sys_threadkill,
-    &sys_threadjoin
+    sys_read,
+    sys_write,
+    sys_open,
+    sys_close,
+    sys_mmap,
+    sys_ioctl,
+    sys_stat,
+    sys_fork,
+    sys_exec,
+    sys_waitpid,
+    sys_exit,
+    sys_sleepns,
+    sys_seek,
+    sys_openpty,
+    sys_threadcreat,
+    sys_threadexit,
+    sys_threadkill,
+    sys_threadjoin,
+    sys_sigsend,
+    sys_getpid
 };
 
 void syscall_handler(reg_ctx_t* regs)
 {
-    syscall_regs = regs;
-    regs->rax = syscalls[regs->rax](regs->rdi, regs->rsi, regs->rdx, regs->rcx, regs->rbx);
+    uint64_t (*syscall)() = syscalls[regs->rax];
+    regs->rax = syscall(regs->rdi, regs->rsi, regs->rdx, regs->rcx, regs->rbx);
 }

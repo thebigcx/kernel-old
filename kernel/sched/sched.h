@@ -12,6 +12,8 @@
 #define USER_CS 0x1b
 #define USER_SS 0x23
 
+#define SIGCNT  3
+
 typedef struct proc
 {
     uint64_t pid; // Process ID
@@ -26,6 +28,9 @@ typedef struct proc
 
     list_t* children; // Child processes (created with fork())
     struct proc* parent; // Parent
+
+    list_t* sigstack; // Signal stack
+    uint64_t signals[SIGCNT];
 
 } proc_t;
 
@@ -43,7 +48,9 @@ void sched_exec(const char* path, int argc, char** argv);
 proc_t* sched_get_currproc();
 
 proc_t* sched_mkproc(void* entry);
-proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char** env);
+proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int envp, char** env);
+
+proc_t* sched_procfrompid(int pid);
 
 typedef struct sem
 {
@@ -69,3 +76,17 @@ typedef struct mutex
 mutex_t* mutex_create();
 void mutex_acquire(mutex_t* mutex);
 void mutex_release(mutex_t* mutex);
+
+#define SIGINT  0
+#define SIGSEG  1
+#define SIGABRT 2
+
+typedef struct signal
+{
+    int signo;          // Signal number
+    uint64_t handler;   // Pointer to handler
+
+} signal_t;
+
+void signal_handle(proc_t* proc, signal_t* sig);
+void signal_send(proc_t* proc, int signal);

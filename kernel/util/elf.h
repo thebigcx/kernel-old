@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-
+#include <sched/sched.h>
 
 #define ELF_NIDENT 16
 
@@ -140,3 +140,11 @@ typedef struct elf64_phdr
 #define PT_PHDR         1
 #define PT_TLS          1
 #define PT_NUM          1
+
+typedef struct elf_inf
+{
+    uint64_t entry;
+
+} elf_inf_t;
+
+int elf_load(void* data, proc_t* proc, elf_inf_t* info);

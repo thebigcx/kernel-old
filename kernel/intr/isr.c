@@ -52,9 +52,10 @@ void pagefault_handler(isr_frame_t* frame)
     if (frame->regs.ss & 0x3)
     {
         proc_t* proc = sched_get_currproc();
-        serial_printf("Process (PID %d) crashed: Page Fault\n", proc->pid);
+        signal_send(proc, SIGSEG);
+        /*serial_printf("Process (PID %d) crashed: Page Fault\n", proc->pid);
         serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_kill(proc);
+        sched_kill(proc);*/
     }
     else
     {
@@ -81,6 +82,10 @@ void pagefault_handler(isr_frame_t* frame)
         else
             serial_writestr("Non-present page\n");
 
+        uint64_t cr2;
+        asm volatile ("mov %%cr2, %0" : "=r"(cr2));
+        serial_printf("Faulting address: %x\n", cr2);
+
         asm volatile ("1: jmp 1b");
     }
 }
@@ -90,9 +95,10 @@ void general_protection_fault_handler(isr_frame_t* frame)
     if (frame->regs.ss & 0x3)
     {
         proc_t* proc = sched_get_currproc();
-        serial_printf("Process (PID %d) crashed: General Protection Fault\n", proc->pid);
+        /*serial_printf("Process (PID %d) crashed: General Protection Fault\n", proc->pid);
         serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_kill(proc);
+        sched_kill(proc);*/
+        signal_send(proc, SIGSEG);
     }
     else
     {

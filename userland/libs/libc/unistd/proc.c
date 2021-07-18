@@ -10,3 +10,8 @@ int execve(const char* pathname, char* const argv[], char* const envp[])
 {
     
 }
+
+pid_t getpid()
+{
+    return (pid_t)proc_getpid();
+}

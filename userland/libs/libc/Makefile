@@ -4,12 +4,13 @@ SOURCES := internal/init.c	\
 		   stdio/file.c		\
 		   stdio/printf.c	\
 		   stdio/stdio.c	\
-		   stdlib/abs.c		\
+		   stdlib/stdlib.c  \
 		   stdlib/convert.c	\
 		   stdlib/rand.c	\
 		   string/string.c	\
 		   unistd/file.c	\
 		   unistd/proc.c	\
+		   signal.c
 
 OBJS := $(patsubst %.c, %.o, $(SOURCES))
 AR := libc.a

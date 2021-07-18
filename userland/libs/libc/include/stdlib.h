@@ -15,3 +15,5 @@ int abs(int n);
 
 int rand();
 void srand(unsigned int seed);
+
+void abort();

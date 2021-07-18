@@ -23,6 +23,9 @@ static int scheduler_ready = 0;
 
 extern void kernel_proc();
 
+static list_t* procs;
+static lock_t proclist_lock = 0;
+
 int creatpid()
 {
     static int pid = 0;
@@ -40,6 +43,7 @@ void sched_start()
 
     //idle_proc = sched_mkproc(idle);
 
+    procs = list_create();
     scheduler_ready = 1;
     
     sti();
@@ -68,6 +72,16 @@ void schedule(reg_ctx_t* r)
         cpu->currthread = list_pop_front(cpu->run_queue);
         cpu->currthread->state = THREAD_STATE_RUNNING;
 
+        if (cpu->currthread->tid == 0)
+        {
+            proc_t* curr = sched_get_currproc();
+            if (curr->sigstack->cnt > 0)
+            {
+                signal_t* sig = list_pop_front(curr->sigstack);
+                signal_handle(curr, sig);
+            }
+        }
+
         release_lock(cpu->lock);
 
         if (cpu->currthread->regs.cs == KERNEL_CS)
@@ -90,6 +104,7 @@ proc_t* sched_mkproc(void* entry)
     proc->children   = list_create();
     proc->nexttid    = 1;
     proc->parent     = NULL;
+    proc->sigstack   = list_create();
 
     strcpy(proc->name, "unknown");
 
@@ -136,6 +151,10 @@ void sched_yield()
 
 void sched_spawn(proc_t* proc, proc_t* parent)
 {
+    acquire_lock(proclist_lock);
+    list_push_back(procs, proc);
+    release_lock(proclist_lock);
+
     thread_spawn(proc->threads->head->val);
 }
 
@@ -178,6 +197,7 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
     nproc->children   = list_create();
     nproc->nexttid    = 1;
     nproc->parent     = NULL;
+    nproc->sigstack   = list_create();
 
     nproc->name = strdup("unknown");
 
@@ -256,45 +276,11 @@ bool check_elf_hdr(elf64_hdr_t* hdr)
     return true;
 }
 
-void* loadelf(uint8_t* elf_dat, proc_t* proc)
+static uint64_t loadelf(void* data, proc_t* proc)
 {
-    elf64_hdr_t hdr;
-
-    memcpy(&hdr, elf_dat, sizeof(elf64_hdr_t));
-
-    if (!check_elf_hdr(&hdr))
-        return NULL;
-
-    for (uint16_t i = 0; i < hdr.ph_num; i++)
-    {
-        elf64_phdr_t phdr;
-        memcpy(&phdr, elf_dat + hdr.ph_off + hdr.ph_ent_size * i, sizeof(elf64_phdr_t));
-
-        if (phdr.type == PT_LOAD)
-        {
-            uint64_t begin = phdr.vaddr;
-            uint64_t size = phdr.mem_sz;
-
-            if (size % PAGE_SIZE_4K != 0)
-                size = size - (size % PAGE_SIZE_4K) + PAGE_SIZE_4K;
-
-            space_alloc_region_at(begin, size / PAGE_SIZE_4K, proc->addr_space);
-
-            void* tmp = page_kernel_alloc4k(1);
-
-            for (uint32_t i = 0; i < size; i += PAGE_SIZE_4K)
-            {
-                void* phys = pmm_request();
-                page_kernel_map_memory(tmp, phys, 1);
-                memcpy(tmp, elf_dat + phdr.offset + i, PAGE_SIZE_4K);
-                page_map_memory(phdr.vaddr + i, phys, 1, proc->addr_space);
-            }
-
-            page_kernel_free4k(tmp, 1);
-        }
-    }
-
-    return hdr.entry;
+    elf_inf_t inf;
+    elf_load(data, proc, &inf);
+    return inf.entry;
 }
 
 // Prepare the stack of a process, by pushing the necessary variables (argc, argv, env, envp)
@@ -340,12 +326,8 @@ static void prepstack(proc_t* proc, const char* file, int argc, char** argv, int
     kfree(tmp_argv);
 }
 
-proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char** env)
+proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int envp, char** env)
 {
-    vfs_node_t* node = vfs_resolve_path(path, NULL);
-    uint8_t* buffer = kmalloc(node->size);
-    vfs_read(node, buffer, 0, node->size);
-
     proc_t* proc     = kmalloc(sizeof(proc_t));
     proc->pid        = creatpid();
     proc->addr_space = page_mk_map(); // Creates a virtual address space with kernel mapped
@@ -354,6 +336,7 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
     proc->children   = list_create();
     proc->nexttid    = 1;
     proc->parent     = NULL;
+    proc->sigstack   = list_create();
 
     strcpy(proc->name, "unknown");
 
@@ -393,7 +376,7 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
     reg_ctx_t* regs = &thread->regs;
     
     memset(regs, 0, sizeof(reg_ctx_t));
-    regs->rip = loadelf(buffer, proc);
+    regs->rip = loadelf(data, proc);
     regs->rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
     regs->cs = USER_CS;
     regs->ss = USER_SS;
@@ -401,8 +384,6 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
     regs->rsp = (uint64_t)0x24000;
 
     prepstack(proc, path, argc, argv, 0, NULL);
-    
-    kfree(buffer);
 
     return proc;
 }
@@ -410,10 +391,37 @@ proc_t* sched_mkelfproc(const char* path, int argc, char** argv, int envp, char*
 // Cheap way of implementing exec() - spawning a new process and killing the old one
 void sched_exec(const char* path, int argc, char** argv)
 {
-    proc_t* proc = sched_mkelfproc(path, argc, argv, 0, NULL);
+    vfs_node_t* node = vfs_resolve_path(path, NULL);
+    uint8_t* buffer = kmalloc(node->size);
+    vfs_read(node, buffer, 0, node->size);
+
+    proc_t* proc = sched_mkelfproc(path, buffer, argc, argv, 0, NULL);
+
+    kfree(buffer);
+
     sched_spawn(proc, NULL);
-    sched_kill(sched_get_currproc());
+    //sched_kill(sched_get_currproc());
     //sched_yield();
+}
+
+proc_t* sched_procfrompid(int pid)
+{
+    // TEMP
+    return sched_get_currproc();
+    acquire_lock(proclist_lock);
+
+    list_foreach(procs, node)
+    {
+        proc_t* proc = node->val;
+        if (proc->pid == pid)
+        {
+            release_lock(proclist_lock);
+            return proc;
+        }
+    }
+
+    release_lock(proclist_lock);
+    return NULL;
 }
 
 sem_t* sem_create(uint32_t max_cnt)
@@ -479,4 +487,51 @@ void mutex_release(mutex_t* mutex)
         thread_unblock(list_pop_front(mutex->waitlst));
     else
         mutex->proc = 0;
+}
+
+#define SIGACT_TERM 0
+#define SIGACT_IGN  1
+#define SIGACT_STOP 2
+
+// Default signal actions
+int sigacts[SIGCNT] =
+{
+    [SIGINT] = SIGACT_TERM,
+    [SIGSEG] = SIGACT_STOP,
+    [SIGABRT] = SIGACT_STOP
+};
+
+const char* sigstrs[SIGCNT] =
+{
+    [SIGINT] = "SIGINT",
+    [SIGSEG] = "SIGSEG",
+    [SIGABRT] = "SIGABRT"
+};
+
+void signal_handle(proc_t* proc, signal_t* sig)
+{
+    if (proc->signals[sig->signo])
+    {
+        thread_t* thread = proc->threads->head;
+        thread->regs.rip = sig->handler;
+    }
+    else
+    {
+        switch (sigacts[sig->signo])
+        {
+            case SIGACT_IGN:
+            {
+                break;
+            }
+            // For now, these actions are the same
+            case SIGACT_TERM:
+            case SIGACT_STOP:
+            {
+                serial_printf("info: proc pid=%d received signal %d, %s\n", sched_get_currproc()->pid, sig->signo, sigstrs[sig->signo]);
+                sched_kill(sched_get_currproc());
+                sched_yield();
+                break;
+            }
+        }
+    }
 }

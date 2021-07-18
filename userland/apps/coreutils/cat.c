@@ -1,5 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <os/proc.h>
+#include <assert.h>
 
 int main(int argc, char** argv)
 {
@@ -13,7 +15,11 @@ int main(int argc, char** argv)
     char buffer[200];
     read(fd, buffer, 200);
     printf("%s\n", buffer);
-    for(;;);
+    //sigsend(0, SIGABRT);
+    //abort();
+    //thread_sleepms(1);
+    printf(":)\n");
+    //exit(1);
     return 0;
 
     /*FILE* file = fopen(argv[1], "r");

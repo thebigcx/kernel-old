@@ -58,6 +58,7 @@ void runcmd(char* cmd)
 
     char* argv_ptr = &argv;
     proc_exec(bin, 1, &argv_ptr);
+    printf("S\n");
 }
 
 void getcmd()

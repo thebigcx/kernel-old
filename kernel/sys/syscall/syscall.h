@@ -18,6 +18,10 @@
 #define SYS_OPENPTY     13
 #define SYS_THREADCREAT 14
 #define SYS_THREADEXIT  15
+#define SYS_THREADKILL  16
+#define SYS_THREADJOIN  17
+#define SYS_SIGSEND     18
+#define SYS_GETPID      19
 
 #define SEEK_SET        1
 #define SEEK_CUR        2
