@@ -7,7 +7,7 @@
 #define THREAD_STATE_WAITING     2
 #define THREAD_STATE_WAIT_LOCK   3
 #define THREAD_STATE_PAUSED      4
-#define THREAD_STATE_ASLEEP       5
+#define THREAD_STATE_ASLEEP      5
 #define THREAD_STATE_KILLED      6
 
 typedef struct proc proc_t;

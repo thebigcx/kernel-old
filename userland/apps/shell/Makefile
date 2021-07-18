@@ -1,6 +1,8 @@
-include ../apps.mk
-
+SOURCES := shell.c
+OBJS := $(patsubst %.c, %.o, $(SOURCES))
 TARGET := sh
+LDFLAGS := -T../linker.ld -static -Bsymbolic -nostdlib -L../../libs/libc -L../../libs/libos -l:libc.a -l:libos.a
+CFLAGS := -ffreestanding -fshort-wchar -mno-red-zone -Wall -Wextra -nostdinc -I../../libs/libc/include -I../../libs/libos/include -fno-stack-protector
 
 all: $(TARGET)
 
@@ -9,9 +11,6 @@ $(TARGET): $(OBJS)
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
-
-%.o: %.s
-	as $< -o $@
 
 install:
 	cp $(TARGET) ../../../base/usr/bin/

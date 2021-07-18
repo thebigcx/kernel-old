@@ -39,7 +39,7 @@ list_t* strsplit(const char* str, char c)
 vfs_path_t* vfs_mkpath(const char* pathstr, const char* working_dir)
 {
     char* abspath;
-
+	
     if (pathstr[0] == '/' && strlen(pathstr) == 1)
     {
         vfs_path_t* path = kmalloc(sizeof(vfs_path_t));

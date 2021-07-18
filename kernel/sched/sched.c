@@ -152,7 +152,7 @@ void sched_yield()
 void sched_spawn(proc_t* proc, proc_t* parent)
 {
     acquire_lock(proclist_lock);
-    list_push_back(procs, proc);
+    //list_push_back(procs, proc);
     release_lock(proclist_lock);
 
     thread_spawn(proc->threads->head->val);
@@ -400,8 +400,8 @@ void sched_exec(const char* path, int argc, char** argv)
     kfree(buffer);
 
     sched_spawn(proc, NULL);
-    //sched_kill(sched_get_currproc());
-    //sched_yield();
+    sched_kill(sched_get_currproc());
+    sched_yield();
 }
 
 proc_t* sched_procfrompid(int pid)

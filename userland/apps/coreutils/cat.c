@@ -18,7 +18,9 @@ int main(int argc, char** argv)
     //sigsend(0, SIGABRT);
     //abort();
     //thread_sleepms(1);
+    //proc_exec("/usr/bin/ls", 0, NULL);
     printf(":)\n");
+    for (;;);
     //exit(1);
     return 0;
 

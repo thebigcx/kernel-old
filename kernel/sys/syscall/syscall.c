@@ -120,6 +120,7 @@ uint64_t sys_exec(const char* path, int argc, char** argv)
     }
     
     sched_exec(npath, argc, nargv);
+    serial_printf("EXEC");
     return 0; // Should not return
 }
 
