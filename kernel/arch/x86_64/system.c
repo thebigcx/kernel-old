@@ -1,4 +1,4 @@
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 
 void breakpoint()
 {

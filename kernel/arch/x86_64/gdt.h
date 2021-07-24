@@ -54,6 +54,21 @@ typedef union gdt_entry
 __attribute__((aligned(PAGE_SIZE_4K))) extern gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
 extern gdt_ptr_t bsp_gdtptr;
 
+// Task State Segment
+typedef struct tss_ent
+{
+    uint32_t res1;
+    uint64_t rsp[3];
+    uint64_t res2;
+    uint64_t ist[7];
+    uint64_t res3;
+    uint16_t res4;
+    uint16_t iomap_base;
+
+} __attribute__((packed)) tss_t;
+
+void tss_init(tss_t* tss, uint32_t select, gdt_entry_t* gdt);
+
 void gdt_init();
 void gdt_set_null(uint32_t idx);
 void gdt_mkentry(uint32_t idx, uint32_t base, uint32_t lim, uint8_t rw, uint8_t dc, uint8_t dpl, uint8_t code, uint8_t codedata);
@@ -65,3 +80,4 @@ void gdt_setlim(gdt_entry_t* entry, uint32_t lim);
 
 // Defined in assembly
 extern void gdt_flush(gdt_ptr_t* ptr);
+extern void tss_flush();

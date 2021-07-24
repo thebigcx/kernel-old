@@ -1,5 +1,5 @@
-#include <cpu/cpu.h>
-#include <cpu/smp.h>
+#include <arch/x86_64/cpu.h>
+#include <arch/x86_64/smp.h>
 
 // CPUID retrieves the Local APIC ID
 cpu_t* cpu_getcurr()

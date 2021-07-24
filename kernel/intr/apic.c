@@ -3,7 +3,7 @@
 #include <sys/console.h>
 #include <mem/paging.h>
 #include <acpi/acpi.h>
-#include <cpu/cpu.h>
+#include <arch/x86_64/cpu.h>
 
 uint64_t lapic_base;
 volatile uint64_t lapic_vbase;

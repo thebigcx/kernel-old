@@ -1,7 +1,7 @@
 # Switch current task
 
-.global kernel_switch
-.global user_switch
+.global arch_enter_kernel
+.global arch_enter_user
 
 .macro popaq
 
@@ -22,7 +22,7 @@
 
 .endm
 
-kernel_switch:
+arch_enter_kernel:
     movq    %rdi, %rsp
     movq    %rsi, %rax
     popaq
@@ -33,7 +33,7 @@ kernel_switch:
     // Stack contains RSP, CS, RIP, RFLAGS, SS
     iretq
 
-user_switch:
+arch_enter_user:
     mov     $0x23, %ax
     mov     %ax, %ds
     mov     %ax, %es

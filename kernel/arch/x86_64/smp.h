@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cpu/cpu.h>
+#include <arch/x86_64/cpu.h>
 
 extern cpu_t cpus[64];
 extern uint32_t cpu_count;

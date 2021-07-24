@@ -1,7 +1,7 @@
 #include <arch/x86_64/hal.h>
 #include <drivers/gfx/fb/fb.h>
 #include <drivers/tty//serial/serial.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <intr/idt.h>
 #include <mem/pmm.h>
 #include <mem/paging.h>

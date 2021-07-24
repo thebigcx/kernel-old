@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <util/list.h>
 #include <util/tree.h>
 #include <mem/paging.h>
@@ -44,6 +44,8 @@ void sched_yield();
 
 void sched_fork(proc_t* proc, reg_ctx_t* regs);
 void sched_exec(const char* path, int argc, char** argv);
+
+void sched_spawninit();
 
 proc_t* sched_get_currproc();
 

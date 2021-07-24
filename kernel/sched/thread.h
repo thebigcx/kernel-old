@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 
 #define THREAD_STATE_RUNNING     0
 #define THREAD_STATE_READY       1

@@ -22,7 +22,7 @@ int elf_load(void* data, proc_t* proc, elf_inf_t* info)
             if (size % PAGE_SIZE_4K != 0)
                 size = size - (size % PAGE_SIZE_4K) + PAGE_SIZE_4K;
 
-            space_alloc_region_at(begin, size / PAGE_SIZE_4K, proc->addr_space);
+            space_alloc_region_at(begin, size, proc->addr_space);
 
             void* tmp = page_kernel_alloc4k(1);
 

@@ -1,8 +1,7 @@
 #include <drivers/input/mouse/ps2mouse.h>
 #include <sys/io.h>
 #include <intr/idt.h>
-
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <intr/apic.h>
 
 int8_t mouse_data[3];

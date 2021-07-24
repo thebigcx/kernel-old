@@ -43,7 +43,7 @@ bool serial_transmit_empty()
 void serial_write(char c)
 {
     while (serial_transmit_empty() == 0); // Spin
-    return outb(PORT_COM1, c);
+    outb(PORT_COM1, c);
 }
 
 void serial_writestr(char* str)

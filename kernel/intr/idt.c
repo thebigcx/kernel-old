@@ -2,7 +2,7 @@
 #include <sys/io.h>
 #include <util/stdlib.h>
 #include <mem/paging.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <intr/apic.h>
 #include <mem/kheap.h>
 #include <sched/sched.h>

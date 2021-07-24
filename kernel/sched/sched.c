@@ -8,16 +8,16 @@
 #include <util/types.h>
 #include <util/stdlib.h>
 #include <mem/kheap.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <util/spinlock.h>
 #include <intr/apic.h>
 #include <time/time.h>
-#include <cpu/cpu.h>
+#include <arch/x86_64/cpu.h>
 #include <drivers/gfx/fb/fb.h>
-#include <cpu/smp.h>
+#include <arch/x86_64/smp.h>
 
-void kernel_switch(reg_ctx_t* regs, uint64_t pml4);
-void user_switch(reg_ctx_t* regs, uint64_t pml4);
+void arch_enter_kernel(reg_ctx_t* regs, uint64_t pml4);
+void arch_enter_user(reg_ctx_t* regs, uint64_t pml4);
 
 static int scheduler_ready = 0;
 
@@ -25,6 +25,8 @@ extern void kernel_proc();
 
 static list_t* procs;
 static lock_t proclist_lock = 0;
+
+// TODO: fix scheduler bug where acquire_lock(cpu->lock) hangs
 
 int creatpid()
 {
@@ -53,7 +55,9 @@ void sched_start()
 void schedule(reg_ctx_t* r)
 {
     cpu_t* cpu = cpu_getcurr();
+	serial_printf("ACQUIRE %d\n", cpu->lapic_id);
     acquire_lock(cpu->lock);
+	serial_printf("DONE %d\n", cpu->lapic_id);
 
     if (cpu->currthread)
     {
@@ -70,7 +74,7 @@ void schedule(reg_ctx_t* r)
     {
         // Remove the next ready to run thread
         cpu->currthread = list_pop_front(cpu->run_queue);
-        cpu->currthread->state = THREAD_STATE_RUNNING;
+		cpu->currthread->state = THREAD_STATE_RUNNING;
 
         if (cpu->currthread->tid == 0)
         {
@@ -83,13 +87,15 @@ void schedule(reg_ctx_t* r)
         }
 
         release_lock(cpu->lock);
+		serial_printf("RELEASE %d\n\n", cpu->lapic_id);
 
         if (cpu->currthread->regs.cs == KERNEL_CS)
-            kernel_switch(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
+            arch_enter_kernel(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
         else
-            user_switch(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
+            arch_enter_user(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
     }
 
+	serial_printf("RELEASE\n\n");
     release_lock(cpu->lock);
     for (;;);
 }
@@ -210,7 +216,7 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
         list_push_back(nproc->file_descs, vfs_open(fd->node, fd->flags, fd->mode));
     }
 
-    space_alloc_region_at(0x20000, 0x4000, nproc->addr_space);
+    space_alloc_region(0x4000, nproc->addr_space);
     for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
     {
         page_map_memory(0x20000 + i, pmm_request(), 1, nproc->addr_space);
@@ -222,31 +228,19 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
     thread->tid = 0; // Primary thread
 
     memcpy(&thread->regs, &((thread_t*)proc->threads->head->val)->regs, sizeof(reg_ctx_t));
-    
-    
-    /*proc_t* new = kmalloc(sizeof(proc_t));
-    new->addr_space = page_clone_map(proc->addr_space);
-    new->pid = creatpid();
-    new->sleep_exp = 0;
-    new->file_descs = list_create();
-    new->state = proc->state;
-    strcpy(new->name, proc->name);
-    
-    new->regs = *regs;
+}
 
-    if (proc->working_dir)
-        strcpy(new->working_dir, proc->working_dir);
+void sched_spawninit()
+{
+	vfs_node_t* node = vfs_resolve_path("/sbin/init", NULL);
+    uint8_t* buffer = kmalloc(node->size);
+    vfs_read(node, buffer, 0, node->size);
 
-    list_foreach(proc->file_descs, node)
-    {
-        fs_fd_t* fd = node->val;
-        fs_fd_t* newfd = vfs_open(fd->node, 0, 0); // vfs_node_t does not need to be copied
-        list_push_back(new->file_descs, newfd);
-    }
+    proc_t* proc = sched_mkelfproc("/sbin/init", buffer, 0, NULL, 0, NULL);
 
-    // Child processes get a new stack
-    space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
-    sched_spawn(new, proc);*/
+    kfree(buffer);
+
+    sched_spawn(proc, NULL);
 }
 
 proc_t* sched_get_currproc()
@@ -351,21 +345,24 @@ proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int
 
     list_push_back(proc->file_descs, stdin);
     list_push_back(proc->file_descs, stdout);
+	
+	// Load ELF before setting up the stack	
+	uint64_t rip = loadelf(data, proc);
 
     // TODO: it should be this
-    /*uint64_t stacktop = KERNEL_VIRTUAL_ADDR;
-    uint64_t stackbot = KERNEL_VIRTUAL_ADDR - 0x4000;
-
-    space_alloc_region_at(stackbot, 0x4000, proc->addr_space);
-    for (uint64_t i = stackbot; i < stacktop; i += PAGE_SIZE_4K)
+	/*uint64_t stacksize = 0x4000;
+    uint64_t stack = KERNEL_VIRTUAL_ADDR - stacksize;
+	serial_printf("%x\n", stack);
+    space_alloc_region_at(stack, stacksize, proc->addr_space);
+    for (uint64_t i = stack; i < stack + stacksize; i += PAGE_SIZE_4K)
     {
         page_map_memory(i, pmm_request(), 1, proc->addr_space);
     }*/
-
-    space_alloc_region_at(0x20000, 0x4000, proc->addr_space);
-    for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
+	uint64_t stacksize = 0x4000;
+    uint64_t stack = space_alloc_region(stacksize, proc->addr_space);
+	for (uint32_t i = stack; i < stack + stacksize; i += PAGE_SIZE_4K)
     {
-        page_map_memory(0x20000 + i, pmm_request(), 1, proc->addr_space);
+        page_map_memory(i, pmm_request(), 1, proc->addr_space);
     }
 
     thread->parent = proc;
@@ -376,12 +373,12 @@ proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int
     reg_ctx_t* regs = &thread->regs;
     
     memset(regs, 0, sizeof(reg_ctx_t));
-    regs->rip = loadelf(data, proc);
+    regs->rip = rip;
     regs->rflags = RFLAG_INTR | 0x2; // Interrupts, reserved
     regs->cs = USER_CS;
     regs->ss = USER_SS;
-    regs->rbp = (uint64_t)0x24000;
-    regs->rsp = (uint64_t)0x24000;
+    regs->rbp = stack + stacksize;
+    regs->rsp = stack + stacksize;
 
     prepstack(proc, path, argc, argv, 0, NULL);
 

@@ -6,6 +6,7 @@
 #include <drivers/gfx/fb/fb.h>
 #include <drivers/tty/pty/pty.h>
 #include <sched/thread.h>
+#include <arch/x86_64/syscall.h>
 
 // Some syscalls need the registers
 static reg_ctx_t* syscall_regs = NULL;
@@ -181,8 +182,11 @@ static uint64_t sys_openpty(int* master)
     return 0;
 }
 
-static uint64_t sys_threadcreat()
+static uint64_t sys_threadcreat(uint64_t* tid, void* entry, void* arg)
 {
+	thread_t* thread = thread_creat(sched_get_currproc(), entry, 0);
+	thread_spawn(thread);
+	*tid = thread->tid;	
     return 0;
 }
 
@@ -257,6 +261,10 @@ static uint64_t (*syscalls[])() =
 
 void syscall_handler(reg_ctx_t* regs)
 {
-    uint64_t (*syscall)() = syscalls[regs->rax];
-    regs->rax = syscall(regs->rdi, regs->rsi, regs->rdx, regs->rcx, regs->rbx);
+	uint64_t (*syscall)() = syscalls[arch_syscall_num(regs)];
+	arch_syscall_ret(regs, syscall(ARCH_SCARG0(regs),
+								   ARCH_SCARG1(regs),
+								   ARCH_SCARG2(regs),
+								   ARCH_SCARG3(regs),
+								   ARCH_SCARG4(regs)));
 }

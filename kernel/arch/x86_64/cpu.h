@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cpu/gdt.h>
-#include <cpu/tss.h>
+#include <arch/x86_64/gdt.h>
 #include <sched/thread.h>
 #include <util/list.h>
 #include <util/spinlock.h>

@@ -3,10 +3,24 @@
 #include <os/proc.h>
 #include <assert.h>
 
+volatile int num = 0;
+
+int thread()
+{
+	printf("Thread!");
+	for (;;);
+	//thread_exit(0);
+	printf("Shouldn't be here\n");
+}
+
 int main(int argc, char** argv)
 {
+	uint64_t tid;
+    //thread_creat(&tid, thread, NULL);
     int fd;
-    if ((fd = open(argv[1], 0, 0)) < 0)
+	//for (;;);
+    
+	if ((fd = open(argv[1], 0, 0)) < 0)
     {
         printf("cat: %s: no such file or directory\n", argv[1]);
         return 0;
@@ -15,7 +29,8 @@ int main(int argc, char** argv)
     char buffer[200];
     read(fd, buffer, 200);
     printf("%s\n", buffer);
-    //sigsend(0, SIGABRT);
+
+	//sigsend(0, SIGABRT);
     //abort();
     //thread_sleepms(1);
     //proc_exec("/usr/bin/ls", 0, NULL);

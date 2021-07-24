@@ -3,7 +3,7 @@
 #include <mem/paging.h>
 #include <mem/kheap.h>
 #include <intr/idt.h>
-#include <cpu/gdt.h>
+#include <arch/x86_64/gdt.h>
 #include <drivers/input/mouse/ps2mouse.h>
 #include <drivers/input/keyboard/ps2kb.h>
 #include <sys/io.h>
@@ -18,7 +18,7 @@
 #include <sys/syscall/syscall.h>
 #include <sys/console.h>
 #include <util/rand.h>
-#include <cpu/smp.h>
+#include <arch/x86_64/smp.h>
 #include <intr/pic.h>
 #include <util/bmp.h>
 #include <util/stdlib.h>
@@ -55,11 +55,14 @@ void kernel_proc()
                 }
             }
         }*/
+		continue;
 
         for (uint32_t i = 0; i < cpu_count; i++)
         {
             cpu_t* cpu = &cpus[i];
+			serial_printf("ACQUIRE %d\n", cpu->lapic_id);
             acquire_lock(cpu->lock);
+			serial_printf("DONE %d\n", cpu->lapic_id);
 
             for (uint32_t i = 0; i < cpu->threads->cnt; i++)
             {
@@ -74,18 +77,20 @@ void kernel_proc()
 
                 if (thread->state == THREAD_STATE_ASLEEP)
                 {
-                    if (thread->sleepexp <= pit_uptime())
+                    if (thread->sleepexp <= timer_uptime())
                     {
                         //serial_printf("%d, %d\n", thread->sleepexp, pit_uptime());
                         thread->state = THREAD_STATE_READY;
-                        thread_spawn(thread);
+						thread_spawn(thread);
                         //sched_spawn(proc, NULL);
                     }
                 }
             }
 
             release_lock(cpu->lock);
+			serial_printf("RELEASE %d\n", cpu->lapic_id);
         }
+
     }
 }
 
@@ -171,9 +176,10 @@ void kmain()
     //const char* hello = "Hello, this is the first parameter!";
     //proc_t* elf = sched_mkelfproc("/usr/bin/sh", NULL, 1, &hello, 0, NULL);
     //sched_spawn(elf, NULL);
-    const char* file = "/menu.cfg";
-    sched_exec("/usr/bin/cat", 1, &file);
-    //proc_t* cat = sched_mkelfproc("/usr/bin/cat", NULL, 1, &file, 0, NULL);
+    //const char* file = "/menu.cfg";
+    //sched_exec("/usr/bin/cat", 1, &file);
+    sched_spawninit();
+	//proc_t* cat = sched_mkelfproc("/usr/bin/cat", NULL, 1, &file, 0, NULL);
     //sched_spawn(cat, NULL);
 
     serial_writestr("Intializing scheduler...");

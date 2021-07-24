@@ -1,7 +1,7 @@
 #include <sched/thread.h>
-#include <cpu/cpu.h>
+#include <arch/x86_64/cpu.h>
 #include <time/time.h>
-#include <cpu/smp.h>
+#include <arch/x86_64/smp.h>
 #include <sched/sched.h>
 
 void thread_spawn(thread_t* thread)
@@ -37,11 +37,22 @@ thread_t* thread_creat(proc_t* parent, void* entry, int kernel)
     thread->tid = parent->nexttid++;
 
     memset(&thread->regs, 0, sizeof(reg_ctx_t));
-    thread->regs.cs = kernel ? KERNEL_CS : USER_SS;
+    thread->regs.cs = kernel ? KERNEL_CS : USER_CS;
     thread->regs.ss = kernel ? KERNEL_SS : USER_SS;
     thread->regs.rflags = RFLAG_INTR | 0x2;
     thread->regs.rip = (uint64_t)entry;
     // TODO: thread stack
+	
+	uint64_t stacksize = 0x4000;
+	uint64_t stack = space_alloc_region(stacksize, parent->addr_space);
+	for (uint64_t i = stack; i < stack + stacksize; i += PAGE_SIZE_4K)
+	{
+		page_map_memory(i, pmm_request(), 1, parent->addr_space);
+	
+	}
+
+	thread->regs.rsp = stack + stacksize;
+	thread->regs.rbp = stack + stacksize;
 
     return thread;
 }
@@ -75,7 +86,7 @@ void thread_unblock(thread_t* thread)
 void thread_sleepuntil(uint64_t timepoint)
 {
     //if (timepoint <= timer_uptime())
-    if (timepoint <= pit_uptime())
+    if (timepoint <= timer_uptime())
         return;
 
     cpu_t* cpu = cpu_getcurr();
@@ -88,7 +99,7 @@ void thread_sleepuntil(uint64_t timepoint)
 void thread_sleepns(uint64_t ns)
 {
     //thread_sleepuntil(timer_uptime() + ns);
-    thread_sleepuntil(pit_uptime() + ns);
+    thread_sleepuntil(timer_uptime() + ns);
 }
 
 void thread_exit()

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <util/types.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 
 #define IDT_PRESENT             (1 << 7)
 #define IDT_KERNEL              (0)

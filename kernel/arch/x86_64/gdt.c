@@ -1,4 +1,4 @@
-#include <cpu/gdt.h>
+#include <arch/x86_64/gdt.h>
 #include <util/stdlib.h>
 
 __attribute__((aligned(PAGE_SIZE_4K))) gdt_entry_t bsp_gdtents[GDT_NUM_DESCS];
@@ -73,4 +73,35 @@ void gdt_setlim(gdt_entry_t* entry, uint32_t lim)
 {
     entry->limlo = lim & 0xffff;
     entry->limhi = (lim >> 16) & 0x0f;
+}
+
+extern void* stack;
+
+void tss_init(tss_t* tss, uint32_t select, gdt_entry_t* gdt)
+{
+    memset(tss, 0, sizeof(tss_t));
+
+    uint64_t base = tss;
+    uint64_t lim = sizeof(tss_t) - 1;
+
+    gdt_entry_t ent;
+    memset(&ent, 0, sizeof(gdt_entry_t));
+
+    gdt_setlim(&ent, sizeof(tss_t) - 1);
+    gdt_setbase(&ent, ((uint64_t)tss) & 0xffffffff);
+
+    ent.access = 1; // Inidicates TSS?
+    ent.present = 1;
+    ent.code = 1;
+    ent.dpl = 3;
+    
+    gdt_set_entry(gdt, 5, &ent);
+
+    gdt[6].low = (uint64_t)tss >> 32;
+    gdt[6].high = 0;
+
+    tss->rsp[0] = (uint64_t)&stack + 4096; // Stack top
+    tss->iomap_base = sizeof(tss_t);
+
+    tss_flush();
 }

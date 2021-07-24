@@ -1,9 +1,7 @@
 #include <drivers/input/keyboard/ps2kb.h>
 #include <intr/idt.h>
-
-
 #include <sys/io.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <intr/apic.h>
 
 #define KEY_QUEUE_SIZE 512

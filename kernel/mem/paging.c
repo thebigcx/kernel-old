@@ -1,7 +1,7 @@
 #include <mem/paging.h>
 #include <util/stdlib.h>
 #include <intr/idt.h>
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 #include <mem/pmm.h>
 #include <mem/kheap.h>
 #include <util/assert.h>

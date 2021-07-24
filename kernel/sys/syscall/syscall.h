@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sys/system.h>
+#include <arch/x86_64/system.h>
 
 #define SYS_READ        0
 #define SYS_WRITE       1
