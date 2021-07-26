@@ -165,23 +165,9 @@ void kmain()
 
     serial_writestr("Creating kernel process...");
     sched_spawn(sched_mkproc(kernel_proc), NULL);
-    //sched_spawn(sched_mkproc(test1), NULL);
-    //sched_spawn(sched_mkproc(test2), NULL);
     serial_writestr("Ok\n");
 
-    // TEMP
-    //vfs_node_t* node = vfs_resolve_path("/usr/bin/sh", NULL);
-    //void* buffer = kmalloc(node->size);
-    //vfs_read(node, buffer, 0, node->size);
-    //const char* hello = "Hello, this is the first parameter!";
-    //proc_t* elf = sched_mkelfproc("/usr/bin/sh", NULL, 1, &hello, 0, NULL);
-    //sched_spawn(elf, NULL);
-    //const char* file = "/menu.cfg";
-    //sched_exec("/usr/bin/cat", 1, &file);
     sched_spawninit();
-	//proc_t* cat = sched_mkelfproc("/usr/bin/cat", NULL, 1, &file, 0, NULL);
-    //sched_spawn(cat, NULL);
-
     serial_writestr("Intializing scheduler...");
     sched_start();
 

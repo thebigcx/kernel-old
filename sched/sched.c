@@ -55,9 +55,7 @@ void sched_start()
 void schedule(reg_ctx_t* r)
 {
     cpu_t* cpu = cpu_getcurr();
-	serial_printf("ACQUIRE %d\n", cpu->lapic_id);
     acquire_lock(cpu->lock);
-	serial_printf("DONE %d\n", cpu->lapic_id);
 
     if (cpu->currthread)
     {
@@ -87,7 +85,6 @@ void schedule(reg_ctx_t* r)
         }
 
         release_lock(cpu->lock);
-		serial_printf("RELEASE %d\n\n", cpu->lapic_id);
 
         if (cpu->currthread->regs.cs == KERNEL_CS)
             arch_enter_kernel(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
@@ -95,7 +92,6 @@ void schedule(reg_ctx_t* r)
             arch_enter_user(&(cpu->currthread->regs), (uint64_t)cpu->currthread->parent->addr_space->pml4_phys);
     }
 
-	serial_printf("RELEASE\n\n");
     release_lock(cpu->lock);
     for (;;);
 }

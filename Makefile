@@ -1,38 +1,46 @@
-EFITARGET := boot/BOOTX64.EFI
-KERNEL := kernel/kernel.elf
-FONT := bin/font.psf
+SOURCES := $(shell find ./ -type f -name '*.c')
+ASM := $(shell find ./ -type f -name '*.S')
+OBJS := $(patsubst %.c, %.o, $(SOURCES)) $(patsubst %.S, %.o, $(ASM))
+TARGET := kernel.elf
 
-ARCH ?=
-ARCHDIR ?=
-ARCHTARGET ?=
+LDFLAGS := \
+	-fno-pic -fpie \
+	-Wl,-static,-pie,--no-dynamic-linker,-ztext \
+	-static-pie    \
+	-nostdlib      \
+	-Tkernel.ld    \
+	-z max-page-size=0x1000
 
-all:
-	@echo "<========== Compiling kernel ==========>"
-	@echo ""
-	@cd kernel && make
-	@echo ""
-	@echo "<======== Compiling Userland =========>"
-	@echo ""
-	@cd userland && make
-	@echo ""
+CFLAGS := 		 		 \
+	-I.                  \
+	-std=gnu11           \
+	-ffreestanding       \
+	-fno-stack-protector \
+	-fno-pic -fpie       \
+	-mno-80387           \
+	-mno-mmx             \
+	-mno-3dnow           \
+	-mno-sse             \
+	-mno-sse2            \
+	-mno-red-zone	     \
+	-nostdinc			 \
+	-Wall				 \
+	-Wextra				 \
+	-fshort-wchar		 \
+	-g					 
 
-install:
-	@echo "<======== Installing Userland =========>"
-	@echo ""
-	@cd userland && make install
-	@echo ""
+all: $(TARGET)
 
+$(TARGET): $(OBJS)
+	gcc $(LDFLAGS) -o $(TARGET) $(OBJS)
+
+%.o: %.c
+	gcc $(CFLAGS) -c -o $@ $<
+
+%.o: %.S
+	gcc -c $< -o $@
+
+.PHONY:
 clean:
-	@echo "Cleaning iso..."
-	@rm -f bin/os.iso
-	@rm -rf iso
-	@echo "Cleaning FAT image..."
-	@rm -f bin/os.img
-	@rm -f bin/sata.img
-	@rm -rf bin/iso
-	@echo "Cleaning userland..."
-	@cd userland && make clean
-	@echo "Cleaning kernel..."
-	@cd kernel && make clean
-	@echo "Cleaning boot loader..."
-	@cd boot/arch/$(ARCHDIR) && make clean
+	@rm -f $(OBJS)
+	@rm -f $(TARGET)
