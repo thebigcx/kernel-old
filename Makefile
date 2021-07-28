@@ -13,6 +13,7 @@ LDFLAGS := \
 
 CFLAGS := 		 		 \
 	-I.                  \
+	-Ilib				 \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \

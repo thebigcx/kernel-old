@@ -143,7 +143,7 @@ void kmain()
 
     vfs_node_t* root = ext2_init(dev);
     vfs_mount(root, "/"); // Mount root file system
-
+    
     console_init();
     video_init();
 

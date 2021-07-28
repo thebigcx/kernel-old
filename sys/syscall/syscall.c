@@ -7,6 +7,7 @@
 #include <drivers/tty/pty/pty.h>
 #include <sched/thread.h>
 #include <arch/x86_64/syscall.h>
+#include <time/time.h>
 
 // Some syscalls need the registers
 static reg_ctx_t* syscall_regs = NULL;
@@ -109,8 +110,11 @@ static uint64_t sys_fork()
     return 0;
 }
 
-uint64_t sys_exec(const char* path, int argc, char** argv)
+uint64_t sys_execve(const char* path, char** argv, char** envp)
 {
+	int argc = 0;
+	while (argv[argc] != NULL) argc++;
+
     char* npath = kmalloc(strlen(path) + 1);
     strcpy(npath, path);
     char** nargv = kmalloc(argc * sizeof(char*));
@@ -125,7 +129,7 @@ uint64_t sys_exec(const char* path, int argc, char** argv)
     return 0; // Should not return
 }
 
-static uint64_t sys_waitpid()
+static uint64_t sys_waitid()
 {
     while (1); // TODO
     return 0;
@@ -142,13 +146,13 @@ static uint64_t sys_exit(int status)
     return 0;
 }
 
-static uint64_t sys_sleepns(uint64_t ns)
+static uint64_t sys_nanosleep(timespec_t* req, timespec_t* rem)
 {
-    thread_sleepns(ns);
+    //thread_sleepns(ns);
     return 0;
 }
 
-static uint64_t sys_seek(int fdno, int64_t off, int whence)
+static uint64_t sys_lseek(unsigned int fdno, int64_t off, int whence)
 {
     fs_fd_t* fd = procgetfd(fdno);
     
@@ -167,22 +171,7 @@ static uint64_t sys_seek(int fdno, int64_t off, int whence)
     return 0;
 }
 
-// TODO: delete resources properly and add stderr
-static uint64_t sys_openpty(int* master)
-{
-    pty_t* pty = pty_grant();
-
-    proc_t* proc = sched_get_currproc();
-    //list_get(proc->file_descs, 0)->val = vfs_open(pty->slave, 0, 0);
-    //list_get(proc->file_descs, 1)->val = vfs_open(pty->slave, 0, 0);
-
-    //list_push_back(proc->file_descs, pty->master);
-
-    *master = proc->file_descs->cnt - 1;
-    return 0;
-}
-
-static uint64_t sys_threadcreat(uint64_t* tid, void* entry, void* arg)
+static uint64_t sys_create_thread(uint64_t* tid, void* entry, void* arg)
 {
 	thread_t* thread = thread_creat(sched_get_currproc(), entry, 0);
 	thread_spawn(thread);
@@ -190,13 +179,13 @@ static uint64_t sys_threadcreat(uint64_t* tid, void* entry, void* arg)
     return 0;
 }
 
-static uint64_t sys_threadexit()
+static uint64_t sys_exit_thread()
 {
     thread_exit();
     return 0;
 }
 
-static uint64_t sys_threadkill(int tid)
+static uint64_t sys_kill_thread(int tid)
 {
     proc_t* proc = sched_get_currproc();
     thread_t* found = NULL;
@@ -218,12 +207,12 @@ static uint64_t sys_threadkill(int tid)
     return 0;
 }
 
-static uint64_t sys_threadjoin()
+static uint64_t sys_join_thread()
 {
     return 0;
 }
 
-static uint64_t sys_sigsend(int pid, int signal)
+static uint64_t sys_kill(int pid, int signal)
 {
     proc_t* proc = sched_procfrompid(pid);
     signal_send(proc, signal);
@@ -237,26 +226,25 @@ static uint64_t sys_getpid()
 
 static uint64_t (*syscalls[])() =
 {
-    sys_read,
-    sys_write,
-    sys_open,
-    sys_close,
-    sys_mmap,
-    sys_ioctl,
-    sys_stat,
-    sys_fork,
-    sys_exec,
-    sys_waitpid,
-    sys_exit,
-    sys_sleepns,
-    sys_seek,
-    sys_openpty,
-    sys_threadcreat,
-    sys_threadexit,
-    sys_threadkill,
-    sys_threadjoin,
-    sys_sigsend,
-    sys_getpid
+    [SYS_READ] = sys_read,
+    [SYS_WRITE] = sys_write,
+    [SYS_OPEN] = sys_open,
+    [SYS_CLOSE] = sys_close,
+    [SYS_MMAP] = sys_mmap,
+    [SYS_IOCTL] = sys_ioctl,
+    [SYS_STAT] = sys_stat,
+    [SYS_FORK] = sys_fork,
+    [SYS_EXECVE] = sys_execve,
+    [SYS_WAITID] = sys_waitid,
+    [SYS_EXIT] = sys_exit,
+    [SYS_NANOSLEEP] = sys_nanosleep,
+    [SYS_LSEEK] = sys_lseek,
+    [SYS_CREATETHREAD] = sys_create_thread,
+    [SYS_EXITTHREAD] = sys_exit_thread,
+    [SYS_KILLTHREAD] = sys_kill_thread,
+    [SYS_JOINTHREAD] = sys_join_thread,
+    [SYS_KILL] = sys_kill,
+    [SYS_GETPID] = sys_getpid
 };
 
 void syscall_handler(reg_ctx_t* regs)

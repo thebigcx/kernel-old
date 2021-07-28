@@ -53,8 +53,7 @@ void video_init()
     node->flags = FS_BLKDEV;
     node->name = strdup("fb");
     vfs_mount(node, "/dev/fb");
-
-    vfs_node_t* psffont = vfs_resolve_path("/usr/font.psf", NULL);
+    vfs_node_t* psffont = vfs_resolve_path("/usr/share/font.psf", NULL);
 
     psf1_header_t header;
     vfs_read(psffont, &header, 0, sizeof(psf1_header_t));
@@ -71,11 +70,6 @@ void video_init()
     font.glyph_buf = buf;
     font.header = header;
 }
-
-/*void video_set_fnt(psf1_font* fnt)
-{
-    font = fnt;
-}*/
 
 const vid_mode_t* video_get_mode()
 {
