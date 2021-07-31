@@ -78,3 +78,25 @@ void vfs_destroy_path(vfs_path_t* path)
     list_destroy(path->parts);
     kfree(path);
 }
+
+// TODO: complete impl
+// Make canonical path (shortest)
+char* vfs_mk_canonpath(char* path, char* working)
+{
+	size_t size = strlen(path);
+	if (working) size += strlen(working);
+	
+	char* res = kmalloc(size + 1);
+
+	if (working)
+	{
+		strcpy(res, working);
+		strcpy(res + strlen(working), path);
+	}
+	else
+	{
+		strcpy(res, path);
+	}
+
+	return res;
+}

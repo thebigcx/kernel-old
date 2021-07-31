@@ -230,71 +230,66 @@ page_map_t* page_mk_map()
 
 page_map_t* page_clone_map(page_map_t* src)
 {
-    return page_mk_map();
-    //return src;
-    /*pml4_t* dst = pmm_request(); // Physical
-    memset(dst, 0, PAGE_SIZE_4K);
+	return src;
+	pml4_t* pml4 = page_kernel_alloc4k(1);
+    uint64_t pml4_phys = pmm_request();
+    page_kernel_map_memory(pml4, pml4_phys, 1);
+    memcpy(pml4, &kpml4, PAGE_SIZE_4K);
 
-    for (uint32_t i = 0; i < PDPS_PER_PML4; i++)
+    pdp_t* pdp = page_kernel_alloc4k(1);
+    uint64_t pdp_phys = pmm_request();
+    page_kernel_map_memory(pdp, pdp_phys, 1);
+    memset(pdp, 0, PAGE_SIZE_4K);
+
+    set_page_frame(&pml4->entries[0], pdp_phys);
+    pml4->entries[0] |= PML4_PRESENT | PML4_WRITABLE | PML4_USER;
+
+    pd_entry_t** page_dirs = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_dirs, pmm_request(), 1);
+    uint64_t* page_dirs_phys = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_dirs_phys, pmm_request(), 1);
+    page_t*** page_tables = page_kernel_alloc4k(1);
+    page_kernel_map_memory(page_tables, pmm_request(), 1);
+
+	page_map_t* map = kmalloc(sizeof(page_map_t));
+	map->pml4 = pml4;
+	map->pml4_phys = pml4_phys;
+	map->pdp = pdp;
+	map->pdp_phys = pdp_phys;
+	map->page_dirs = page_dirs;
+	map->page_dirs_phys = page_dirs_phys;
+	map->page_tables = page_tables;
+	map->regions = list_create();
+
+	for (uint32_t i = 0; i < DIRS_PER_PDP; i++)
     {
-        if (src->entries[i] & PML4_PRESENT)
-        {
-            pdp_t* pdp_src = src->entries[i] & PML4_FRAME;
+		page_dirs[i] = page_kernel_alloc4k(1);
+		page_dirs_phys[i] = pmm_request();
+		page_kernel_map_memory(page_dirs[i], page_dirs_phys[i], 1);
 
-            pdp_t* pdp = pmm_request();
-            memset(pdp, 0, PAGE_SIZE_4K);
-            dst->entries[i] = src->entries[i] & 0x7;
-            set_page_frame(&dst->entries[i], pdp);
+		page_tables[i] = kmalloc(4096);
+		set_page_frame(&(pdp->entries[i]), page_dirs_phys[i]);
+		pdp->entries[i] |= PDP_WRITABLE | PDP_PRESENT | PDP_USER;
 
-            for (uint32_t j = 0; j < DIRS_PER_PDP; j++)
-            {
-                if (pdp_src->entries[j] & PDP_PRESENT)
-                {
-                    page_dir_t* dir_src = pdp_src->entries[j] & PDP_FRAME;
+		for (uint32_t j = 0; j < TABLES_PER_DIR; j++)
+		{
+			page_t* srcpage = src->page_tables[i][j];
 
-                    page_dir_t* dir = pmm_request();
-                    memset(dir, 0, PAGE_SIZE_4K);
-                    pdp->entries[j] = pdp_src->entries[j] & 0x7;
-                    set_page_frame(&pdp->entries[j], dir);
+			if (srcpage)
+			{
+				page_mk_table(i, j, map);
+				memcpy(map->page_tables[i][j], srcpage, sizeof(uint64_t) * PAGES_PER_TABLE);
+			}
+			else
+			{
+				page_dirs[i][j] = 0;
+				page_tables[i][j] = NULL;
+			}
+		}
 
-                    for (uint32_t k = 0; k < TABLES_PER_DIR; k++)
-                    {
-                        if (dir_src->entries[k] & PD_PRESENT)
-                        {
-                            page_table_t* tbl_src = dir_src->entries[k] & PD_FRAME;
+    }
 
-                            page_table_t* tbl = pmm_request();
-                            memset(tbl, 0, PAGE_SIZE_4K);
-                            dir->entries[k] = dir_src->entries[k] & 0x7;
-                            set_page_frame(&dir->entries[k], tbl);
-
-                            // Copy the pages
-                            for (uint32_t l = 0; l < PAGES_PER_TABLE; l++)
-                            {
-                                if (tbl_src->entries[l] & PAGE_PRESENT)
-                                {
-                                    if (tbl_src->entries[l] & PAGE_USER)
-                                    {
-                                        void* page_src = tbl_src->entries[l] & PAGE_FRAME;
-                                        void* page = pmm_request();
-                                        memcpy(page, page_src, PAGE_SIZE_4K);
-
-                                        tbl->entries[l] = tbl_src->entries[l] & 0x1f;
-                                        
-                                        set_page_frame(&tbl->entries[l], page);
-                                    }
-                                    else // If it is a kernel page, link pages rather than copy them
-                                    {
-                                        tbl->entries[l] = tbl_src->entries[l];
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }*/
+	return map;
 }
 
 // TODO

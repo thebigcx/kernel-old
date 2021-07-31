@@ -14,9 +14,11 @@
 
 #define SIGCNT  3
 
+typedef int pid_t;
+
 typedef struct proc
 {
-    uint64_t pid; // Process ID
+    pid_t pid; // Process ID
     page_map_t* addr_space; // Virtual address space
     list_t* file_descs; // Open file descriptors
 
@@ -32,6 +34,7 @@ typedef struct proc
     list_t* sigstack; // Signal stack
     uint64_t signals[SIGCNT];
 
+	reg_ctx_t* syscall_regs;
 } proc_t;
 
 void schedule(reg_ctx_t* r);
@@ -42,7 +45,7 @@ void sched_kill(proc_t* proc);
 void sched_proc_destroy(proc_t* proc);
 void sched_yield();
 
-void sched_fork(proc_t* proc, reg_ctx_t* regs);
+pid_t sched_fork(proc_t* proc, reg_ctx_t* regs);
 void sched_exec(const char* path, int argc, char** argv);
 
 void sched_spawninit();

@@ -50,7 +50,7 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
 
 void kheap_init()
 {
-    // Pre-allocate 1000 pages and map them to low physical addresses
+    // Pre-allocate 1000 pages and map them to physical pages
     void* addr = page_kernel_alloc4k(1000);
     for (uint32_t i = 0; i < 1000; i++)
     {
@@ -72,8 +72,6 @@ void kheap_init()
     last_block = start_block;
 }
 
-char heapbuf[100];
-
 void* kmalloc(size_t n)
 {
     // Must be a multiple of 16 bytes
@@ -83,6 +81,12 @@ void* kmalloc(size_t n)
     acquire_lock(kheap_lock);
 
     heap_block_t* curr = (heap_block_t*)heap_start;
+	if (!curr)
+	{
+		kheap_expand(n);
+		return kmalloc(n);
+	}
+
     while (1)
     {
         if (curr->free)

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <arch/x86_64/system.h>
-#include <kernel/syscall.h>
 
 #define SYS_READ        0
 #define SYS_WRITE       1
@@ -22,9 +21,24 @@
 #define SYS_JOINTHREAD  16
 #define SYS_KILL     	17
 #define SYS_GETPID      18
+#define SYS_SIGACTION	19
+#define SYS_CHDIR		20
+#define SYS_GETCWD		21
 
 #define SEEK_SET        1
 #define SEEK_CUR        2
 #define SEEK_END        3
+
+typedef uint64_t sigset_t;
+
+typedef struct sigaction
+{
+	void (*sa_handler)(int);
+	void (*sa_sigaction)(int);
+	sigset_t sa_mask;
+	int sa_flags;
+	void (*sa_restorer)();
+
+} sigaction_t;
 
 void syscall_handler(reg_ctx_t* regs);

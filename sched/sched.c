@@ -56,8 +56,8 @@ void schedule(reg_ctx_t* r)
 {
     cpu_t* cpu = cpu_getcurr();
     acquire_lock(cpu->lock);
-
-    if (cpu->currthread)
+	
+	if (cpu->currthread)	
     {
         cpu->currthread->regs = *r;
         // If it hasn't blocked or is sleeping, add it back to the ready list
@@ -189,9 +189,9 @@ void sched_proc_destroy(proc_t* proc)
     kfree(proc);
 }
 
-void sched_fork(proc_t* proc, reg_ctx_t* regs)
+pid_t sched_fork(proc_t* proc, reg_ctx_t* regs)
 {
-    proc_t* nproc = kmalloc(sizeof(proc_t));
+	proc_t* nproc = kmalloc(sizeof(proc_t));
     nproc->addr_space = page_clone_map(proc->addr_space);
     nproc->pid        = creatpid();
     nproc->file_descs = list_create();
@@ -211,11 +211,12 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
         fs_fd_t* fd = node->val;
         list_push_back(nproc->file_descs, vfs_open(fd->node, fd->flags, fd->mode));
     }
-
-    space_alloc_region(0x4000, nproc->addr_space);
-    for (uint32_t i = 0; i < 0x4000; i += PAGE_SIZE_4K)
+	
+	uint64_t stacksize = 0x4000;
+    uint64_t stackbot = space_alloc_region(stacksize, nproc->addr_space);
+    for (uint64_t i = stackbot; i < stackbot + stacksize; i += PAGE_SIZE_4K)
     {
-        page_map_memory(0x20000 + i, pmm_request(), 1, nproc->addr_space);
+        page_map_memory(i, pmm_request(), 1, nproc->addr_space);
     }
 
     thread->parent = nproc;
@@ -224,6 +225,13 @@ void sched_fork(proc_t* proc, reg_ctx_t* regs)
     thread->tid = 0; // Primary thread
 
     memcpy(&thread->regs, &((thread_t*)proc->threads->head->val)->regs, sizeof(reg_ctx_t));
+	thread->regs.rsp = stackbot + stacksize;
+	thread->regs.rbp = stackbot + stacksize;
+	thread->regs.rax = 0; // Send 0 to child
+
+	sched_spawn(nproc, NULL);
+
+	return nproc->pid;
 }
 
 void sched_spawninit()
@@ -327,8 +335,8 @@ proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int
     proc->nexttid    = 1;
     proc->parent     = NULL;
     proc->sigstack   = list_create();
-
-    strcpy(proc->name, "unknown");
+	proc->name       = strdup("unknown");
+	proc->working_dir = strdup("/");	
 
     thread_t* thread = kmalloc(sizeof(thread_t));
     list_push_back(proc->threads, thread);
@@ -384,14 +392,15 @@ proc_t* sched_mkelfproc(const char* path, void* data, int argc, char** argv, int
 // Cheap way of implementing exec() - spawning a new process and killing the old one
 void sched_exec(const char* path, int argc, char** argv)
 {
-    vfs_node_t* node = vfs_resolve_path(path, NULL);
-    uint8_t* buffer = kmalloc(node->size);
+	char* working = sched_get_currproc()->working_dir;
+    vfs_node_t* node = vfs_resolve_path(path, working);
+	uint8_t* buffer = kmalloc(node->size);
     vfs_read(node, buffer, 0, node->size);
-
-    proc_t* proc = sched_mkelfproc(path, buffer, argc, argv, 0, NULL);
+	
+	proc_t* proc = sched_mkelfproc(path, buffer, argc, argv, 0, NULL);
 
     kfree(buffer);
-
+	
     sched_spawn(proc, NULL);
     sched_kill(sched_get_currproc());
     sched_yield();

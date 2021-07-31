@@ -83,6 +83,7 @@ vfs_node_t* vfs_get_mountpoint(vfs_path_t* path);
 // path.c
 vfs_path_t* vfs_mkpath(const char* pathstr, const char* working_dir);
 void vfs_destroy_path(vfs_path_t* path);
+char* vfs_mk_canonpath(char* path, char* working);
 
 // vfs.c
 void vfs_init();

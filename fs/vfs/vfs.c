@@ -67,15 +67,15 @@ vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
         vfs_node_t* next = node->finddir(node, part->val);
         if (next == NULL) // File does not exist
             return NULL;
-
-        if (node != mount) // Mount point is not kmalloc'd
+        
+		if (node != mount) // Mount point is not kmalloc'd
             kfree(node);
-
+		
         node = next;
     }
-
+	
     vfs_destroy_path(path);
-
+	
     return node;
 }
 

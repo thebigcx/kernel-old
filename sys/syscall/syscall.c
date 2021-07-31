@@ -9,9 +9,6 @@
 #include <arch/x86_64/syscall.h>
 #include <time/time.h>
 
-// Some syscalls need the registers
-static reg_ctx_t* syscall_regs = NULL;
-
 static fs_fd_t* procgetfd(int fdnum)
 {
     proc_t* proc = sched_get_currproc();
@@ -106,12 +103,19 @@ static uint64_t sys_stat(const char* path, vfs_stat_t* status)
 
 static uint64_t sys_fork()
 {
-    sched_fork(sched_get_currproc(), syscall_regs);
-    return 0;
+	proc_t* curr = sched_get_currproc();
+    return sched_fork(curr, curr->syscall_regs);
 }
 
-uint64_t sys_execve(const char* path, char** argv, char** envp)
+uint64_t sys_execve(const char* path, char* const argv[], char* const envp[])
 {
+	/*vfs_stat_t stat;
+	if (vfs_stat(path, &stat) != 0)	
+	{
+		serial_printf("stat: file does not exist\n");
+		return -1;
+	}*/
+	
 	int argc = 0;
 	while (argv[argc] != NULL) argc++;
 
@@ -125,8 +129,7 @@ uint64_t sys_execve(const char* path, char** argv, char** envp)
     }
     
     sched_exec(npath, argc, nargv);
-    serial_printf("EXEC");
-    return 0; // Should not return
+    return -1; // Should not return
 }
 
 static uint64_t sys_waitid()
@@ -224,6 +227,51 @@ static uint64_t sys_getpid()
     return sched_get_currproc()->pid;
 }
 
+static uint64_t sys_sigaction(int signum, sigaction_t* act, sigaction_t* old)
+{
+	proc_t* proc = sched_get_currproc();
+	
+	uint64_t prev = proc->signals[signum];
+
+	if (act)
+	{
+		proc->signals[signum] = act->sa_handler;
+	}
+
+	if (old)
+	{
+		sigaction_t oldact;
+		oldact.sa_handler = prev;
+		*old = oldact;
+	}
+
+	return 0;
+}
+
+static uint64_t sys_chdir(const char* path)
+{
+	proc_t* proc = sched_get_currproc();
+	char* new_path = vfs_mk_canonpath(path, proc->working_dir);
+	
+	if (proc->working_dir) kfree(proc->working_dir);
+
+	proc->working_dir = kmalloc(strlen(new_path) + 1);
+	strcpy(proc->working_dir, new_path);
+	kfree(new_path);
+
+	return 0;	
+}
+
+static uint64_t sys_getcwd(char* buf, size_t size)
+{
+	char* working = sched_get_currproc()->working_dir;
+	if (working)
+		strncpy(buf, working, size);
+	else
+		strcpy(buf, "/");
+	return buf;
+}
+
 static uint64_t (*syscalls[])() =
 {
     [SYS_READ] = sys_read,
@@ -244,11 +292,16 @@ static uint64_t (*syscalls[])() =
     [SYS_KILLTHREAD] = sys_kill_thread,
     [SYS_JOINTHREAD] = sys_join_thread,
     [SYS_KILL] = sys_kill,
-    [SYS_GETPID] = sys_getpid
+    [SYS_GETPID] = sys_getpid,
+	[SYS_SIGACTION] = sys_sigaction,
+	[SYS_CHDIR]	= sys_chdir,
+	[SYS_GETCWD] = sys_getcwd
 };
 
 void syscall_handler(reg_ctx_t* regs)
 {
+	sched_get_currproc()->syscall_regs = regs;
+
 	uint64_t (*syscall)() = syscalls[arch_syscall_num(regs)];
 	arch_syscall_ret(regs, syscall(ARCH_SCARG0(regs),
 								   ARCH_SCARG1(regs),
