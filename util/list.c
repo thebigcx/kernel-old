@@ -9,7 +9,8 @@ list_t* list_create()
 
 void list_destroy(list_t* list)
 {
-    for (int i = 0; i < list->cnt; i++)
+	uint32_t cnt = list->cnt;
+    for (int i = 0; i < cnt; i++)
     {
         list_pop_back(list);
     }
@@ -48,7 +49,8 @@ void* list_pop_back(list_t* list)
 
     list_node_t* node = list->tail;
     list->tail = node->prev;
-    list->tail->next = NULL;
+    	
+	if (list->tail) list->tail->next = NULL;
     list->cnt--;
     void* val = node->val;
     kfree(node);

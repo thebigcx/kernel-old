@@ -202,6 +202,7 @@ pid_t sched_fork(proc_t* proc, reg_ctx_t* regs)
     nproc->sigstack   = list_create();
 
     nproc->name = strdup("unknown");
+	nproc->working_dir = strdup("/");
 
     thread_t* thread = kmalloc(sizeof(thread_t));
     list_push_back(nproc->threads, thread);
@@ -212,25 +213,25 @@ pid_t sched_fork(proc_t* proc, reg_ctx_t* regs)
         list_push_back(nproc->file_descs, vfs_open(fd->node, fd->flags, fd->mode));
     }
 	
-	uint64_t stacksize = 0x4000;
+	/*uint64_t stacksize = 0x4000;
     uint64_t stackbot = space_alloc_region(stacksize, nproc->addr_space);
     for (uint64_t i = stackbot; i < stackbot + stacksize; i += PAGE_SIZE_4K)
     {
         page_map_memory(i, pmm_request(), 1, nproc->addr_space);
-    }
+    }*/
 
     thread->parent = nproc;
     thread->state = THREAD_STATE_READY;
     thread->sleepexp = 0;
     thread->tid = 0; // Primary thread
 
-    memcpy(&thread->regs, &((thread_t*)proc->threads->head->val)->regs, sizeof(reg_ctx_t));
-	thread->regs.rsp = stackbot + stacksize;
-	thread->regs.rbp = stackbot + stacksize;
+    memcpy(&thread->regs, regs, sizeof(reg_ctx_t));
+	//thread->regs.rsp = stackbot + stacksize - PAGE_SIZE_4K;
+	//thread->regs.rbp = stackbot + stacksize - PAGE_SIZE_4K;
 	thread->regs.rax = 0; // Send 0 to child
 
 	sched_spawn(nproc, NULL);
-
+	
 	return nproc->pid;
 }
 
@@ -396,7 +397,7 @@ void sched_exec(const char* path, int argc, char** argv)
     vfs_node_t* node = vfs_resolve_path(path, working);
 	uint8_t* buffer = kmalloc(node->size);
     vfs_read(node, buffer, 0, node->size);
-	
+
 	proc_t* proc = sched_mkelfproc(path, buffer, argc, argv, 0, NULL);
 
     kfree(buffer);

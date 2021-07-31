@@ -2,11 +2,14 @@
 #include <drivers/tty//serial/serial.h>
 #include <sched/sched.h>
 #include <intr/apic.h>
+#include <util/spinlock.h>
 
 #define DUMPREG(reg, val)\
     serial_writestr(reg"=");\
     serial_writestr(ultoa(val, buffer, 16));\
     serial_writestr("\n");
+
+lock_t isrlock = 0;
 
 void dumpregs(reg_ctx_t* r)
 {
@@ -49,13 +52,35 @@ void generic_isr(const char* err, isr_frame_t* frame)
 
 void pagefault_handler(isr_frame_t* frame)
 {
+	acquire_lock(isrlock);
     if (frame->regs.ss & 0x3)
     {
-        proc_t* proc = sched_get_currproc();
+		dumpregs(&frame->regs);
+
+        if (frame->errcode & (1 << 4))
+            serial_writestr("Invalid instruction fetch\n");
+        if (frame->errcode & (1 << 3))
+            serial_writestr("Reserved bits set\n");
+        if (frame->errcode & (1 << 2))
+            serial_writestr("CPL = 3\n");
+
+        if (frame->errcode & (1 << 1))
+            serial_writestr("Invalid write\n");
+        else
+            serial_writestr("Invalid read\n");
+
+        if (frame->errcode & (1 << 0))
+            serial_writestr("Page protection violation\n");
+        else
+            serial_writestr("Non-present page\n");
+		
+		uint64_t cr2;
+        asm volatile ("mov %%cr2, %0" : "=r"(cr2));
+        serial_printf("Faulting address: %x\n", cr2);
+        
+		release_lock(isrlock);
+		proc_t* proc = sched_get_currproc();
         signal_send(proc, SIGSEG);
-        /*serial_printf("Process (PID %d) crashed: Page Fault\n", proc->pid);
-        serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_kill(proc);*/
     }
     else
     {
@@ -86,18 +111,18 @@ void pagefault_handler(isr_frame_t* frame)
         asm volatile ("mov %%cr2, %0" : "=r"(cr2));
         serial_printf("Faulting address: %x\n", cr2);
 
+		release_lock(isrlock);
         asm volatile ("1: jmp 1b");
     }
 }
 
 void general_protection_fault_handler(isr_frame_t* frame)
 {
+	acquire_lock(isrlock);
     if (frame->regs.ss & 0x3)
     {
+		release_lock(isrlock);
         proc_t* proc = sched_get_currproc();
-        /*serial_printf("Process (PID %d) crashed: General Protection Fault\n", proc->pid);
-        serial_printf("Faulting address: 0x%x\n", frame->regs.rip);
-        sched_kill(proc);*/
         signal_send(proc, SIGSEG);
     }
     else
@@ -139,6 +164,7 @@ void general_protection_fault_handler(isr_frame_t* frame)
             serial_writestr("No error code");
         }
 
+		release_lock(isrlock);
         asm volatile ("1: jmp 1b");
     }
 }

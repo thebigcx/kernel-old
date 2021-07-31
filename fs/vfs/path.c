@@ -51,12 +51,12 @@ vfs_path_t* vfs_mkpath(const char* pathstr, const char* working_dir)
     if (working_dir && pathstr[0] != '/') // Relative path
     {
         abspath = kmalloc(strlen(pathstr) + strlen(working_dir) + 1);
-        strcpy(abspath, working_dir + 1);
+        strcpy(abspath, working_dir);
         strcpy(abspath + strlen(working_dir), pathstr);
     }
     else // Absolute path
     {
-        abspath = kmalloc(strlen(pathstr));
+        abspath = kmalloc(strlen(pathstr) + 1);
         strcpy(abspath, pathstr + 1);
         abspath[strlen(pathstr)] = 0;
     }
@@ -79,24 +79,79 @@ void vfs_destroy_path(vfs_path_t* path)
     kfree(path);
 }
 
-// TODO: complete impl
 // Make canonical path (shortest)
 char* vfs_mk_canonpath(char* path, char* working)
 {
-	size_t size = strlen(path);
-	if (working) size += strlen(working);
-	
-	char* res = kmalloc(size + 1);
+	char* temppath;
 
-	if (working)
+	if (working && path[0] != '/')
 	{
-		strcpy(res, working);
-		strcpy(res + strlen(working), path);
+		temppath = kmalloc(strlen(path) + strlen(working) + 2); // Slash in between, null terminator
+		strcpy(temppath, working);
+		strcpy(temppath + strlen(temppath), "/");
+		strcpy(temppath + strlen(temppath), path);
 	}
 	else
 	{
-		strcpy(res, path);
+		temppath = kmalloc(strlen(path) + 1);
+		strcpy(temppath, path);
 	}
 
-	return res;
+	list_t* tokens = list_create();
+
+	size_t finalsize = 1;
+	
+	char* token = strtok(temppath, "/");
+	while (token != NULL)
+	{
+		if (token[0] == 0)
+		{
+			kfree(token);
+		}
+		else if (strcmp(token, "..") == 0)
+		{
+			if (tokens->cnt > 0)
+			{
+				char* del_token = list_pop_back(tokens);
+				finalsize -= strlen(del_token) + 1;
+				kfree(del_token);
+			}
+		}
+		else if (strcmp(token, ".") == 0)
+		{
+			kfree(token);	
+		}
+		else
+		{
+			list_push_back(tokens, token);
+			finalsize += strlen(token) + 1;
+		}
+
+		token = strtok(NULL, "/");
+	}
+
+	finalsize++; // Null-terminator
+	char* final = kmalloc(finalsize);
+	
+	if (tokens->cnt == 0)
+	{
+		strcpy(final, "/");
+	}
+	else
+	{
+		list_foreach(tokens, node)
+		{
+			char* token = node->val;
+			strcpy(final + strlen(final), "/");
+			strcpy(final + strlen(final), token);
+		}
+	}
+
+	uint32_t cnt = tokens->cnt;
+	for (uint32_t i = 0; i < cnt; i++)
+	{
+		kfree(list_pop_back(tokens));
+	}
+
+	return final;
 }

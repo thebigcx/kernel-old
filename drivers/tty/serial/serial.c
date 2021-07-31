@@ -48,6 +48,8 @@ void serial_write(char c)
 
 void serial_writestr(char* str)
 {
+	if (!str) return;
+
     acquire_lock(lock);
 
     while (*str != 0)

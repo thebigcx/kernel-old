@@ -218,3 +218,44 @@ char* ultoa(unsigned long n, char* str, int base)
 
     return strrev(str);
 }
+
+static char* olds;
+
+char* strtok(char* s, const char* delim)
+{
+	if (s) olds = s;
+	else s = olds;
+
+	if (!s || !delim || *olds == '\0') return NULL;
+
+	char* ret = kmalloc(1000);
+	int k = 0;
+	int i = 0;
+	
+	while (s[i] != '\0')
+	{
+		int j = 0;
+		while (delim[j] != '\0')
+		{
+			if (s[i] != delim[j])
+			{
+				ret[k] = s[i];
+			}
+			else
+			{
+				goto end;
+			}
+
+			j++;
+		}
+
+		i++;
+		k++;
+	}
+	
+end:
+	olds = s + i + 1;
+	ret[i] = 0;
+
+	return ret;
+}

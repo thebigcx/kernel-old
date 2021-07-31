@@ -212,8 +212,9 @@ page_map_t* page_mk_map()
         set_page_frame(&pdp->entries[i], page_dirs_phys[i]);
         pdp->entries[i] |= PDP_PRESENT | PDP_WRITABLE | PDP_USER;
 
-        page_tables[i] = page_kernel_alloc4k(1);
-        memset(page_tables[i], 0, PAGE_SIZE_4K);
+        page_tables[i] = kmalloc(4096);
+		//page_tables[i] = page_kernel_alloc4k(1);
+		memset(page_tables[i], 0, PAGE_SIZE_4K);
     }
 
     page_map_t* map = kmalloc(sizeof(page_map_t));
@@ -230,7 +231,7 @@ page_map_t* page_mk_map()
 
 page_map_t* page_clone_map(page_map_t* src)
 {
-	return src;
+	//return src;
 	pml4_t* pml4 = page_kernel_alloc4k(1);
     uint64_t pml4_phys = pmm_request();
     page_kernel_map_memory(pml4, pml4_phys, 1);

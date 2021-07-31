@@ -51,14 +51,14 @@ static heap_block_t* heap_split_block(heap_block_t* block, size_t len)
 void kheap_init()
 {
     // Pre-allocate 1000 pages and map them to physical pages
-    void* addr = page_kernel_alloc4k(1000);
-    for (uint32_t i = 0; i < 1000; i++)
+    void* addr = page_kernel_alloc4k(10000);
+    for (uint32_t i = 0; i < 10000; i++)
     {
         void* phys = pmm_request();
         page_kernel_map_memory(addr + i * PAGE_SIZE_4K, phys, 1);
     }
     
-    size_t heap_len = 1000 * PAGE_SIZE_4K;
+    size_t heap_len = 10000 * PAGE_SIZE_4K;
 
     heap_start = addr;
     heap_end = (void*)((size_t)heap_start + heap_len);
