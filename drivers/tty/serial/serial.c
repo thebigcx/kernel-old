@@ -3,7 +3,7 @@
 #include <util/stdlib.h>
 #include <util/spinlock.h>
 
-lock_t lock = 0;
+lock_t serial_lock = 0;
 
 void serial_init()
 {
@@ -50,14 +50,14 @@ void serial_writestr(char* str)
 {
 	if (!str) return;
 
-    acquire_lock(lock);
+    acquire_lock(serial_lock);
 
     while (*str != 0)
     {
         serial_write(*str++);
     }
-
-    release_lock(lock);
+	
+    release_lock(serial_lock);
 }
 
 void serial_printf(char* format, ...)

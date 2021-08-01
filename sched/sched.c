@@ -55,8 +55,9 @@ void sched_start()
 void schedule(reg_ctx_t* r)
 {
     cpu_t* cpu = cpu_getcurr();
-    acquire_lock(cpu->lock);
-	
+    //acquire_lock(cpu->lock);
+	while (acquire_test_lock(cpu->lock)) return;
+
 	if (cpu->currthread)	
     {
         cpu->currthread->regs = *r;
@@ -93,7 +94,7 @@ void schedule(reg_ctx_t* r)
     }
 
     release_lock(cpu->lock);
-    for (;;);
+	for (;;);
 }
 
 proc_t* sched_mkproc(void* entry)

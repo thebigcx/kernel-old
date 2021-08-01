@@ -109,15 +109,21 @@ static uint64_t sys_fork()
 
 uint64_t sys_execve(const char* path, char* const argv[], char* const envp[])
 {
-	/*vfs_stat_t stat;
+	if (!path || !argv || !envp) return -1;
+
+	vfs_stat_t stat;
 	if (vfs_stat(path, &stat) != 0)	
 	{
-		serial_printf("stat: file does not exist\n");
 		return -1;
-	}*/
+	}
 	
 	int argc = 0;
-	while (argv[argc] != NULL) argc++;
+	while (argv[argc] != NULL && argc < 128) argc++;
+
+	if (argc == 128)
+	{
+		return -1;
+	}
 
     char* npath = kmalloc(strlen(path) + 1);
     strcpy(npath, path);
@@ -151,6 +157,7 @@ static uint64_t sys_exit(int status)
 
 static uint64_t sys_nanosleep(timespec_t* req, timespec_t* rem)
 {
+	thread_sleepns(req->tv_sec * 1000000000 + req->tv_nsec);
     //thread_sleepns(ns);
     return 0;
 }

@@ -55,14 +55,14 @@ void kernel_proc()
                 }
             }
         }*/
-		continue;
-
         for (uint32_t i = 0; i < cpu_count; i++)
         {
             cpu_t* cpu = &cpus[i];
 			serial_printf("ACQUIRE %d\n", cpu->lapic_id);
             acquire_lock(cpu->lock);
 			serial_printf("DONE %d\n", cpu->lapic_id);
+
+			serial_printf("%d\n", cpu->threads->cnt);
 
             for (uint32_t i = 0; i < cpu->threads->cnt; i++)
             {
@@ -90,7 +90,10 @@ void kernel_proc()
             release_lock(cpu->lock);
 			serial_printf("RELEASE %d\n", cpu->lapic_id);
         }
-
+	
+		serial_printf("UP");	
+		int spin = 0;
+		while (spin++ < 100000000);
     }
 }
 
@@ -168,7 +171,7 @@ void kmain()
     serial_writestr("Ok\n");
 
     sched_spawninit();
-    serial_writestr("Intializing scheduler...");
+	serial_writestr("Intializing scheduler...");
     sched_start();
 
     for (;;);

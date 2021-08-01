@@ -27,8 +27,8 @@ void vfs_mount_recur(vfs_path_t* path, tree_node_t* node, vfs_node_t* dev, uint3
 
     bool found = false;
     char* name = (char*)list_get(path->parts, depth)->val;
-
-    list_foreach(node->children, child)
+    
+	list_foreach(node->children, child)
     {
         tree_node_t* tnode = (tree_node_t*)child->val;
         vfs_ent_t* ent = (vfs_ent_t*)tnode->data;
@@ -69,23 +69,22 @@ void vfs_mount(vfs_node_t* dev, const char* mnt_pt)
     vfs_destroy_path(path);
 }
 
-vfs_node_t* vfs_get_mountpoint_recur(tree_node_t* node, vfs_path_t* path, uint32_t depth)
+vfs_node_t* vfs_get_mountpoint_recur(tree_node_t* node, char* token, uint32_t depth)
 {
-    if (path->parts->cnt == depth)
+    if (token == NULL)
     {
         vfs_ent_t* ent = node->data;
         return ent->file;
     }
 
     bool found = false;
-    char* name = (char*)list_get(path->parts, depth)->val;
     
     list_foreach(node->children, child)
     {
         tree_node_t* tnode = (tree_node_t*)child->val;
         vfs_ent_t* ent = (vfs_ent_t*)tnode->data;
         
-        if (strcmp(ent->name, name) == 0)
+        if (strcmp(ent->name, token) == 0)
         {
             found = true;
             node = tnode;
@@ -98,15 +97,16 @@ vfs_node_t* vfs_get_mountpoint_recur(tree_node_t* node, vfs_path_t* path, uint32
         return ((vfs_ent_t*)node->data)->file;
     }
 
-    return vfs_get_mountpoint_recur(node, path, ++depth);
+    return vfs_get_mountpoint_recur(node, strtok(NULL, "/"), ++depth);
 }
 
-vfs_node_t* vfs_get_mountpoint(vfs_path_t* path)
+vfs_node_t* vfs_get_mountpoint(const char* path)
 {
-    if (path->parts->cnt == 0)
-    {
+	if (strlen(path) == 1 && path[0] == '/')
+	{
         return (vfs_node_t*)((vfs_ent_t*)vfs_tree->root->data)->file;
-    }
-    
-    return vfs_get_mountpoint_recur(vfs_tree->root, path, 0);
+	}
+	
+	char* token = strtok(path + 1, "/");
+    return vfs_get_mountpoint_recur(vfs_tree->root, token, 0);
 }

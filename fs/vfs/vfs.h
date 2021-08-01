@@ -78,7 +78,7 @@ extern tree_t* vfs_tree;
 // mount.c
 int vfs_get_type(vfs_node_t* dev);
 void vfs_mount(vfs_node_t* dev, const char* mnt_pt);
-vfs_node_t* vfs_get_mountpoint(vfs_path_t* path);
+vfs_node_t* vfs_get_mountpoint(const char* path);
 
 // path.c
 vfs_path_t* vfs_mkpath(const char* pathstr, const char* working_dir);

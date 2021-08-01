@@ -52,7 +52,8 @@ size_t vfs_write(vfs_node_t* file, const void* ptr, size_t off, size_t size)
 
 vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
 {
-    vfs_path_t* path = vfs_mkpath(pathstr, working_dir);
+    vfs_path_t* path_old = vfs_mkpath(pathstr, working_dir);
+	char* path = vfs_mk_canonpath(pathstr, working_dir);
     vfs_node_t* mount = vfs_get_mountpoint(path);
 
     if (mount->flags == FS_BLKDEV || mount->flags == FS_CHARDEV) // Device file
@@ -62,9 +63,11 @@ vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
 
     vfs_node_t* node = mount;
 
-    list_foreach(path->parts, part)
-    {
-        vfs_node_t* next = node->finddir(node, part->val);
+    //list_foreach(path->parts, part)
+    char* token = strtok(path + 1, "/"); // Ignore first slash
+	while (token != NULL)
+	{
+        vfs_node_t* next = node->finddir(node, token);
         if (next == NULL) // File does not exist
             return NULL;
         
@@ -72,9 +75,11 @@ vfs_node_t* vfs_resolve_path(const char* pathstr, const char* working_dir)
             kfree(node);
 		
         node = next;
+
+		token = strtok(NULL, "/");
     }
 	
-    vfs_destroy_path(path);
+    vfs_destroy_path(path_old);
 	
     return node;
 }
